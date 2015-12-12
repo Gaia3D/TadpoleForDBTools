@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.hangum.tadpole.rdb.core.viewers.object;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -33,17 +32,19 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine.QUERY_DDL_TYPE;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.QUERY_DDL_TYPE;
 import com.hangum.tadpole.commons.util.TadpoleWidgetUtils;
 import com.hangum.tadpole.commons.viewsupport.SelectionProviderMediator;
 import com.hangum.tadpole.engine.define.DBDefine;
-import com.hangum.tadpole.engine.query.dao.system.SchemaHistoryDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
 import com.hangum.tadpole.rdb.core.Messages;
+import com.hangum.tadpole.rdb.core.editors.main.utils.RequestQuery;
 import com.hangum.tadpole.rdb.core.viewers.connections.ManagerViewer;
+import com.hangum.tadpole.rdb.core.viewers.object.sub.AbstractObjectComposite;
 import com.hangum.tadpole.rdb.core.viewers.object.sub.mongodb.collections.TadpoleMongoDBCollectionComposite;
 import com.hangum.tadpole.rdb.core.viewers.object.sub.mongodb.index.TadpoleMongoDBIndexesComposite;
 import com.hangum.tadpole.rdb.core.viewers.object.sub.mongodb.serversidescript.TadpoleMongoDBJavaScriptComposite;
@@ -51,6 +52,7 @@ import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.function.TadpoleFuncti
 import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.index.TadpoleIndexesComposite;
 import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.orapackage.TadpolePackageComposite;
 import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.procedure.TadpoleProcedureComposite;
+import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.schedule.TadpoleScheduleComposite;
 import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.sysnonym.TadpoleSynonymComposite;
 import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.table.TadpoleTableComposite;
 import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.trigger.TadpoleTriggerComposite;
@@ -73,16 +75,11 @@ public class ExplorerViewer extends ViewPart {
 	/** multi structured viewer */
 	private StructuredViewer[] arrayStructuredViewer = null;
 
-	/**
-	 * 현재 오픈된페이지를 리프레쉬한다.
-	 */
-	public static enum CHANGE_TYPE { DEL, INS };
-
 	private UserDBDAO userDB;
 	private CTabFolder tabFolderObject;
 	private Text textSearch;
 	
-	private String strSelectItem;
+	// rdb
 	private Composite compositeBody;
 	private TadpoleTriggerComposite 	triggerComposite 	= null;
 	private TadpoleFunctionComposite 	functionCompostite 	= null;
@@ -91,7 +88,10 @@ public class ExplorerViewer extends ViewPart {
 	private TadpoleIndexesComposite 	indexComposite 		= null;
 	private TadpoleViewerComposite 		viewComposite 		= null;
 	private TadpoleTableComposite 		tableComposite 		= null;
+	// oracle
 	private TadpoleSynonymComposite 	synonymComposite 	= null;
+	private TadpoleScheduleComposite    scheduleComposite 	= null;
+	
 	
 	// mongodb
 	private TadpoleMongoDBCollectionComposite mongoCollectionComposite 	= null;
@@ -104,7 +104,7 @@ public class ExplorerViewer extends ViewPart {
 
 	@Override
 	public void createPartControl(Composite parent) {
-		setPartName(Messages.ExplorerViewer_0);
+		setPartName(Messages.get().ExplorerViewer_0);
 		
 		GridLayout gl_parent = new GridLayout(1, false);
 		gl_parent.marginWidth = 1;
@@ -127,41 +127,43 @@ public class ExplorerViewer extends ViewPart {
 		textSearch.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
-				String strSelectTab = tabFolderObject.getItem(tabFolderObject.getSelectionIndex()).getText();
+				String strSelectTab = ""+tabFolderObject.getItem(tabFolderObject.getSelectionIndex()).getData(AbstractObjectComposite.TAB_DATA_KEY);
 				String strSearchText = textSearch.getText();
 				
-				if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.COLLECTIONS.toString())) {
+				if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.COLLECTIONS.name())) {
 					mongoCollectionComposite.filter(strSearchText);
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.TABLES.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.TABLES.name())) {
 					tableComposite.filter(strSearchText);
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.SYNONYM.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.SYNONYM.name())) {
 					synonymComposite.filter(strSearchText);
+//				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.SCHEDULE.name())) {
+//					scheduleComposite.filter(strSearchText);
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.VIEWS.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.VIEWS.name())) {
 					viewComposite.filter(strSearchText);					
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.INDEXES.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.INDEXES.name())) {
 					if(userDB != null && DBDefine.MONGODB_DEFAULT == DBDefine.getDBDefine(userDB)) {
 						mongoIndexComposite.filter(strSearchText);
 					} else {
 						indexComposite.filter(strSearchText);
 					}					
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.PROCEDURES.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.PROCEDURES.name())) {
 					procedureComposite.filter(strSearchText);
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.PACKAGES.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.PACKAGES.name())) {
 					packageComposite.filter(strSearchText);
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.FUNCTIONS.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.FUNCTIONS.name())) {
 					functionCompostite.filter(strSearchText);
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.TRIGGERS.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.TRIGGERS.name())) {
 					triggerComposite.filter(strSearchText);
 				
-				} else if (strSelectTab.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.JAVASCRIPT.toString())) {
+				} else if (strSelectTab.equalsIgnoreCase(OBJECT_TYPE.JAVASCRIPT.name())) {
 					mongoJavaScriptComposite.filter(strSearchText);
 				}
 			}
@@ -186,8 +188,8 @@ public class ExplorerViewer extends ViewPart {
 			public void widgetSelected(SelectionEvent evt) {
 				if (userDB == null) return;
 				if(boolInitObjectHead) {
-					strSelectItem = ((CTabItem)evt.item).getText();
-					refershSelectObject(strSelectItem);
+					CTabItem ct = (CTabItem)evt.item;
+					refershSelectObject(""+ct.getData(AbstractObjectComposite.TAB_DATA_KEY));
 				}
 			}
 		});
@@ -212,6 +214,7 @@ public class ExplorerViewer extends ViewPart {
 				} // end if(event.getProperty()
 			} //
 		}); // end property change
+		
 	}
 
 	/**
@@ -239,7 +242,8 @@ public class ExplorerViewer extends ViewPart {
 		// 기존 사용자원을 반납합니다. 
 		if(null != tableComposite) tableComposite.dispose(); 
 		if(null != viewComposite) viewComposite.dispose(); 
-		if(null != synonymComposite) synonymComposite.dispose(); 
+		if(null != synonymComposite) synonymComposite.dispose();
+		if(null != scheduleComposite) scheduleComposite.dispose();
 		if(null != indexComposite) indexComposite.dispose(); 
 		if(null != procedureComposite) procedureComposite.dispose(); 
 		if(null != packageComposite) packageComposite.dispose(); 
@@ -300,12 +304,11 @@ public class ExplorerViewer extends ViewPart {
 			arrayStructuredViewer = new StructuredViewer[] { 
 				tableComposite.getTableListViewer(), 
 				tableComposite.getTableColumnViewer(),
-				viewComposite.getViewListViewer(), 
+				viewComposite.getTableViewer(), 
 				indexComposite.getTableViewer(), 
 				triggerComposite.getTableViewer()
 			};
 			getViewSite().setSelectionProvider(new SelectionProviderMediator(arrayStructuredViewer, tableComposite.getTableListViewer()));
-			strSelectItem = PublicTadpoleDefine.DB_ACTION.TABLES.toString();
 			
 		} else if (dbDefine == DBDefine.TAJO_DEFAULT) {
 			createTable();
@@ -314,7 +317,6 @@ public class ExplorerViewer extends ViewPart {
 					tableComposite.getTableListViewer() 
 				};
 			getViewSite().setSelectionProvider(new SelectionProviderMediator(arrayStructuredViewer, tableComposite.getTableListViewer()));
-			strSelectItem = PublicTadpoleDefine.DB_ACTION.TABLES.toString();
 				
 		// hive
 		} else if (dbDefine == DBDefine.HIVE_DEFAULT || dbDefine == DBDefine.HIVE2_DEFAULT) {
@@ -325,7 +327,6 @@ public class ExplorerViewer extends ViewPart {
 				tableComposite.getTableColumnViewer()
 			};
 			getViewSite().setSelectionProvider(new SelectionProviderMediator(arrayStructuredViewer, tableComposite.getTableListViewer()));
-			strSelectItem = PublicTadpoleDefine.DB_ACTION.TABLES.toString();
 			
 		// mongodb
 		} else if (dbDefine == DBDefine.MONGODB_DEFAULT) {
@@ -340,8 +341,6 @@ public class ExplorerViewer extends ViewPart {
 			};
 			getViewSite().setSelectionProvider(new SelectionProviderMediator(arrayStructuredViewer, mongoCollectionComposite.getCollectionListViewer()));
 			
-			strSelectItem = PublicTadpoleDefine.DB_ACTION.COLLECTIONS.toString();
-			
 		} else if (dbDefine == DBDefine.ORACLE_DEFAULT) {
 			createTable();
 			createView();
@@ -351,23 +350,22 @@ public class ExplorerViewer extends ViewPart {
 			createPackage();
 			createFunction();
 			createTrigger();
+//			createSchedule();
 			
 			arrayStructuredViewer = new StructuredViewer[] { 
 				tableComposite.getTableListViewer(),
 				tableComposite.getTableColumnViewer(),
-				viewComposite.getViewListViewer(), 
-				synonymComposite.getSynonymListViewer(),
-				synonymComposite.getSynonymColumnViewer(),
+				viewComposite.getTableViewer(), 
+				synonymComposite.getTableviewer(),
 				indexComposite.getTableViewer(), 
 				procedureComposite.getTableViewer(), 
 				packageComposite.getTableViewer(), 
-				packageComposite.getSubTableViewer(),
+				packageComposite.getTableViewer(),
 				functionCompostite.getTableviewer(), 
-				triggerComposite.getTableViewer()
+				triggerComposite.getTableViewer(),
+//				scheduleComposite.getTableViewer()
 			};
 			getViewSite().setSelectionProvider(new SelectionProviderMediator(arrayStructuredViewer, tableComposite.getTableListViewer()));
-			
-			strSelectItem = PublicTadpoleDefine.DB_ACTION.TABLES.toString();
 		// cubrid, mysql, postgre, mssql
 		} else {
 			createTable();
@@ -380,18 +378,16 @@ public class ExplorerViewer extends ViewPart {
 			arrayStructuredViewer = new StructuredViewer[] { 
 				tableComposite.getTableListViewer(), 
 				tableComposite.getTableColumnViewer(),
-				viewComposite.getViewListViewer(), 
+				viewComposite.getTableViewer(), 
 				indexComposite.getTableViewer(), 
 				procedureComposite.getTableViewer(), 
 				functionCompostite.getTableviewer(), 
 				triggerComposite.getTableViewer()
 			};
 			getViewSite().setSelectionProvider(new SelectionProviderMediator(arrayStructuredViewer, tableComposite.getTableListViewer()));
-			
-			strSelectItem = PublicTadpoleDefine.DB_ACTION.TABLES.toString();
 		}
 		
-		refershSelectObject(PublicTadpoleDefine.DB_ACTION.TABLES.toString());
+		refershSelectObject(PublicTadpoleDefine.OBJECT_TYPE.TABLES.name());
 	}
 	
 	/**
@@ -407,28 +403,29 @@ public class ExplorerViewer extends ViewPart {
 	 * 현재 선택된 tab을 리프레쉬합니다.
 	 * 
 	 * @param strSelectItemText TabItem text
+	 * @param strObjectName
 	 */
 	private void refershSelectObject(String strSelectItemText, String strObjectName) {
-//		테이블 초기화 될때 무조건 리프레쉬 되므로 다시리프레쉬 되는것을 막습니다.
-		if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.TABLES.toString())) {
-			if(tabFolderObject.getSelectionIndex() != 0) tabFolderObject.setSelection(0);
+
+		if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.TABLES.name())) {
 			refreshTable(false, strObjectName);
-		} else if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.VIEWS.toString())) {
-			if(tabFolderObject.getSelectionIndex() != 1) tabFolderObject.setSelection(1);
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.VIEWS.name())) {
 			refreshView(true, strObjectName);
-		} else if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.SYNONYM.toString())) {
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.SYNONYM.name())) {
 			refreshSynonym(false, strObjectName);
-		} else if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.INDEXES.toString())) {
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.INDEXES.name())) {
 			refreshIndexes(true, strObjectName);
-		} else if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.PROCEDURES.toString())) {
-			refreshProcedure(false, strObjectName);
-		} else if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.PACKAGES.toString())) {
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.PROCEDURES.name())) {
+			refreshProcedure(true, strObjectName);
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.PACKAGES.name())) {
 			refreshPackage(false, strObjectName);
-		} else if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.FUNCTIONS.toString())) {
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.FUNCTIONS.name())) {
 			refreshFunction(false, strObjectName);
-		} else if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.TRIGGERS.toString())) {
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.TRIGGERS.name())) {
 			refreshTrigger(true, strObjectName);
-		} else if (strSelectItemText.equalsIgnoreCase(PublicTadpoleDefine.DB_ACTION.JAVASCRIPT.toString())) {
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.SCHEDULE.name())) {
+			refreshSchedule(true, strObjectName);
+		} else if (strSelectItemText.equalsIgnoreCase(OBJECT_TYPE.JAVASCRIPT.name())) {
 			refreshJS(false, strObjectName);
 		}
 		
@@ -440,7 +437,7 @@ public class ExplorerViewer extends ViewPart {
 	 * selected tab refresh
 	 */
 	private void refreshSelectTab() {
-		if(logger.isDebugEnabled()) logger.debug("tabFolderObject.getSelection().getText()" + tabFolderObject.getSelection().getText());
+//		if(logger.isDebugEnabled()) logger.debug("tabFolderObject.getSelection().getText()" + tabFolderObject.getSelection().getText());
 		refershSelectObject(tabFolderObject.getSelection().getText(), "");
 	}
 	
@@ -533,19 +530,27 @@ public class ExplorerViewer extends ViewPart {
 		synonymComposite = new TadpoleSynonymComposite(getSite(), tabFolderObject, userDB);
 		synonymComposite.initAction();
 	}
+	
+	/**
+	 * define oracle schedule
+	 */
+	private void createSchedule() {
+		scheduleComposite = new TadpoleScheduleComposite(getSite(), tabFolderObject, userDB);
+		scheduleComposite.initAction();
+	}
 
 	/**
 	 * Synonym 정보를 최신으로 리프레쉬합니다.
 	 */
 	public void refreshSynonym(boolean boolRefresh, String strObjectName) {
-		synonymComposite.refreshSynonym(getUserDB(), boolRefresh);
+		synonymComposite.refreshSynonym(getUserDB(), boolRefresh, strObjectName);
 	}
 
 	/**
 	 * view 정보를 최신으로 리프레쉬합니다.
 	 */
 	public void refreshView(boolean boolRefresh, String strObjectName) {
-		viewComposite.refreshView(getUserDB(), boolRefresh);
+		viewComposite.refreshView(getUserDB(), boolRefresh, strObjectName);
 	}
 
 	/**
@@ -555,7 +560,7 @@ public class ExplorerViewer extends ViewPart {
 		if(userDB != null && DBDefine.MONGODB_DEFAULT == DBDefine.getDBDefine(userDB)) {
 			mongoIndexComposite.refreshIndexes(userDB, boolRefresh);
 		} else {
-			indexComposite.refreshIndexes(getUserDB(), boolRefresh);
+			indexComposite.refreshIndexes(getUserDB(), boolRefresh, strObjectName);
 		}
 	}
 
@@ -563,28 +568,32 @@ public class ExplorerViewer extends ViewPart {
 	 * procedure 정보를 최신으로 갱신 합니다.
 	 */
 	public void refreshProcedure(boolean boolRefresh, String strObjectName) {
-		procedureComposite.refreshProcedure(userDB, boolRefresh);
+		procedureComposite.refreshProcedure(userDB, boolRefresh, strObjectName);
 	}
 
 	/**
 	 * package 정보를 최신으로 갱신 합니다.
 	 */
 	public void refreshPackage(boolean boolRefresh, String strObjectName) {
-		packageComposite.refreshPackage(userDB, boolRefresh);
+		packageComposite.refreshPackage(userDB, boolRefresh, strObjectName);
+	}
+	
+	public void refreshSchedule(boolean boolRefresh, String strObjectName) {
+//		scheduleComposite.refreshSchedule(userDB, boolRefresh, strObjectName);
 	}
 
 	/**
 	 * trigger 정보를 최신으로 갱신 합니다.
 	 */
 	public void refreshTrigger(boolean boolRefresh, String strObjectName) {
-		triggerComposite.refreshTrigger(userDB, boolRefresh);
+		triggerComposite.refreshTrigger(userDB, boolRefresh, strObjectName);
 	}
 
 	/**
 	 * function 정보를 최신으로 갱신 합니다.
 	 */
 	public void refreshFunction(boolean boolRefresh, String strObjectName) {
-		functionCompostite.refreshFunction(userDB, boolRefresh);
+		functionCompostite.refreshFunction(userDB, boolRefresh, strObjectName);
 	}
 
 	/**
@@ -599,6 +608,13 @@ public class ExplorerViewer extends ViewPart {
 	}
 	
 	/**
+	 * select table refresh
+	 */
+	public void refreshTableColumn() {
+		tableComposite.refreshTableColumn();		
+	}
+	
+	/**
 	 * mongodb server side javascript define
 	 */
 	public void refreshJS(boolean boolRefresh, String strObjectName) {
@@ -608,29 +624,49 @@ public class ExplorerViewer extends ViewPart {
 	public UserDBDAO getUserDB() {
 		return userDB;
 	}
-
+	
 	/**
 	 *  refresh object
 	 * 
 	 * @param chgUserDB
-	 * @param schemaDao
+	 * @param reqQuery
 	 */
-	public void refreshCurrentTab(UserDBDAO chgUserDB, final PublicTadpoleDefine.QUERY_DDL_TYPE queryDDLType) {
+	public void refreshCurrentTab(UserDBDAO chgUserDB, final RequestQuery reqQuery) {
+		if(reqQuery.getSqlDDLType() == null) return;
+		
+		QUERY_DDL_TYPE queryDDLType = reqQuery.getSqlDDLType();
+		String strObjectName = reqQuery.getSqlObjectName();
+		
+		refreshCurrentTab(queryDDLType, strObjectName, chgUserDB);
+	}
+	
+	/**
+	 * 
+	 * @param queryDDLType
+	 * @param strObjectName
+	 * @param chgUserDB
+	 */
+	public void refreshCurrentTab(QUERY_DDL_TYPE queryDDLType, String strObjectName, UserDBDAO chgUserDB) {
 		if (this.userDB.getSeq() != chgUserDB.getSeq())	return;
 		
-		if(queryDDLType != null) {
-			if(queryDDLType == PublicTadpoleDefine.QUERY_DDL_TYPE.TABLE) {
-				refershSelectObject(PublicTadpoleDefine.DB_ACTION.TABLES.name(), "");
-			} else if(queryDDLType == PublicTadpoleDefine.QUERY_DDL_TYPE.VIEW) {
-				refershSelectObject(PublicTadpoleDefine.DB_ACTION.VIEWS.name(), "");
-			} else if(queryDDLType == PublicTadpoleDefine.QUERY_DDL_TYPE.INDEX) {
-				refershSelectObject(PublicTadpoleDefine.DB_ACTION.INDEXES.name(), "");
-			} else {
-				refreshSelectTab();
-			// TO DO This code is temporary. do not understand refresh object is table view refresh. --;; - 15.4.20. hangum
-//			} else {
-//				refershSelectObject(PublicTadpoleDefine.DB_ACTION.TABLES.name(), "");
-			}
+		if(queryDDLType == QUERY_DDL_TYPE.TABLE) {
+			refershSelectObject(OBJECT_TYPE.TABLES.name(), strObjectName);
+		} else if(queryDDLType == QUERY_DDL_TYPE.VIEW) {
+			refershSelectObject(OBJECT_TYPE.VIEWS.name(), strObjectName);
+		} else if(queryDDLType == QUERY_DDL_TYPE.INDEX) {
+			refershSelectObject(OBJECT_TYPE.INDEXES.name(), strObjectName);
+		} else if(queryDDLType == QUERY_DDL_TYPE.PROCEDURE) {
+			refershSelectObject(OBJECT_TYPE.PROCEDURES.name(), strObjectName);
+		} else if(queryDDLType == QUERY_DDL_TYPE.FUNCTION) {
+			refershSelectObject(OBJECT_TYPE.FUNCTIONS.name(), strObjectName);
+		} else if(queryDDLType == QUERY_DDL_TYPE.TRIGGER) {
+			refershSelectObject(OBJECT_TYPE.TRIGGERS.name(), strObjectName);
+		} else if(queryDDLType == QUERY_DDL_TYPE.PACKAGE) {
+			refershSelectObject(OBJECT_TYPE.PACKAGES.name(), strObjectName);
+		} else if(queryDDLType == QUERY_DDL_TYPE.SYNONYM) {
+			refershSelectObject(OBJECT_TYPE.SYNONYM.name(), strObjectName);
+		} else {
+			refreshSelectTab();
 		}
 	}
 	

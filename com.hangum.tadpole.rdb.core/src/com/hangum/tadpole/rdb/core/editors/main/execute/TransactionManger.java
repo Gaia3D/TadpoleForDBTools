@@ -2,7 +2,6 @@ package com.hangum.tadpole.rdb.core.editors.main.execute;
 
 import org.apache.commons.lang.StringUtils;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.manager.TadpoleSQLTransactionManager;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 
@@ -47,7 +46,7 @@ public class TransactionManger {
 	 * @param query
 	 * @return
 	 */
-	public static boolean transactionQuery(String query, String userEmail, UserDBDAO userDB) {
+	public static boolean calledCommitOrRollback(String query, String userEmail, UserDBDAO userDB) {
 		if(StringUtils.startsWithIgnoreCase(query, COMMIT_STATEMENT)) {
 			TadpoleSQLTransactionManager.commit(userEmail, userDB);
 			return true;

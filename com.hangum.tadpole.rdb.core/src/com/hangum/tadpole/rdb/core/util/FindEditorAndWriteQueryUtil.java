@@ -18,8 +18,8 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.sql.util.SQLUtil;
@@ -48,14 +48,15 @@ public class FindEditorAndWriteQueryUtil {
 	 * 쿼리 스트링을 에디터로 엽니다.
 	 * 
 	 * @param userDB
-	 * @param lowSQL
+	 * @param strObjectName
+	 * @param strScript 
 	 * @param isNewEditor 항상 새로운 창으로 엽니다.
 	 * @param initAction action이 호출된곳.
 	 */
-	public static void run(UserDBDAO userDB, String lowSQL, boolean isNewEditor, PublicTadpoleDefine.DB_ACTION initAction) {
+	public static void run(UserDBDAO userDB, String strObjectName, String strScript, boolean isNewEditor, PublicTadpoleDefine.OBJECT_TYPE initAction) {
 		
 		if(userDB != null && DBDefine.MONGODB_DEFAULT == DBDefine.getDBDefine(userDB)) {
-			newMongoDBEditorOpen(userDB, lowSQL);
+			newMongoDBEditorOpen(userDB, strScript);
 		} else {
 
 //			if(isFormating) {
@@ -70,12 +71,12 @@ public class FindEditorAndWriteQueryUtil {
 			if(SQLUtil.isSELECTEditor(initAction)) {
 				IEditorPart editor = EditorUtils.findSQLEditor(userDB);
 				if(editor == null || isNewEditor) {				
-					newSQLEditorOpen(userDB, lowSQL, initAction);		
+					newSQLEditorOpen(userDB, strScript, initAction);		
 				} else {
-					appendSQLEditorOpen(editor, userDB, lowSQL);				
+					appendSQLEditorOpen(editor, userDB, strScript);				
 				}	// end reference
 			} else {
-				newObjectEditorOpen(userDB, lowSQL, initAction);
+				newObjectEditorOpen(userDB, strObjectName, strScript, initAction);
 			}
 		}	// end db
 	}
@@ -88,8 +89,8 @@ public class FindEditorAndWriteQueryUtil {
 	 * @param lowSQL
 	 * @param initAction
 	 */
-	public static void run(UserDBDAO userDB, String lowSQL, PublicTadpoleDefine.DB_ACTION initAction) {
-		run(userDB, lowSQL, false, initAction);
+	public static void run(UserDBDAO userDB, String lowSQL, PublicTadpoleDefine.OBJECT_TYPE initAction) {
+		run(userDB, "", lowSQL, false, initAction);
 	}
 	
 	/**
@@ -116,18 +117,19 @@ public class FindEditorAndWriteQueryUtil {
 	 * new window open
 	 * 
 	 * @param userDB
-	 * @param lowSQL
+	 * @param objectName
+	 * @param strScript 
 	 * @param initAction
 	 */
-	private static void newObjectEditorOpen(UserDBDAO userDB, String lowSQL, PublicTadpoleDefine.DB_ACTION initAction) {
+	private static void newObjectEditorOpen(UserDBDAO userDB, String objectName, String strScript, PublicTadpoleDefine.OBJECT_TYPE initAction) {
 		try {
-			ObjectEditorInput mei = new ObjectEditorInput(userDB, lowSQL, initAction);
+			ObjectEditorInput mei = new ObjectEditorInput(userDB, objectName, strScript, initAction);
 			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(mei, ObjectEditor.ID, false);
 		} catch (PartInitException e) {
 			logger.error("new sql editor open", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 		}	
 	}
 	
@@ -138,7 +140,7 @@ public class FindEditorAndWriteQueryUtil {
 	 * @param lowSQL
 	 * @param initAction
 	 */
-	private static void newSQLEditorOpen(UserDBDAO userDB, String lowSQL, PublicTadpoleDefine.DB_ACTION initAction) {
+	private static void newSQLEditorOpen(UserDBDAO userDB, String lowSQL, PublicTadpoleDefine.OBJECT_TYPE initAction) {
 		try {
 			MainEditorInput mei = new MainEditorInput(userDB, lowSQL, initAction);
 			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(mei, MainEditor.ID, false);
@@ -146,7 +148,7 @@ public class FindEditorAndWriteQueryUtil {
 			logger.error("new object editor open", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 		}	
 	}
 	
@@ -167,7 +169,7 @@ public class FindEditorAndWriteQueryUtil {
 			logger.error("find editor open", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 		}
 	}
 

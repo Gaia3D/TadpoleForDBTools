@@ -10,17 +10,17 @@
  ******************************************************************************/
 package com.hangum.tadpole.application.initialize.wizard;
 
+import org.apache.log4j.Logger;
 import org.eclipse.jface.wizard.Wizard;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.application.Messages;
+import com.hangum.tadpole.application.initialize.wizard.dao.SystemAdminWizardUserDAO;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.util.Utils;
-import com.hangum.tadpole.engine.initialize.TadpoleSystemInitializer;
-import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
+import com.hangum.tadpole.engine.initialize.AddDefaultSampleDBToUser;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
-import com.hangum.tadpole.engine.query.dao.system.UserInfoDataDAO;
+import com.hangum.tadpole.engine.query.sql.TadpoleSystemQuery;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
-import com.hangum.tadpole.preference.define.PreferenceDefine;
-import com.ibatis.sqlmap.client.SqlMapClient;
 
 /**
  * System Administrator wizard 
@@ -31,56 +31,96 @@ import com.ibatis.sqlmap.client.SqlMapClient;
  *
  */
 public class SystemInitializeWizard extends Wizard {
-	protected SystemAdminWizardPage adminPage;
+	private static final Logger logger = Logger.getLogger(SystemInitializeWizard.class);
+	
+	protected SystemAdminTermsPage termPage;
+	protected SystemAdminWizardUseTypePage systemUseType;
+	protected SystemAdminWizardDefaultUserPage addUserPage;
 
 	public SystemInitializeWizard() {
-		setWindowTitle("System initialize Wizard");
+		setWindowTitle(Messages.get().SystemAdminWizardPage_3);
 	}
 
 	@Override
 	public void addPages() {
-		adminPage = new SystemAdminWizardPage();
-		addPage(adminPage);
+		termPage = new SystemAdminTermsPage();
+		addPage(termPage);
+		
+		systemUseType = new SystemAdminWizardUseTypePage();
+		addPage(systemUseType);
+		
+		addUserPage = new SystemAdminWizardDefaultUserPage();
+		addPage(addUserPage);
+	}
+	
+	@Override
+	public boolean canFinish() {
+		if(termPage.getAggree()) {
+			if(PublicTadpoleDefine.SYSTEM_USE_GROUP.PERSONAL.name().equals(systemUseType.getUseType())) {
+				return true;
+			} else {
+				if(addUserPage.isComplete()) return true;
+			}
+		}
+		
+		return super.canFinish();
 	}
 
 	@Override
 	public boolean performFinish() {
-		SystemAdminWizardPageDAO adminDao = adminPage.getUserData();
+		UserDAO systeUser = null; 
 		
+		if(PublicTadpoleDefine.SYSTEM_USE_GROUP.PERSONAL.name().equals(systemUseType.getUseType())) {
+			
+			try {
+				// 사용 그룹을 개인으로 수정.
+				TadpoleSystemQuery.updateSystemInformation(PublicTadpoleDefine.SYSTEM_USE_GROUP.PERSONAL.name());
+				
+				// 기본 유저 하면을 입력합니다.				
+				systeUser = TadpoleSystem_UserQuery.newUser(
+						PublicTadpoleDefine.INPUT_TYPE.NORMAL.toString(),
+						PublicTadpoleDefine.SYSTEM_DEFAULT_USER, 
+						Utils.getUniqueDigit(7), 
+						PublicTadpoleDefine.YES_NO.YES.name(),
+						"1005tadPole1206", 	
+						PublicTadpoleDefine.USER_ROLE_TYPE.SYSTEM_ADMIN.toString(),
+						"Default Admin", 
+						"en", 
+						PublicTadpoleDefine.YES_NO.YES.name(), 
+						PublicTadpoleDefine.YES_NO.NO.name(), 
+						"",
+						"*"); //$NON-NLS-1$ //$NON-NLS-2$
+				
+			} catch(Exception e) {
+				logger.error("System initialize Exception", e);
+			}
+			
+		} else {
+			SystemAdminWizardUserDAO adminDao = addUserPage.getUserData();
+			
+			try {
+				// 사용 그룹을 개인으로 수정.
+				TadpoleSystemQuery.updateSystemInformation(PublicTadpoleDefine.SYSTEM_USE_GROUP.GROUP.name());
+
+				// 사용자 등록
+				systeUser = TadpoleSystem_UserQuery.newUser(PublicTadpoleDefine.INPUT_TYPE.NORMAL.toString(),
+				adminDao.getEmail(), Utils.getUniqueDigit(7), PublicTadpoleDefine.YES_NO.YES.name(),
+				adminDao.getPasswd(), 	
+				PublicTadpoleDefine.USER_ROLE_TYPE.SYSTEM_ADMIN.toString(),
+				"System Admin", "en", PublicTadpoleDefine.YES_NO.YES.name(), PublicTadpoleDefine.YES_NO.NO.name(), "", "*"); //$NON-NLS-1$ //$NON-NLS-2$
+				
+			} catch(Exception e) {
+				logger.error("System initialize Exception", e);
+			}
+		}
+		
+		// savmpe database 를 생성합니다.
 		try {
-			UserDAO newUserDAO = TadpoleSystem_UserQuery.newUser(PublicTadpoleDefine.INPUT_TYPE.NORMAL.toString(),
-					adminDao.getEmail(), Utils.getUniqueDigit(7), PublicTadpoleDefine.YES_NO.YES.name(),
-					adminDao.getPasswd(), 	
-					PublicTadpoleDefine.USER_ROLE_TYPE.SYSTEM_ADMIN.toString(),
-					"Tadpole System Admin", "en", PublicTadpoleDefine.YES_NO.YES.name(), PublicTadpoleDefine.YES_NO.NO.name(), ""); //$NON-NLS-1$ //$NON-NLS-2$
-			
-			insertUserPreferenceValue(newUserDAO, PreferenceDefine.SMTP_HOST_NAME, 	adminDao.getsMTPServer());
-			insertUserPreferenceValue(newUserDAO, PreferenceDefine.SMTP_PORT, 		adminDao.getPort());
-			insertUserPreferenceValue(newUserDAO, PreferenceDefine.SMTP_EMAIL, 		adminDao.getsMTPEmail());
-			insertUserPreferenceValue(newUserDAO, PreferenceDefine.SMTP_PASSWD, 	adminDao.getsMTPPasswd());
-			
-		} catch(Exception e) {
-			e.printStackTrace();
+			AddDefaultSampleDBToUser.addUserDefaultDB(systeUser.getSeq(), systeUser.getEmail());
+		} catch (Exception e) {
+			logger.error("Sample db copy error", e);
 		}
 		
 		return true;
 	}
-	
-	/**
-	 * insert key, value
-	 * 
-	 * @param key
-	 * @param use
-	 * @throws Exception
-	 */
-	private static void insertUserPreferenceValue(UserDAO userDao, String key, String use) throws Exception {
-		SqlMapClient sqlClient = TadpoleSQLManager.getInstance(TadpoleSystemInitializer.getUserDB());
-		UserInfoDataDAO userInfoData = new UserInfoDataDAO();
-		userInfoData.setUser_seq(userDao.getSeq());
-		
-		userInfoData.setName(key);
-		userInfoData.setValue0(use);
-		sqlClient.insert("userInfoDataInsert", userInfoData); //$NON-NLS-1$
-	}
-
 }

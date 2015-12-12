@@ -27,6 +27,12 @@ import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.ibatis.sqlmap.client.SqlMapClient;
 
+/**
+ * alter table executer
+ * 
+ * @author hangum
+ *
+ */
 public class AlterTableExecutor {
 	private UserDBDAO userDB;
 	private List<AlterTableMetaDataDAO> listAlterTableColumns;
@@ -45,7 +51,7 @@ public class AlterTableExecutor {
 
 	public List<AlterTableMetaDataDAO> Initializing(String selectTable) {
 		ResultSet rsDumy = null;
-		// ResultSet rsCons = null;
+
 		java.sql.Connection javaConn = null;
 		PreparedStatement stmt = null;
 
@@ -64,7 +70,6 @@ public class AlterTableExecutor {
 				for(int col = 1; col <= rs.getMetaData().getColumnCount(); col++){
 					info  += rs.getMetaData().getColumnLabel(col) + "=" + rs.getString(col) + ", ";
 				}
-				logger.debug(info);
 			}
 			
 			SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);
@@ -74,21 +79,19 @@ public class AlterTableExecutor {
 				AlterTableMetaDataDAO dao = new AlterTableMetaDataDAO();
 
 				dao.setDbdef(userDB.getDBDefine());
-				dao.setSeqNo(i);
-				dao.setColumnId(i);
+				dao.setOriginal_columnName(rsm.getColumnLabel(i));
 				dao.setColumnName(rsm.getColumnLabel(i));
 				dao.setDataType(rsm.getColumnType(i));
 				dao.setDataTypeName(rsm.getColumnTypeName(i));
-				
-				logger.debug(dao.toString());
 				
 				if (DataTypeDef.isCharType(rsm.getColumnType(i))){
 					dao.setDataSize(rsm.getColumnDisplaySize(i));
 					dao.setUseSize(true);
 					dao.setUsePrecision(false);
 				} else if (DataTypeDef.isNumericType(rsm.getColumnType(i))){
-					dao.setDataPrecision(rsm.getPrecision(i));
-					dao.setDataScale(rsm.getScale(i));
+					dao.setDataSize(rsm.getPrecision(i));
+//					dao.setDataPrecision(rsm.getPrecision(i));
+//					dao.setDataScale(rsm.getScale(i));
 					dao.setUseSize(false);
 					dao.setUsePrecision(true);
 				} else {
@@ -114,6 +117,7 @@ public class AlterTableExecutor {
 				}
 				dao.setDefaultValue("");
 				dao.setNullable(1 != rsm.isNullable(i));
+				dao.setComment("");
 
 				listAlterTableColumns.add(dao);
 			}
@@ -140,7 +144,7 @@ public class AlterTableExecutor {
 
 	}
 
-	public boolean AlterTableStart(String selectTable, int genCount) {
+	public boolean alterTableStart(String selectTable, int genCount) {
 
 		java.sql.Connection javaConn = null;
 		PreparedStatement stmt = null;

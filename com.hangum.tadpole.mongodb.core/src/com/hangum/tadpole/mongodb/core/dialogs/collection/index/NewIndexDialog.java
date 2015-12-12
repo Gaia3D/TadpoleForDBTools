@@ -73,14 +73,16 @@ public class NewIndexDialog extends Dialog {
 
 	public NewIndexDialog(Shell parentShell, UserDBDAO userDB, String initCollectionName) {
 		super(parentShell);
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE);
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
+		
 		this.userDB = userDB;
 		this.initCollectionName = initCollectionName;
 	}
 	
 	public NewIndexDialog(Shell parentShell, UserDBDAO userDB) {
 		super(parentShell);
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE);
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
+		
 		this.userDB = userDB;
 	}
 
@@ -228,7 +230,7 @@ public class NewIndexDialog extends Dialog {
 		
 		if("".equals(textIndexName.getText().trim())) { //$NON-NLS-1$				
 			textIndexName.setFocus();
-			MessageDialog.openError(null, Messages.NewDocumentDialog_3, "Please enter Index name");
+			MessageDialog.openError(null, Messages.get().NewDocumentDialog_3, "Please enter Index name");
 			return;
 		}
 		

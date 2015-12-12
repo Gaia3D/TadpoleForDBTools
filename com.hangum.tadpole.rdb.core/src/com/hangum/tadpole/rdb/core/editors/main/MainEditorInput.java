@@ -17,13 +17,12 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IPersistableElement;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.permission.PermissionChecker;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBResource;
-import com.hangum.tadpole.session.manager.SessionManager;
 
 /**
  * main editor의 input
@@ -38,7 +37,7 @@ public class MainEditorInput implements IEditorInput {
 	private PublicTadpoleDefine.EDITOR_OPEN_TYPE OPEN_TYPE = PublicTadpoleDefine.EDITOR_OPEN_TYPE.NONE;
 	
 	private UserDBDAO userDB;
-	private PublicTadpoleDefine.DB_ACTION dbAction = PublicTadpoleDefine.DB_ACTION.TABLES;
+	private PublicTadpoleDefine.OBJECT_TYPE dbAction = PublicTadpoleDefine.OBJECT_TYPE.TABLES;
 	private String defaultStr = ""; //$NON-NLS-1$
 	private UserDBResourceDAO resourceDAO;
 	
@@ -59,7 +58,7 @@ public class MainEditorInput implements IEditorInput {
 	 * @param userDB
 	 * @param defaultStr
 	 */
-	public MainEditorInput(UserDBDAO userDB, String defaultStr, PublicTadpoleDefine.DB_ACTION initAction) {
+	public MainEditorInput(UserDBDAO userDB, String defaultStr, PublicTadpoleDefine.OBJECT_TYPE initAction) {
 		this.userDB = userDB;
 		this.defaultStr = defaultStr;
 		this.dbAction = initAction;
@@ -123,7 +122,7 @@ public class MainEditorInput implements IEditorInput {
 	public String getToolTipText() {
 
 		if(PermissionChecker.isShow(userDB.getRole_id())) {
-			if(DBDefine.getDBDefine(userDB) == DBDefine.SQLite_DEFAULT ) {
+			if(userDB.getDBDefine() == DBDefine.SQLite_DEFAULT ) {
 				String fileName = new File(userDB.getDb()).getName();			
 				return String.format(userDB.getDbms_type() + " - %s", fileName);
 			} else {
@@ -150,7 +149,7 @@ public class MainEditorInput implements IEditorInput {
 		return resourceDAO;
 	}
 	
-	public PublicTadpoleDefine.DB_ACTION getDbAction() {
+	public PublicTadpoleDefine.OBJECT_TYPE getDbAction() {
 		return dbAction;
 	}
 }

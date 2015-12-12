@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.commons.util.TadpoleWidgetUtils;
 
 /**
@@ -49,7 +50,7 @@ public class TadpoleSimpleMessageDialog extends TitleAreaDialog {
 	 */
 	public TadpoleSimpleMessageDialog(Shell parentShell, String title, String message) {
 		super(parentShell);
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE);
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 		
 		this.title = title;
 		this.message = message;
@@ -58,7 +59,8 @@ public class TadpoleSimpleMessageDialog extends TitleAreaDialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText("Tadpole Dialog"); //$NON-NLS-1$
+		newShell.setText("Tadpole DB Hub Dialog"); //$NON-NLS-1$
+		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 
 	/**
@@ -68,7 +70,7 @@ public class TadpoleSimpleMessageDialog extends TitleAreaDialog {
 	@Override
 	protected Control createDialogArea(Composite parent) {
 		setMessage(title);
-		setTitle("Tadpole Message");
+		setTitle("Tadpole DB Hub Message");
 		Composite area = (Composite) super.createDialogArea(parent);
 		Composite container = new Composite(area, SWT.NONE);
 		container.setLayout(new GridLayout(2, false));

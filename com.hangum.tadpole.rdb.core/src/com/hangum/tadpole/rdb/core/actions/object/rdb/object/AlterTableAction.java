@@ -11,14 +11,15 @@
 package com.hangum.tadpole.rdb.core.actions.object.rdb.object;
 
 import org.apache.log4j.Logger;
-import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine.DB_ACTION;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.core.actions.object.AbstractObjectSelectAction;
@@ -43,81 +44,25 @@ public class AlterTableAction extends AbstractObjectSelectAction {
 
 	public final static String ID = "com.hangum.db.browser.rap.core.actions.object.alterTable";
 	
-	public AlterTableAction(IWorkbenchWindow window, PublicTadpoleDefine.DB_ACTION actionType, String title) {
+	public AlterTableAction(IWorkbenchWindow window, PublicTadpoleDefine.OBJECT_TYPE actionType, String title) {
 		super(window, actionType);
 		setId(ID + actionType.toString());
-		setText("Alter " + title);
+		setText(title);
 		
 		window.getSelectionService().addSelectionListener(this);
 	}
-	
-	@Override
-	public void selectionChanged(IWorkbenchPart part, ISelection selection) {
-		setEnabled(false);
-	}
 
 	@Override
-	public void run(IStructuredSelection selection, UserDBDAO userDB, DB_ACTION actionType) {
+	public void run(IStructuredSelection selection, UserDBDAO userDB, OBJECT_TYPE actionType) {
 		TableDAO tc = (TableDAO)selection.getFirstElement();
 		
-		AlterTableDialog dialog = new AlterTableDialog(PlatformUI.getWorkbench().getDisplay().getActiveShell(), userDB, tc);
-		dialog.open();
-		
-		
-//		if(actionType == PublicTadpoleDefine.DB_ACTION.TABLES) {
-//			
-//			// others db
-//			if(DBDefine.getDBDefine(userDB) != DBDefine.MONGODB_DEFAULT) {
-//				
-//				CreateTableAction cta = new CreateTableAction();
-//				
-//				// sqlite db인 경우 해당 테이블의 creation문으로 생성합니다.
-//				if(DBDefine.getDBDefine(userDB) == DBDefine.SQLite_DEFAULT) {
-//					TableDAO tc = (TableDAO)selection.getFirstElement();
-//					if(tc == null) cta.run(userDB, actionType);
-//					else cta.run(userDB, tc.getComment(), actionType);
-//				} else {				
-//					cta.run(userDB, actionType);
-//				}
-//				
-//			// moongodb
-//			} else if(DBDefine.getDBDefine(userDB) == DBDefine.MONGODB_DEFAULT) {				
-//				NewCollectionDialog ncd = new NewCollectionDialog(Display.getCurrent().getActiveShell(), userDB);
-//				if(Dialog.OK == ncd.open() ) {
-//					refreshTable();
-//				}
-//			}
-//			
-//		} else if(actionType == PublicTadpoleDefine.DB_ACTION.VIEWS) {
-//			CreateViewAction cva = new CreateViewAction();
-//			cva.run(userDB, actionType);
-//		} else if(actionType == PublicTadpoleDefine.DB_ACTION.INDEXES) {
-//			if(DBDefine.getDBDefine(userDB) != DBDefine.MONGODB_DEFAULT) {
-//				CreateIndexAction cia = new CreateIndexAction();
-//				cia.run(userDB, actionType);
-//			// moongodb
-//			} else if(DBDefine.getDBDefine(userDB) == DBDefine.MONGODB_DEFAULT) {
-//				NewIndexDialog nid = new NewIndexDialog(Display.getCurrent().getActiveShell(), userDB);
-//				if(Dialog.OK == nid.open()) {
-//					refreshIndexes();
-//				}
-//			}
-//		} else if(actionType == PublicTadpoleDefine.DB_ACTION.PROCEDURES) {
-//			CreateProcedureAction cia = new CreateProcedureAction();
-//			cia.run(userDB, actionType);
-//		} else if(actionType == PublicTadpoleDefine.DB_ACTION.PACKAGES) {
-//			CreatePackageAction cia = new CreatePackageAction();
-//			cia.run(userDB, actionType);
-//		} else if(actionType == PublicTadpoleDefine.DB_ACTION.FUNCTIONS) {
-//			CreateFunctionAction cia = new CreateFunctionAction();
-//			cia.run(userDB, actionType);
-//		} else if(actionType == PublicTadpoleDefine.DB_ACTION.TRIGGERS) {
-//			CreateTriggerAction cia = new CreateTriggerAction();
-//			cia.run(userDB, actionType);
-//		} else if(actionType == PublicTadpoleDefine.DB_ACTION.JAVASCRIPT) {
-//			CreateJavaScriptAction csa = new CreateJavaScriptAction();
-//			csa.run(userDB, actionType);
-//		}
+		final Shell shell = PlatformUI.getWorkbench().getDisplay().getActiveShell();
+		if(userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT | userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT) {
+			AlterTableDialog dialog = new AlterTableDialog(shell, userDB, tc);
+			dialog.open();
+		} else {
+			MessageDialog.openInformation(shell, "Confirm", "Not support this function. But soon. wait for our team.");
+		}
 	}
 	
 }

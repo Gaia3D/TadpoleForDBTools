@@ -12,9 +12,9 @@ import org.quartz.CronExpression;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
-import com.hangum.tadpold.commons.libs.core.mails.SendEmails;
-import com.hangum.tadpold.commons.libs.core.mails.dto.EmailDTO;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.mails.SendEmails;
+import com.hangum.tadpole.commons.libs.core.mails.dto.EmailDTO;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.monitoring.MonitoringIndexDAO;
@@ -159,7 +159,7 @@ public class Utils {
 	        
 	        return sbStr.toString();
 //		} catch (ParseException e) {
-//			MessageDialog.openError(null, Messages.AddScheduleDialog_20, Messages.AddScheduleDialog_12);
+//			MessageDialog.openError(null, Messages.get().AddScheduleDialog_20, Messages.get().AddScheduleDialog_12);
 //			textCronExp.setFocus();
 //		}
 	}

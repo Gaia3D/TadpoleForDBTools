@@ -12,7 +12,7 @@ package com.hangum.tadpole.rdb.core.actions.connections;
 
 import org.eclipse.jface.action.IAction;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.core.util.FindEditorAndWriteQueryUtil;
 
@@ -32,7 +32,7 @@ public class CreateJavaScriptAction extends AbstractQueryAction {
 	public void run(IAction action) {
 		UserDBDAO userDB = (UserDBDAO)sel.getFirstElement();
 		
-		FindEditorAndWriteQueryUtil.run(userDB, "", PublicTadpoleDefine.DB_ACTION.JAVASCRIPT);
+		FindEditorAndWriteQueryUtil.run(userDB, "", PublicTadpoleDefine.OBJECT_TYPE.JAVASCRIPT);
 	}
 	
 }

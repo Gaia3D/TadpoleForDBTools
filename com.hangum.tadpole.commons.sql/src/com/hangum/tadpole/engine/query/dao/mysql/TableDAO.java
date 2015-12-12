@@ -10,6 +10,9 @@
  ******************************************************************************/
 package com.hangum.tadpole.engine.query.dao.mysql;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * table 정보 
  * 
@@ -28,7 +31,7 @@ public class TableDAO {
 	String name;
 	String comment="";
 	
-	/* MSSQL Server schema support */
+	/* postgresql, MSSQL Server schema support */
 	String table_name = "";
 	String schema_name = "";
 	
@@ -38,6 +41,9 @@ public class TableDAO {
 	/** mongoDB */
 	long rows = 0l;
 	long size = 0l;
+	
+	/** table columns */
+	List<TableColumnDAO> listColumn = new ArrayList<TableColumnDAO>();
 	
 	public TableDAO() {
 	}
@@ -129,5 +135,30 @@ public class TableDAO {
 	public final void setSysName(String sysName) {
 		this.sysName = sysName;
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof TableDAO) {
+			TableDAO userDB = (TableDAO)obj;
+			return userDB.getName() == getName();
+		}
+		
+		return super.equals(obj);
+	}
 
+	/**
+	 * @return the listColumn
+	 */
+	public List<TableColumnDAO> getListColumn() {
+		return listColumn;
+	}
+
+	/**
+	 * @param listColumn the listColumn to set
+	 */
+	public void setListColumn(List<TableColumnDAO> listColumn) {
+		this.listColumn = listColumn;
+	}
+
+	
 }

@@ -10,12 +10,13 @@
  ******************************************************************************/
 package com.hangum.tadpole.engine.query.dao.system;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.cipher.core.manager.CipherManager;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.permission.PermissionChecker;
 import com.hangum.tadpole.engine.query.dao.ManagerListDTO;
@@ -37,7 +38,7 @@ import com.hangum.tadpole.engine.query.dao.system.accesscontrol.DBAccessControlD
  * @author hangum
  *
  */
-public class UserDBDAO implements Cloneable {	
+public class UserDBDAO extends TDBDBDAO implements Cloneable {	
 	
 	// TadpoleUserDbRoleDAO start ======================================
 	protected int role_seq;
@@ -73,7 +74,7 @@ public class UserDBDAO implements Cloneable {
 	// ====================================== end
 
 	protected int seq = -999;
-	protected int user_seq;
+	protected int user_seq = -1;
 	
 //	/** 외부 시스템 seq 현재는 amamzon rds seq*/
 //	protected int ext_seq = -999;
@@ -86,7 +87,7 @@ public class UserDBDAO implements Cloneable {
 	protected String url;
 	protected String url_user_parameter = "";
 	
-	protected List<TadpoleUserDbRoleDAO> listChildren = new ArrayList<>();
+	protected List<TadpoleUserDbRoleDAO> listChildren = new ArrayList<TadpoleUserDbRoleDAO>();
 	
 	public String getUrl(String userType) {
 		return PermissionChecker.isShow(userType)?getUrl():"jdbc:*************************";
@@ -118,7 +119,7 @@ public class UserDBDAO implements Cloneable {
 		return PermissionChecker.isShow(userType)?getUsers():"********";
 	}
 	
-	protected Date create_time;
+	protected Timestamp create_time;
 	protected String delYn;
 	
 	protected String ext1 = "";
@@ -290,11 +291,11 @@ public class UserDBDAO implements Cloneable {
 		this.passwd = passwd;
 	}
 
-	public Date getCreate_time() {
+	public Timestamp getCreate_time() {
 		return create_time;
 	}
 
-	public void setCreate_time(Date create_time) {
+	public void setCreate_time(Timestamp create_time) {
 		this.create_time = create_time;
 	}
     
@@ -627,6 +628,16 @@ public class UserDBDAO implements Cloneable {
 		return super.clone();
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof UserDBDAO) {
+			UserDBDAO userDB = (UserDBDAO)obj;
+			return userDB.getSeq() == getSeq();
+		}
+		
+		return super.equals(obj);
+	}
+	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */

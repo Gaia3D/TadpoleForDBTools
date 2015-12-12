@@ -12,7 +12,9 @@ package com.hangum.tadpole.rdb.core.viewers.connections;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -44,9 +46,9 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.util.download.DownloadServiceHandler;
 import com.hangum.tadpole.commons.util.download.DownloadUtils;
 import com.hangum.tadpole.engine.define.DBDefine;
@@ -78,7 +80,8 @@ public class ManagerViewer extends ViewPart {
 	public static String ID = "com.hangum.tadpole.rdb.core.view.connection.manager"; //$NON-NLS-1$
 	
 	private Composite compositeMainComposite;
-	private List<ManagerListDTO> treeList = new ArrayList<ManagerListDTO>();
+	private List<ManagerListDTO> treeDataList = new ArrayList<ManagerListDTO>();
+	private Map<String, ManagerListDTO> mapTreeList = new HashMap<>();
 	private TreeViewer managerTV;
 	
 	/** download servcie handler. */
@@ -91,7 +94,7 @@ public class ManagerViewer extends ViewPart {
 	@Override
 	public void createPartControl(Composite parent) {
 		
-		setPartName(Messages.ManagerViewer_0);
+		setPartName(Messages.get().ManagerViewer_0);
 		
 		compositeMainComposite = new Composite(parent, SWT.NONE);
 		GridLayout gl_composite = new GridLayout(1, false);
@@ -105,6 +108,7 @@ public class ManagerViewer extends ViewPart {
 		managerTV.addSelectionChangedListener(new ISelectionChangedListener() {
 			
 			public void selectionChanged(SelectionChangedEvent event) {
+				
 				IStructuredSelection is = (IStructuredSelection)event.getSelection();
 				if(is.getFirstElement() instanceof UserDBDAO) {
 					final UserDBDAO userDB = (UserDBDAO)is.getFirstElement();
@@ -116,14 +120,30 @@ public class ManagerViewer extends ViewPart {
 					
 					addUserResouceData(userDB, false);
 					AnalyticCaller.track(ManagerViewer.ID, userDB.getDbms_type());
+
+					// 
+					// 아래 코드(managerTV.getControl().setFocus();)가 없으면, 오브젝트 탐색기의 event listener가 동작하지 않는다. 
+					// 이유는 글쎄 모르겠어.
+					//
+					managerTV.getControl().setFocus();
+				} else if(is.getFirstElement() instanceof ManagerListDTO) {
+					ManagerListDTO managerDTO = (ManagerListDTO)is.getFirstElement();
+					if(managerDTO.getManagerList().isEmpty()) {
+						try {
+							List<UserDBDAO> userDBS = TadpoleSystem_UserDBQuery.getUserGroupDB(managerDTO.getName());
+							for (UserDBDAO userDBDAO : userDBS) {
+								managerDTO.addLogin(userDBDAO);
+							}
+							
+							managerTV.refresh(managerDTO, false);
+							managerTV.expandToLevel(managerDTO, 2);
+						} catch(Exception e) {
+							logger.error("get manager list", e);
+						}
+					}
 				}
 				
-				// 
-				// 아래 코드(managerTV.getControl().setFocus();)가 없으면, 오브젝트 탐색기의 event listener가 동작하지 않는다. 
-				// 이유는 글쎄 모르겠어.
-				//
-				managerTV.getControl().setFocus();
-			}
+			} 
 		});
 		managerTV.addDoubleClickListener(new IDoubleClickListener() {
 			public void doubleClick(DoubleClickEvent event) {
@@ -158,8 +178,10 @@ public class ManagerViewer extends ViewPart {
 					}
 				// manager
 				} else if (selElement instanceof ManagerListDTO) {
-					ConnectDatabaseAction cda = new ConnectDatabaseAction(getSite().getWorkbenchWindow());
-					cda.runConnectionDialog(is);
+					if("YES".equals(SessionManager.getIsRegistDB())) {
+						ConnectDatabaseAction cda = new ConnectDatabaseAction(getSite().getWorkbenchWindow());
+						cda.runConnectionDialog(is);
+					}
 				}
 			}
 		});
@@ -169,7 +191,7 @@ public class ManagerViewer extends ViewPart {
 		
 		managerTV.setContentProvider(new ManagerContentProvider());
 		managerTV.setLabelProvider(new ManagerLabelProvider());
-		managerTV.setInput(treeList);		
+		managerTV.setInput(treeDataList);		
 		getSite().setSelectionProvider(managerTV);
 		
 		createPopupMenu();
@@ -194,40 +216,33 @@ public class ManagerViewer extends ViewPart {
 	 * 트리 데이터 초기화
 	 */
 	public void init() {
-		// toolbar button 초기화.
-//		ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(ICommandService.class);  
-//	    Command command = commandService.getCommand(SynchronizedEditorHandler.ID);
-//	    State state = command.getState(SynchronizedEditorHandler.STATE_ID);
-//	    
-//	    if (GetPreferenceGeneral.getSyncEditorStat()) state.setValue(Boolean.TRUE);
-//	    else state.setValue(Boolean.FALSE);
-//	    
-//		try {
-//			HandlerUtil.toggleCommandState(command);
-//		} catch (ExecutionException e1) {
-//			logger.error("Synchronized editor and connection view", e1);
-//		}
-		
-		treeList.clear();
-		
+		treeDataList.clear();
+		mapTreeList.clear();
+	
 		try {
-			List<UserDBDAO> userDBS = TadpoleSystem_UserDBQuery.getUserDB();
-			for (UserDBDAO userDBDAO : userDBS) {
-				addUserDB(userDBDAO, false);				
-			}
+			for (String strGroupName : TadpoleSystem_UserDBQuery.getUserGroupName()) {
+				ManagerListDTO managerDTO = new ManagerListDTO(strGroupName);
+				
+				List<UserDBDAO> userDBS = TadpoleSystem_UserDBQuery.getUserGroupDB(managerDTO.getName());
+				for (UserDBDAO userDBDAO : userDBS) {
+					managerDTO.addLogin(userDBDAO);
+				}
+				
+				treeDataList.add(managerDTO);
+			}	// end last end
+
+			managerTV.refresh();
+			managerTV.expandToLevel(2);
 			
 		} catch (Exception e) {
 			logger.error("initialize Managerview", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.ManagerViewer_4, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.get().ManagerViewer_4, errStatus); //$NON-NLS-1$
 		}
 		
 		managerTV.refresh();
-//		managerTV.expandToLevel(2);
-		
 		AnalyticCaller.track(ManagerViewer.ID);
-		
 	}
 
 	/**
@@ -252,27 +267,7 @@ public class ManagerViewer extends ViewPart {
 	 * @return
 	 */
 	public List<ManagerListDTO> getAllTreeList() {
-		return treeList;
-	}
-	
-	/**
-	 * 트리에 추가될수 있는것인지 검증
-	 * 
-	 * @param dbType
-	 * @param userDB
-	 */
-	public boolean isAdd(DBDefine dbType, UserDBDAO userDB) {
-		for(ManagerListDTO dto: treeList) {
-			if(dto.getName().equals(dbType.getDBToString())) {
-				if(dto.getName().equals( userDB.getDisplay_name() )) return false;
-				
-				for (UserDBDAO alreaduserDB : dto.getManagerList()) {
-					if( alreaduserDB.getUrl().equals( userDB.getUrl() )) return false;
-				}
-			}
-		}
-	 	
-		return true;
+		return treeDataList;
 	}
 	
 	/**
@@ -282,7 +277,8 @@ public class ManagerViewer extends ViewPart {
 	 * @param defaultOpen default editor open
 	 */
 	public void addUserDB(UserDBDAO userDB, boolean defaultOpen) {
-		for(ManagerListDTO dto: treeList) {
+		
+		for(ManagerListDTO dto: treeDataList) {
 			if(dto.getName().equals(userDB.getGroup_name())) {
 				dto.addLogin(userDB);
 				
@@ -297,7 +293,7 @@ public class ManagerViewer extends ViewPart {
 		// 신규 그룹이면...
 		ManagerListDTO managerDto = new ManagerListDTO(userDB.getGroup_name());
 		managerDto.addLogin(userDB);
-		treeList.add(managerDto);	
+		treeDataList.add(managerDto);	
 		
 		if(defaultOpen) {
 			selectAndOpenView(userDB);
@@ -341,7 +337,7 @@ public class ManagerViewer extends ViewPart {
 				logger.error("user_db_erd list", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.ManagerViewer_6, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.get().ManagerViewer_6, errStatus); //$NON-NLS-1$
 			}
 		}
 	}
@@ -352,7 +348,7 @@ public class ManagerViewer extends ViewPart {
 	 * @param userDBErd
 	 */
 	public void addResource(int dbSeq) {
-		for(ManagerListDTO dto: treeList) {
+		for(ManagerListDTO dto: treeDataList) {
 			
 			for(UserDBDAO userDB : dto.getManagerList()) {
 				if(userDB.getSeq() == dbSeq) {
@@ -432,7 +428,7 @@ public class ManagerViewer extends ViewPart {
 				logger.error("main editor open", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.ManagerViewer_10, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.get().ManagerViewer_10, errStatus); //$NON-NLS-1$
 			}
 		}
 	}
@@ -458,7 +454,7 @@ public class ManagerViewer extends ViewPart {
 			downloadServiceHandler.setByteContent(arrayData);
 			DownloadUtils.provideDownload(compositeMainComposite, downloadServiceHandler.getId());
 		} catch(Exception e) {
-			logger.error("GridFS Download exception", e); //$NON-NLS-1$
+			logger.error("SQLite file Download exception", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
 			ExceptionDetailsErrorDialog.openError(null, "Error", "DB Download Exception", errStatus); //$NON-NLS-1$ //$NON-NLS-2$

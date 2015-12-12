@@ -31,6 +31,12 @@ SELECT name FROM sqlite_master where 1 = 0
 <!-- 
 	table 이름
  -->
+<select id="tableListOnlyName" resultClass="com.hangum.tadpole.engine.query.dao.mysql.TableDAO" parameterClass="java.lang.String">
+	SELECT name, sql as comment
+	FROM sqlite_master
+	WHERE type = 'table'
+	ORDER BY name
+</select>
 <select id="tableList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.TableDAO" parameterClass="java.lang.String">
 	SELECT name, sql as comment
 	FROM sqlite_master
@@ -175,6 +181,13 @@ SELECT name as function_name,
  -->
 <select id="primarykeyListInTable" resultClass="java.util.HashMap" parameterClass="java.lang.String">
 PRAGMA table_info($table_name$)
+</select>
+
+<!-- 
+	table row count
+ -->
+<select id="tableRowCount" resultClass="java.lang.Integer" parameterClass="java.lang.String">
+	SELECT count(*) FROM $table$
 </select>
 
 <!-- 

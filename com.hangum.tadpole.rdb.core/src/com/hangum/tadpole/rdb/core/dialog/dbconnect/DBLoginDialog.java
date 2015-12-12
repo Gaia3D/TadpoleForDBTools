@@ -30,14 +30,16 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.util.ApplicationArgumentUtils;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBQuery;
 import com.hangum.tadpole.rdb.core.Messages;
 import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.AbstractLoginComposite;
+import com.hangum.tadpole.session.manager.SessionManager;
 import com.swtdesigner.SWTResourceManager;
 
 /**
@@ -77,14 +79,15 @@ public class DBLoginDialog extends Dialog {
 	
 	public DBLoginDialog(Shell paShell, String selGroupName) {
 		super(paShell);
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE);
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 		this.selGroupName = selGroupName;
 	}
 
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText("New Database Connection"); //$NON-NLS-1$
+		newShell.setText(Messages.get().DBLoginDialog_9);
+		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 	
 	/**
@@ -115,7 +118,7 @@ public class DBLoginDialog extends Dialog {
 
 		Label lblNewLabel = new Label(compositeHead, SWT.NONE);
 		lblNewLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblNewLabel.setText(Messages.DBLoginDialog_35);
+		lblNewLabel.setText(Messages.get().DBLoginDialog_35);
 		lblNewLabel.setFont(SWTResourceManager.getBoldFont(PlatformUI.getWorkbench().getDisplay().getSystemFont()));
 
 		comboDBList = new Combo(compositeHead, SWT.DROP_DOWN | SWT.READ_ONLY);
@@ -144,7 +147,7 @@ public class DBLoginDialog extends Dialog {
 				// 초기 값이 잘못되어 ui가 잘못 생성되는것을 방지하기위한 코드.
 				if(-1 == comboDBList.getSelectionIndex()) comboDBList.select(0);;
 			} catch(Exception e) {
-				logger.error(Messages.DBLoginDialog_38, e);
+				logger.error(Messages.get().DBLoginDialog_38, e);
 			}
 		} else {
 			comboDBList.select(0);
@@ -193,14 +196,13 @@ public class DBLoginDialog extends Dialog {
 		container.layout();
 		
 		// google analytic
-		AnalyticCaller.track("DBLoginDialog");
+		AnalyticCaller.track("DBLoginDialog"); //$NON-NLS-1$
 	}
 	
 	/**
 	 * db widget을 생성한다.
 	 */
 	private void createDBWidget(UserDBDAO userDB) {
-		
 		DBDefine dbDefine = (DBDefine) comboDBList.getData(comboDBList.getText());
 		loginComposite = DBConnectionUtils.getDBConnection(dbDefine, compositeBody, listGroupName, selGroupName, userDB);
 	}
@@ -217,7 +219,11 @@ public class DBLoginDialog extends Dialog {
 	 */
 	private boolean addDB() {
 		if (loginComposite.saveDBData()) {
-			this.retuserDb = loginComposite.getDBDTO();	
+			this.retuserDb = loginComposite.getDBDTO();
+			if(PublicTadpoleDefine.YES_NO.YES.name().equals(this.retuserDb.getIs_lock())) {
+				SessionManager.setUnlokDB(retuserDb);
+			}
+			
 			return true;
 		}
 		
@@ -229,13 +235,13 @@ public class DBLoginDialog extends Dialog {
 		super.buttonPressed(buttonId);
 		if(TEST_CONNECTION_ID == buttonId) {
 			if(loginComposite.testConnection(true)) {
-				MessageDialog.openInformation(null, "Confirm", Messages.DBLoginDialog_42); //$NON-NLS-1$
+				MessageDialog.openInformation(null, "Confirm", Messages.get().DBLoginDialog_42); //$NON-NLS-1$
 			}
 		} else if(ADD_NEW_CONNECTION_ID == buttonId) {
 			if(addDB()) {
 				PlatformUI.getPreferenceStore().setValue(PublicTadpoleDefine.ADD_DB, ""+retuserDb.getSeq() + ":" + System.currentTimeMillis()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				
-				MessageDialog.openInformation(null, "Confirm", Messages.DBLoginDialog_47); //$NON-NLS-1$
+				MessageDialog.openInformation(null, "Confirm", Messages.get().DBLoginDialog_47); //$NON-NLS-1$
 			}
 		}
 	}
@@ -251,12 +257,12 @@ public class DBLoginDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, TEST_CONNECTION_ID, Messages.DBLoginDialog_43, false);
+		createButton(parent, TEST_CONNECTION_ID, Messages.get().DBLoginDialog_43, false);
 		
-		createButton(parent, ADD_NEW_CONNECTION_ID, Messages.DBLoginDialog_45, false);
-		createButton(parent, IDialogConstants.OK_ID, Messages.DBLoginDialog_44, true);
+		createButton(parent, ADD_NEW_CONNECTION_ID, Messages.get().DBLoginDialog_45, false);
+		createButton(parent, IDialogConstants.OK_ID, Messages.get().DBLoginDialog_44, true);
 		
-		createButton(parent, IDialogConstants.CANCEL_ID, Messages.DBLoginDialog_7, false);
+		createButton(parent, IDialogConstants.CANCEL_ID, Messages.get().DBLoginDialog_7, false);
 	}
 	/**
 	 * group name
@@ -272,6 +278,6 @@ public class DBLoginDialog extends Dialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(500, 470);
+		return new Point(530, 470);
 	}
 }

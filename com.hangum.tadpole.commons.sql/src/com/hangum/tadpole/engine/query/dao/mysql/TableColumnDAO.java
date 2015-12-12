@@ -29,6 +29,8 @@ package com.hangum.tadpole.engine.query.dao.mysql;
  *
  */
 public class TableColumnDAO {
+	TableDAO tableDao;
+	
 	String sysName = "";
 	
 	// MySQL, Oracle 사용하는 컬럼.
@@ -56,6 +58,12 @@ public class TableColumnDAO {
 	// hive
 	String col_name = "";
 	String data_type = "";
+	
+	/**
+	 * column value
+	 * 컬럼에 실제 들어 있는 값을 정의 합니다. 
+	 */
+	String col_value = "";
 	
 	public TableColumnDAO() {
 	}
@@ -215,5 +223,32 @@ public class TableColumnDAO {
 		setType(data_type);
 	}
 
-	
+	/**
+	 * @return the col_value
+	 */
+	public String getCol_value() {
+		return col_value;
+	}
+
+	/**
+	 * @param col_value the col_value to set
+	 */
+	public void setCol_value(String col_value) {
+		this.col_value = col_value;
+	}
+
+	/**
+	 * @return the tableDao
+	 */
+	public TableDAO getTableDao() {
+		return tableDao;
+	}
+
+	/**
+	 * @param tableDao the tableDao to set
+	 */
+	public void setTableDao(TableDAO tableDao) {
+		this.tableDao = tableDao;
+	}
+
 }

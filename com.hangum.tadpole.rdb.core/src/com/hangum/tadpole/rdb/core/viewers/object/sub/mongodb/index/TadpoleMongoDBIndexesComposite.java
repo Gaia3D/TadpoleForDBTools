@@ -35,8 +35,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IWorkbenchPartSite;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.query.dao.mongodb.MongoDBIndexDAO;
 import com.hangum.tadpole.engine.query.dao.mongodb.MongoDBIndexFieldDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
@@ -90,7 +90,8 @@ public class TadpoleMongoDBIndexesComposite extends AbstractObjectComposite {
 	
 	private void createWidget(final CTabFolder tabFolderObject) {
 		CTabItem tbtmIndex = new CTabItem(tabFolderObject, SWT.NONE);
-		tbtmIndex.setText("Indexes"); //$NON-NLS-1$
+		tbtmIndex.setText(Messages.get().TadpoleMongoDBIndexesComposite_0);
+		tbtmIndex.setData(TAB_DATA_KEY, PublicTadpoleDefine.OBJECT_TYPE.INDEXES.name());
 
 		Composite compositeIndexes = new Composite(tabFolderObject, SWT.NONE);
 		tbtmIndex.setControl(compositeIndexes);
@@ -153,7 +154,7 @@ public class TadpoleMongoDBIndexesComposite extends AbstractObjectComposite {
 		tableTableColumn.setLinesVisible(true);
 
 		TableViewerColumn tableColumn = new TableViewerColumn(tableColumnViewer, SWT.LEFT);
-		tableColumn.getColumn().setText("name");
+		tableColumn.getColumn().setText(Messages.get().TadpoleMongoDBIndexesComposite_1);
 		tableColumn.getColumn().setWidth(130);
 		tableColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
@@ -164,15 +165,15 @@ public class TadpoleMongoDBIndexesComposite extends AbstractObjectComposite {
 		});
 		
 		tableColumn = new TableViewerColumn(tableColumnViewer, SWT.LEFT);
-		tableColumn.getColumn().setText("order");
+		tableColumn.getColumn().setText(Messages.get().TadpoleMongoDBIndexesComposite_2);
 		tableColumn.getColumn().setWidth(100);
 		tableColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
 				MongoDBIndexFieldDAO table = (MongoDBIndexFieldDAO) element;
 				
-				return table.getOrder().equals("1")?"Ascending":
-					table.getOrder().equals("-1")?"Descending":"Geospatial";
+				return table.getOrder().equals("1")?"Ascending": //$NON-NLS-1$ //$NON-NLS-2$
+					table.getOrder().equals("-1")?"Descending":"Geospatial"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 		});
 
@@ -188,7 +189,7 @@ public class TadpoleMongoDBIndexesComposite extends AbstractObjectComposite {
 	 * @param indexComparator
 	 */
 	private void createMongoDBIndexesColumn(TableViewer tv, ObjectComparator comparator) {
-		String[] name = {"Collection Name", "Index Name","Unique"};
+		String[] name = {Messages.get().TadpoleMongoDBIndexesComposite_8, Messages.get().TadpoleMongoDBIndexesComposite_9,Messages.get().TadpoleMongoDBIndexesComposite_10};
 		int[] size = {120, 70, 70};
 
 		for (int i=0; i<name.length; i++) {
@@ -204,9 +205,9 @@ public class TadpoleMongoDBIndexesComposite extends AbstractObjectComposite {
 	 * 
 	 */
 	private void createMenu() {
-		creatAction_Index = new ObjectCreatAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.DB_ACTION.INDEXES, "Index"); //$NON-NLS-1$
-		deleteAction_Index = new ObjectDropAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.DB_ACTION.INDEXES, "Index"); //$NON-NLS-1$
-		refreshAction_Index = new ObjectRefreshAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.DB_ACTION.INDEXES, "Index"); //$NON-NLS-1$
+		creatAction_Index = new ObjectCreatAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.INDEXES, Messages.get().TadpoleMongoDBIndexesComposite_11);
+		deleteAction_Index = new ObjectDropAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.INDEXES, Messages.get().TadpoleMongoDBIndexesComposite_12);
+		refreshAction_Index = new ObjectRefreshAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.INDEXES, Messages.get().TadpoleMongoDBIndexesComposite_13);
 
 		// menu
 		final MenuManager menuMgr = new MenuManager("#PopupMenu"); //$NON-NLS-1$
@@ -259,7 +260,7 @@ public class TadpoleMongoDBIndexesComposite extends AbstractObjectComposite {
 		} catch (Exception e) {
 			logger.error("index refresh", e); //$NON-NLS-1$
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.ExplorerViewer_1, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.get().ExplorerViewer_1, errStatus); //$NON-NLS-1$
 		}
 	}
 
@@ -293,5 +294,11 @@ public class TadpoleMongoDBIndexesComposite extends AbstractObjectComposite {
 		creatAction_Index.dispose();
 		deleteAction_Index.dispose();
 		refreshAction_Index.dispose();
+	}
+
+	@Override
+	public void selectDataOfTable(String strObjectName) {
+		// TODO Auto-generated method stub
+		
 	}
 }

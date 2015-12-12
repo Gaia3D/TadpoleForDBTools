@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.hangum.tadpole.rdb.core.editors.main.function;
 
+import java.util.List;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.SWT;
@@ -20,11 +22,12 @@ import com.hangum.tadpole.ace.editor.core.define.EditorDefine;
 import com.hangum.tadpole.ace.editor.core.define.EditorDefine.EXECUTE_TYPE;
 import com.hangum.tadpole.ace.editor.core.dialogs.help.RDBShortcutHelpDialog;
 import com.hangum.tadpole.ace.editor.core.texteditor.function.EditorFunctionService;
+import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.rdb.core.dialog.dml.GenerateStatmentDMLDialog;
 import com.hangum.tadpole.rdb.core.editors.main.MainEditor;
 import com.hangum.tadpole.rdb.core.editors.main.utils.RequestQuery;
-import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.table.TadpoleTableComposite;
+import com.hangum.tadpole.rdb.core.viewers.object.sub.utils.TadpoleObjectQuery;
 import com.hangum.tadpole.sql.format.SQLFormater;
 
 /**
@@ -111,12 +114,32 @@ public class MainEditorBrowserFunctionService extends EditorFunctionService {
 	 * @see com.hangum.tadpole.ace.editor.core.texteditor.function.EditorFunctionService#f4DMLOpen(java.lang.Object[])
 	 */
 	@Override
-	protected void f4DMLOpen(Object[] argument) {
-		String strObject = (String) argument[1];
+	protected void f4DMLOpen(Object[] arguments) {
+		String strObject = StringUtils.remove((String) arguments[1], ",");
+		strObject = StringUtils.remove(strObject, "(");
+		strObject = StringUtils.remove(strObject, ")");
+		
+		if(StringUtils.contains(strObject, ".")) strObject = StringUtils.substringAfter(strObject, ".");
+		
 		if(logger.isDebugEnabled()) logger.debug("select editor content is '" + strObject + "'");
 		
 		try {
-			TableDAO tableDao = TadpoleTableComposite.getTable(editor.getUserDB(), StringUtils.trim(strObject));
+			TableDAO tableDao = null;
+			List<TableDAO> listTable = editor.getUserDB().getListTable();
+			if(listTable.isEmpty()) { 
+				if(DBDefine.POSTGRE_DEFAULT != editor.getUserDB().getDBDefine()) { 
+					tableDao = TadpoleObjectQuery.getTable(editor.getUserDB(), StringUtils.trim(strObject));
+				} else {
+					tableDao = new TableDAO(strObject, "");
+				}
+			} else {
+				for (TableDAO tmpTableDAO : listTable) {
+					if(strObject.equals(tmpTableDAO.getName())) {
+						tableDao = tmpTableDAO;
+					}
+				}
+			}
+			
 			if(tableDao != null) {
 				GenerateStatmentDMLDialog dialog = new GenerateStatmentDMLDialog(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), false, 
 									editor.getUserDB(), tableDao);
@@ -133,7 +156,11 @@ public class MainEditorBrowserFunctionService extends EditorFunctionService {
 	 */
 	@Override
 	protected void generateSelect(Object[] arguments) {
-		String strSQL = "select * from " + (String) arguments[1];
+		String strObject = StringUtils.remove((String) arguments[1], ",");
+		strObject = StringUtils.remove(strObject, "(");
+		strObject = StringUtils.remove(strObject, ")");
+		
+		String strSQL = "select * from " + strObject;
 		EditorDefine.EXECUTE_TYPE exeType = EXECUTE_TYPE.NONE;
 		exeType = EXECUTE_TYPE.BLOCK;
 		

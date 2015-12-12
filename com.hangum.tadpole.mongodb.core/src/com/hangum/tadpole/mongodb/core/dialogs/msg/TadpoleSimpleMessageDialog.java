@@ -24,6 +24,7 @@ import org.eclipse.swt.widgets.Shell;
 import com.hangum.tadpole.ace.editor.core.define.EditorDefine;
 import com.hangum.tadpole.ace.editor.core.widgets.TadpoleEditorWidget;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.commons.util.JSONUtil;
 import com.hangum.tadpole.mongodb.core.Messages;
 
@@ -46,7 +47,7 @@ public class TadpoleSimpleMessageDialog extends Dialog {
 	 */
 	public TadpoleSimpleMessageDialog(Shell parentShell, String title, String content) {
 		super(parentShell);
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE);
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 		
 		this.title = title;
 		this.content = content;
@@ -55,7 +56,8 @@ public class TadpoleSimpleMessageDialog extends Dialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText(title);//Messages.TadpoleSimpleMessageDialog_2);
+		newShell.setText(title);
+		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 
 	/**
@@ -87,11 +89,11 @@ public class TadpoleSimpleMessageDialog extends Dialog {
 	}
 	
 	private void initUI() {
-//		try {
-//			tadpoleEditor.setText(JSONUtil.getPretty(content));
-//		} catch(Exception e) {
-//			logger.error("server status", e); //$NON-NLS-1$
-//		}
+		try {
+			tadpoleEditor.setText(JSONUtil.getPretty(content));
+		} catch(Exception e) {
+			logger.error("server status", e); //$NON-NLS-1$
+		}
 	}
 
 	/**
@@ -100,7 +102,7 @@ public class TadpoleSimpleMessageDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, Messages.TadpoleSimpleMessageDialog_1, true);
+		createButton(parent, IDialogConstants.OK_ID, Messages.get().TadpoleSimpleMessageDialog_1, true);
 	}
 
 	/**

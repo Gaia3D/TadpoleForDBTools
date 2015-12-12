@@ -10,6 +10,7 @@
  ******************************************************************************/
 package com.hangum.tadpole.engine.sql.util.tables;
 
+import java.sql.SQLNonTransientConnectionException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -20,7 +21,8 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 
-import com.hangum.tadpole.commons.dialogs.message.dao.SQLHistoryDAO;
+import com.hangum.tadpole.commons.dialogs.message.dao.RequestResultDAO;
+import com.hangum.tadpole.commons.dialogs.message.dao.TadpoleMessageDAO;
 import com.swtdesigner.SWTResourceManager;
 
 /**
@@ -38,8 +40,8 @@ public class SQLHistoryLabelProvider extends LabelProvider implements ITableLabe
 
 	@Override
 	public String getColumnText(Object element, int columnIndex) {
-//		if(element instanceof SQLHistoryDAO) {
-			SQLHistoryDAO historyDAO = (SQLHistoryDAO)element;
+		if(element instanceof RequestResultDAO) {
+			RequestResultDAO historyDAO = (RequestResultDAO)element;
 			
 			switch(columnIndex) {
 				case 0: return dateToStr(historyDAO.getStartDateExecute());
@@ -57,7 +59,13 @@ public class SQLHistoryLabelProvider extends LabelProvider implements ITableLabe
 				case 7: return historyDAO.getDbName();
 				case 8: return historyDAO.getIpAddress();
 			}
-//		}
+		} else if(element instanceof TadpoleMessageDAO) {
+			TadpoleMessageDAO dao = (TadpoleMessageDAO)element;
+			switch(columnIndex) {
+			case 0: return dateToStr(dao.getDateExecute());
+			case 1: return dao.getStrMessage();
+			}
+		}
 		
 		return "### not set column ###"; //$NON-NLS-1$
 	}
@@ -86,11 +94,14 @@ public class SQLHistoryLabelProvider extends LabelProvider implements ITableLabe
 	 */
 	@Override
 	public Color getBackground(Object element, int columnIndex) {
-		SQLHistoryDAO historyDAO = (SQLHistoryDAO)element;
-		String strResult = historyDAO.getResult();
-		if("F".equals(strResult)) {
-			return SWTResourceManager.getColor(240, 180, 167);
+		if(element instanceof RequestResultDAO) {
+			RequestResultDAO historyDAO = (RequestResultDAO)element;
+			String strResult = historyDAO.getResult();
+			if("F".equals(strResult)) {
+				return SWTResourceManager.getColor(240, 180, 167);
+			}
 		}
-		return SWTResourceManager.getColor(SWT.COLOR_GRAY);
+		
+		return SWTResourceManager.getColor(SWT.COLOR_GRAY);		
 	}
 }

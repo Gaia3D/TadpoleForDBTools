@@ -43,7 +43,9 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import com.hangum.tadpole.commons.Messages;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 
 /**
  * A dialog to display one or more errors to the user, as contained in an
@@ -136,12 +138,12 @@ public class ExceptionDetailsErrorDialog extends IconAndMessageDialog {
             IStatus status, int displayMask) {
         super(parentShell);
         this.title = dialogTitle == null ? JFaceResources
-                .getString("Problem_Occurred") : //$NON-NLS-1$
+                .getString("Problem_Occurred") :
                 dialogTitle;
         this.message = message == null ? status.getMessage()
                 : JFaceResources
                         .format(
-                                "Reason", new Object[] { message, status.getMessage() }); //$NON-NLS-1$
+                        		"Reason", new Object[] { message, status.getMessage() });
         this.status = status;
         this.displayMask = displayMask;
         setShellStyle(getShellStyle() | SWT.RESIZE);
@@ -169,6 +171,7 @@ public class ExceptionDetailsErrorDialog extends IconAndMessageDialog {
     protected void configureShell(Shell shell) {
         super.configureShell(shell);
         shell.setText(title);
+        shell.setImage(GlobalImageUtils.getTadpoleIcon());
     }
 
     /*
@@ -176,7 +179,7 @@ public class ExceptionDetailsErrorDialog extends IconAndMessageDialog {
      */
     protected void createButtonsForButtonBar(Composite parent) {
         // create OK and Details buttons
-        createButton(parent, IDialogConstants.OK_ID, "Ok", true);
+        createButton(parent, IDialogConstants.OK_ID, Messages.get().ExceptionDetailsErrorDialog_2, true);
         createDetailsButton(parent);
     }
 
@@ -187,7 +190,7 @@ public class ExceptionDetailsErrorDialog extends IconAndMessageDialog {
      */
 	protected void createDetailsButton(Composite parent) {
 		if (shouldShowDetailsButton()) {
-            detailsButton = createButton(parent, IDialogConstants.DETAILS_ID, "SHOW DETAILS", false);
+            detailsButton = createButton(parent, IDialogConstants.DETAILS_ID, Messages.get().ExceptionDetailsErrorDialog_3, false);
         }
 	}
 
@@ -489,10 +492,10 @@ public class ExceptionDetailsErrorDialog extends IconAndMessageDialog {
         if (listCreated) {
             text.dispose();
             listCreated = false;
-            detailsButton.setText("SHOW DETAILS");
+            detailsButton.setText(Messages.get().ExceptionDetailsErrorDialog_3);
         } else {
             text = createDropDownList((Composite) getContents());
-            detailsButton.setText("HIDE DETAILS");
+            detailsButton.setText(Messages.get().ExceptionDetailsErrorDialog_5);
         }
         Point newSize = getShell().computeSize(SWT.DEFAULT, SWT.DEFAULT);
         getShell()
@@ -613,7 +616,7 @@ public class ExceptionDetailsErrorDialog extends IconAndMessageDialog {
      */
     private void repopulateList() {
         if (text != null && !text.isDisposed()) {
-	        text.setText("");
+	        text.setText(""); //$NON-NLS-1$
 	        populateList(text);
         }
     }

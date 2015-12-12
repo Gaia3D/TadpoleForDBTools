@@ -13,6 +13,7 @@ package com.hangum.tadpole.rdb.core.viewers.object.sub;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -20,9 +21,10 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.ui.IWorkbenchPartSite;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.hangum.tadpole.rdb.core.Messages;
 import com.hangum.tadpole.rdb.core.viewers.object.comparator.ObjectComparator;
 
 /**
@@ -33,7 +35,10 @@ import com.hangum.tadpole.rdb.core.viewers.object.comparator.ObjectComparator;
  */
 public abstract class AbstractObjectComposite extends Composite {
 	protected IWorkbenchPartSite site;
-//	protected final String strUserType = SessionManager.getRoleType();
+	protected CTabFolder tabFolderObject;
+	
+	/** TAB DATA KEY */
+	public static String TAB_DATA_KEY = "DB_ACTION";
 	
 	protected UserDBDAO userDB;
 	protected int DND_OPERATIONS = DND.DROP_COPY | DND.DROP_MOVE;
@@ -82,10 +87,11 @@ public abstract class AbstractObjectComposite extends Composite {
 	 * @param parent
 	 * @param userDB
 	 */
-	public AbstractObjectComposite(IWorkbenchPartSite site, Composite parent, UserDBDAO userDB) {
-		super(parent, SWT.NONE);
+	public AbstractObjectComposite(IWorkbenchPartSite site, CTabFolder tabFolderObject, UserDBDAO userDB) {
+		super(tabFolderObject, SWT.NONE);
 		
 		this.site = site;
+		this.tabFolderObject = tabFolderObject;
 		this.userDB = userDB;
 	}
 	
@@ -119,6 +125,11 @@ public abstract class AbstractObjectComposite extends Composite {
 	 * init action
 	 */
 	public abstract void initAction();
+	
+	/**
+	 * select data of table
+	 */
+	public abstract void selectDataOfTable(String strObjectName);
 
 	/**
 	 * 테이블, 테이블 컬럼의 컬럼을 에디트 할수 있는지.
@@ -140,9 +151,9 @@ public abstract class AbstractObjectComposite extends Composite {
 	 * @param tv
 	 */
 	protected void createTriggerColumn(TableViewer tv, ObjectComparator comparator) {
-		String[] name = {"Trigger", "Event", "Table", "Statement", "Timing",
-			"Created", "sql_mode", "Definer", "character_set_client", "collation_connection", "Database",
-			"Collation"
+		String[] name = {Messages.get().AbstractObjectComposite_0, Messages.get().AbstractObjectComposite_1, Messages.get().AbstractObjectComposite_2, Messages.get().AbstractObjectComposite_3, Messages.get().AbstractObjectComposite_4,
+			Messages.get().AbstractObjectComposite_5, Messages.get().AbstractObjectComposite_6, Messages.get().AbstractObjectComposite_7, Messages.get().AbstractObjectComposite_8, Messages.get().AbstractObjectComposite_9, Messages.get().AbstractObjectComposite_10,
+			Messages.get().AbstractObjectComposite_11
 		};
 		int[] size = {120, 70, 70, 70, 70,
 					   70, 70, 70, 70, 70, 
@@ -153,6 +164,7 @@ public abstract class AbstractObjectComposite extends Composite {
 			TableViewerColumn tableColumn = new TableViewerColumn(tv, SWT.LEFT);
 			tableColumn.getColumn().setText(name[i]);
 			tableColumn.getColumn().setWidth(size[i]);
+			tableColumn.getColumn().setMoveable(true);
 			tableColumn.getColumn().addSelectionListener(getSelectionAdapter(tv, comparator, tableColumn.getColumn(), i));
 		}
 	}
@@ -162,9 +174,9 @@ public abstract class AbstractObjectComposite extends Composite {
 	 * @param tv
 	 */
 	protected void createProcedureFunctionColumn(TableViewer tv, ObjectComparator comparator) {
-		String[] name = {"Name", "Definer", "Modified", "Created",
-						"Security_type", "Comment", "character_set_client", "collation_connection", "Database", 
-						"Collation"
+		String[] name = {Messages.get().AbstractObjectComposite_12, Messages.get().AbstractObjectComposite_13, Messages.get().AbstractObjectComposite_14, Messages.get().AbstractObjectComposite_15,
+						Messages.get().AbstractObjectComposite_16, Messages.get().AbstractObjectComposite_17, Messages.get().AbstractObjectComposite_18, Messages.get().AbstractObjectComposite_19, Messages.get().AbstractObjectComposite_20, 
+						Messages.get().AbstractObjectComposite_21
 		};
 		int[] size = {120, 70, 70, 70,
 						70, 70, 70, 70, 70, 
@@ -175,6 +187,7 @@ public abstract class AbstractObjectComposite extends Composite {
 			TableViewerColumn tableColumn = new TableViewerColumn(tv, SWT.LEFT);
 			tableColumn.getColumn().setText(name[i]);
 			tableColumn.getColumn().setWidth(size[i]);
+			tableColumn.getColumn().setMoveable(true);
 			tableColumn.getColumn().addSelectionListener(getSelectionAdapter(tv, comparator, tableColumn.getColumn(), i));
 		}
 	}
@@ -184,35 +197,33 @@ public abstract class AbstractObjectComposite extends Composite {
 	 * @param tv
 	 */
 	protected void createIndexesColumn(final TableViewer tv, final ObjectComparator comparator) {
-//		String[] name = {"TABLE NAME", "INDEX NAME", "NON UNIQUE", "INDEX SCHEMA", "SEQ IN INDEX", 
-//						"COLUMN NAME", "COLLATION", "CARDINALITY", "SUB PART", "PACKED", 
-//						"NULLABLE", 	"INDEX TYPE","COMMENT"
-//		};
-		String[] name = {"Table Name", "Index Name","Type","Comment"};
-		int[] size = {120, 120, 70, 70//, 70, 
-//						70,	70, 70, 70, 70, 
-//						70, 70,	70
-		};
+		String[] name = {Messages.get().AbstractObjectComposite_22, Messages.get().AbstractObjectComposite_23,Messages.get().AbstractObjectComposite_24,Messages.get().AbstractObjectComposite_25};
+		int[] size = {120, 120, 70, 70};
 
 		for (int i=0; i<name.length; i++) {
 			TableViewerColumn tableColumn = new TableViewerColumn(tv, SWT.LEFT);
 			tableColumn.getColumn().setText(name[i]);
 			tableColumn.getColumn().setWidth(size[i]);
+			tableColumn.getColumn().setMoveable(true);
 			tableColumn.getColumn().addSelectionListener(getSelectionAdapter(tv, comparator, tableColumn.getColumn(), i));
 		}
 	}
 	
 	/**
-	 * view column
+	 * 
+	 * @param tv
+	 * @param comparator
 	 */
-	protected void createViewColumne(TableViewer tv) {
-		String[] name = {"Field", "Type", "Key", "Comment", "Null", "Default", "Extra"};
-		int[] size = {120, 70, 50, 100, 50, 50, 50};
+	protected void crateSchedule(final TableViewer tv, final ObjectComparator comparator) {
+		String[] name = {"WHAT", "JOB", "NEXT_DATE", "NEXT_SEC", "FAILURES", "BROKEN"};
+		int[] size = {120, 120, 70, 70, 70, 70};
 
 		for (int i=0; i<name.length; i++) {
 			TableViewerColumn tableColumn = new TableViewerColumn(tv, SWT.LEFT);
 			tableColumn.getColumn().setText(name[i]);
 			tableColumn.getColumn().setWidth(size[i]);
+			tableColumn.getColumn().setMoveable(true);
+//			tableColumn.getColumn().addSelectionListener(getSelectionAdapter(tv, comparator, tableColumn.getColumn(), i));
 		}
 	}
 	
@@ -237,6 +248,14 @@ public abstract class AbstractObjectComposite extends Composite {
 		};
 		
 		return adapter;
+	}
+	
+	/**
+	 * get tabFolder
+	 * @return
+	 */
+	protected CTabFolder getTabFolderObject() {
+		return tabFolderObject;
 	}
 	
 	@Override

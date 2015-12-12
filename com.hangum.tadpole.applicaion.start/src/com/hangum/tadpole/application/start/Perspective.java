@@ -1,4 +1,5 @@
 /*******************************************************************************
+
  * Copyright (c) 2013 hangum.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the GNU Lesser Public License v2.1
@@ -25,11 +26,12 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
-import com.hangum.tadpole.help.core.views.HelpViewPart;
-import com.hangum.tadpole.manager.core.editor.auth.UserManagementEditor;
-import com.hangum.tadpole.manager.core.editor.auth.UserManagementEditorInput;
-import com.hangum.tadpole.manager.core.editor.executedsql.ExecutedSQLEditor;
-import com.hangum.tadpole.manager.core.editor.executedsql.ExecutedSQLEditorInput;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.engine.permission.PermissionChecker;
+import com.hangum.tadpole.manager.core.editor.db.DBMgmtEditor;
+import com.hangum.tadpole.manager.core.editor.db.DBMgntEditorInput;
+import com.hangum.tadpole.manager.core.editor.executedsql.SQLAuditEditor;
+import com.hangum.tadpole.manager.core.editor.executedsql.SQLAuditEditorInput;
 //import com.hangum.tadpole.notes.core.views.list.NoteListViewPart;
 import com.hangum.tadpole.rdb.core.viewers.connections.ManagerViewer;
 import com.hangum.tadpole.rdb.core.viewers.object.ExplorerViewer;
@@ -84,22 +86,20 @@ public class Perspective implements IPerspectiveFactory {
 		layout.setEditorAreaVisible(true);
 		layout.setFixed(false);
 
-		IFolderLayout leftFolder = layout.createFolder("id" + ManagerViewer.ID, IPageLayout.LEFT, 0.30f, editorArea);
+		IFolderLayout leftFolder = layout.createFolder("id" + ManagerViewer.ID, IPageLayout.LEFT, 0.26f, editorArea);
 		leftFolder.addView(ManagerViewer.ID);
 
-		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.30f, "id" + ManagerViewer.ID);
+		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.26f, "id" + ManagerViewer.ID);
 		leftUnderFolder.addView(ExplorerViewer.ID);
-//		leftUnderFolder.addView(NoteListViewPart.ID);
 		
-		IFolderLayout rightFolder = layout.createFolder("id" + HelpViewPart.ID, IPageLayout.RIGHT, 0.80f, editorArea);
-		rightFolder.addView(HelpViewPart.ID);
-
-		// viewer closealbe false
-		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
+//		IFolderLayout rightFolder = layout.createFolder("id" + HelpViewPart.ID, IPageLayout.RIGHT, 0.80f, editorArea);
+//		rightFolder.addView(HelpViewPart.ID);
+//
+//		// viewer closealbe false
+//		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
 		layout.getViewLayout(ManagerViewer.ID).setCloseable(false);
 		layout.getViewLayout(ExplorerViewer.ID).setCloseable(false);
-//		layout.getViewLayout(NoteListViewPart.ID).setCloseable(false);
-		openEditor(UserManagementEditor.ID);
+		openEditor(DBMgmtEditor.ID);
 	}
 
 	public void managerPerspective(IPageLayout layout) {
@@ -107,24 +107,21 @@ public class Perspective implements IPerspectiveFactory {
 		layout.setEditorAreaVisible(true);
 		layout.setFixed(false);
 
-		IFolderLayout leftFolder = layout.createFolder("id" + ManagerViewer.ID, IPageLayout.LEFT, 0.30f, editorArea);
+		IFolderLayout leftFolder = layout.createFolder("id" + ManagerViewer.ID, IPageLayout.LEFT, 0.26f, editorArea);
 		leftFolder.addView(ManagerViewer.ID);
 
-		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.30f, "id" + ManagerViewer.ID);
+		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.26f, "id" + ManagerViewer.ID);
 		leftUnderFolder.addView(ExplorerViewer.ID);
 
-//		leftUnderFolder.addView(NoteListViewPart.ID);
-
-		IFolderLayout rightFolder = layout.createFolder("id" + HelpViewPart.ID, IPageLayout.RIGHT, 0.80f, editorArea);
-		rightFolder.addView(HelpViewPart.ID);
+//		IFolderLayout rightFolder = layout.createFolder("id" + HelpViewPart.ID, IPageLayout.RIGHT, 0.80f, editorArea);
+//		rightFolder.addView(HelpViewPart.ID);
 
 		// viewer closealbe false
-		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
+//		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
 		layout.getViewLayout(ManagerViewer.ID).setCloseable(false);
 		layout.getViewLayout(ExplorerViewer.ID).setCloseable(false);
-//		layout.getViewLayout(NoteListViewPart.ID).setCloseable(false);
 		
-		openEditor(ExecutedSQLEditor.ID);
+		openEditor(SQLAuditEditor.ID);
 	}
 
 	public void defaultPerspective(IPageLayout layout) {
@@ -132,29 +129,37 @@ public class Perspective implements IPerspectiveFactory {
 		layout.setEditorAreaVisible(true);
 		layout.setFixed(false);
 
-		IFolderLayout leftFolder = layout.createFolder("id" + ManagerViewer.ID, IPageLayout.LEFT, 0.30f, editorArea);
+		IFolderLayout leftFolder = layout.createFolder("id" + ManagerViewer.ID, IPageLayout.LEFT, 0.26f, editorArea);
 		leftFolder.addView(ManagerViewer.ID);
-		leftFolder.addView(HelpViewPart.ID);
-//		leftFolder.addView(IPageLayout.ID_OUTLINE);
+//		leftFolder.addView(HelpViewPart.ID);
 
-		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.30f, "id" + ManagerViewer.ID);
+		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.26f, "id" + ManagerViewer.ID);
 		leftUnderFolder.addView(ExplorerViewer.ID);
-//		leftUnderFolder.addView(NoteListViewPart.ID);
 
 		// viewer closealbe false
-		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
+//		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
 		layout.getViewLayout(ManagerViewer.ID).setCloseable(false);
 		layout.getViewLayout(ExplorerViewer.ID).setCloseable(false);
-//		layout.getViewLayout(NoteListViewPart.ID).setCloseable(false);
 	}
 
 	private void openEditor(String id) {
 		IEditorInput input = null;
-		if (id.equals(UserManagementEditor.ID)) {
-			input = new UserManagementEditorInput();
-		} else if (id.equals(ExecutedSQLEditor.ID)) {
-			input = new ExecutedSQLEditorInput();
-		}
+		
+		boolean isAdmin = PermissionChecker.isAdmin(SessionManager.getRepresentRole());
+    	if(isAdmin) {
+			if (id.equals(DBMgmtEditor.ID)) {
+				input = new DBMgntEditorInput(PublicTadpoleDefine.USER_ROLE_TYPE.ADMIN);
+			} else if (id.equals(SQLAuditEditor.ID)) {
+				input = new SQLAuditEditorInput();
+			}
+    	} else {
+    		if (id.equals(DBMgmtEditor.ID)) {
+				input = new DBMgntEditorInput(PublicTadpoleDefine.USER_ROLE_TYPE.USER);
+			} else if (id.equals(SQLAuditEditor.ID)) {
+				input = new SQLAuditEditorInput();
+			}
+    	}
+    	
 		try {
 			// Check duplicated editor.
 			IEditorReference[] editorRefs = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getEditorReferences();

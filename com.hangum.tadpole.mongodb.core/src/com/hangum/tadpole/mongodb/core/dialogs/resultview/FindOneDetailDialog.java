@@ -24,6 +24,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.mongodb.DBObject;
 
@@ -51,7 +52,7 @@ public class FindOneDetailDialog extends Dialog {
 	 */
 	public FindOneDetailDialog(Shell parentShell, UserDBDAO userDB, String collectionName, DBObject dbResultObject) {
 		super(parentShell);
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE);
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 		
 		this.userDB = userDB;
 		this.collectionName = collectionName;
@@ -63,6 +64,7 @@ public class FindOneDetailDialog extends Dialog {
 		super.configureShell(newShell);
 
 		newShell.setText("Collection Detail"); //$NON-NLS-1$
+		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 
 	/**

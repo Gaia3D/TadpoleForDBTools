@@ -12,13 +12,15 @@ package com.hangum.tadpole.commons.util;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.core.runtime.Platform;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.SystemDefine;
 
 /**
- * 시스템 시작 유틸 
+ * System application argument utils 
  * 
  * @author hangum
  *
@@ -28,7 +30,8 @@ public class ApplicationArgumentUtils {
 	 * Logger for this class
 	 */
 	private static final Logger logger = Logger.getLogger(ApplicationArgumentUtils.class);
-
+	public static String[] applicationArgs = null;
+	
 	/**
 	 * engine에서 사용하는 패스워드.
 	 * 
@@ -40,7 +43,7 @@ public class ApplicationArgumentUtils {
 		try {
 			passwd = getValue("-passwd");
 		} catch(Exception e) {
-			passwd = "heechan.tadpole.owner.son";
+			passwd = PublicTadpoleDefine.SYSTEM_DEFAULT_PASSWORD;
 		}
 		
 		return passwd;
@@ -60,15 +63,6 @@ public class ApplicationArgumentUtils {
 		}
 		
 		return strResourceDir + IOUtils.DIR_SEPARATOR;
-	}
-	
-	/**
-	 * 시스템의 테이블 초기 데이터를 초기화 루틴을 탈것인지 검사합니다.
-	 * @return
-	 * @throws Exception
-	 */
-	public static boolean isForceSystemInitialize() {
-		return checkString("-forceSystemInitialize");
 	}
 	
 	/**
@@ -176,8 +170,8 @@ public class ApplicationArgumentUtils {
 	 * 
 	 * @return
 	 */
-	public static boolean isGAON() {
-		return checkString("-GAON");
+	public static boolean isGAOFF() {
+		return checkString("-GAOFF");
 	}
 	
 	/**
@@ -212,9 +206,9 @@ public class ApplicationArgumentUtils {
 	 * @return
 	 */
 	private static String getValue(String key) throws Exception {
-		String[] applicationArgs = Platform.getApplicationArgs();
+		String[] applicationArgs = getArguments();
 		for(int i=0; i<applicationArgs.length; i++) {
-			String arg = applicationArgs[i];
+			String arg = StringUtils.trimToEmpty(applicationArgs[i]);
 			if( arg.startsWith(key) ) {
 				return applicationArgs[i+1];
 			}
@@ -229,12 +223,71 @@ public class ApplicationArgumentUtils {
 	 * @return
 	 */
 	private static boolean checkString(String checkString) {
-		String[] applicationArgs = Platform.getApplicationArgs();
+		String[] applicationArgs = getArguments();
 		
-		for (String string : applicationArgs) {
-			if( string.equalsIgnoreCase(checkString) ) return true;
+		for (String strArg : applicationArgs) {
+			strArg = StringUtils.trimToEmpty(strArg);
+			if( strArg.equalsIgnoreCase(checkString) ) return true;
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * application argument
+	 * 
+	 * @return
+	 */
+	private static String[] getArguments() {
+		if(applicationArgs != null) return applicationArgs;
+		
+//		System.out.println("\t==[05:03]==========================================================");
+//		Properties p = System.getProperties();
+//		p.list(System.out);
+//		System.out.println("\t============================================================");
+		
+		try {
+			/* is osgi */
+			if(SystemDefine.isOSGIRuntime()) {
+	
+				logger.info("\t\t --> start OSGI Runtime....................................................");
+				applicationArgs = Platform.getApplicationArgs();
+				
+			/* is single or test  */
+			} else {
+				logger.info("\t\t --> [0] start api server ....................................................");
+				applicationArgs = getWebServerArguments();
+				
+			}
+		} catch(Throwable e) {
+			logger.info("\t\t [exception]--> [1] start api server ....................................................");
+			applicationArgs = getWebServerArguments();
+		}
+		
+		return applicationArgs;
+	}
+	
+	/**
+	 * traditional web server argument
+	 * 
+	 * @return
+	 */
+	private static String[] getWebServerArguments() {
+		applicationArgs = new String[4];
+		
+		applicationArgs[0] = "-dbServer";
+		applicationArgs[1] = System.getProperty("dbServer");
+		if(applicationArgs[1] == null) {
+			applicationArgs[0] = null;
+			logger.error("**** System Initialize exception : Not found Tadpole engine db");
+			
+			return applicationArgs;
+		}
+			
+		applicationArgs[2] = "-passwd";
+		applicationArgs[3] = System.getProperty("passwd");
+		if(applicationArgs[3] == null) applicationArgs[3] = PublicTadpoleDefine.SYSTEM_DEFAULT_PASSWORD;
+		
+		return applicationArgs;
 	}
 }

@@ -22,8 +22,8 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
@@ -75,7 +75,7 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 				logger.error("open editor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 			}
 		} else if(userDB.getDBDefine() == DBDefine.MONGODB_DEFAULT) {
 			MongoDBInfosInput mongoInput = new MongoDBInfosInput(userDB, MongoDBInfosEditor.PAGES.COLLECTION_SUMMERY);
@@ -85,7 +85,7 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 				logger.error("open editor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 			}
 		}
 		
@@ -109,7 +109,7 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 				logger.error("new editor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.MainEditorInput_0, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().MainEditorInput_0, errStatus); //$NON-NLS-1$
 			}
 		} else {
 			try {
@@ -120,7 +120,7 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 				logger.error("findEditor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 			}
 		}
 	}
@@ -131,7 +131,7 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 	 * @param userDB
 	 * @param actionType
 	 */
-	public void run(UserDBDAO userDB, PublicTadpoleDefine.DB_ACTION actionType) {
+	public void run(UserDBDAO userDB, PublicTadpoleDefine.OBJECT_TYPE actionType) {
 		FindEditorAndWriteQueryUtil.run(userDB, QueryTemplateUtils.getQuery(userDB, actionType), actionType);
 	}
 	
@@ -141,7 +141,7 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 	 * @param userDB
 	 * @param actionType
 	 */
-	public void run(UserDBDAO userDB, String strSql, PublicTadpoleDefine.DB_ACTION actionType) {
+	public void run(UserDBDAO userDB, String strSql, PublicTadpoleDefine.OBJECT_TYPE actionType) {
 		FindEditorAndWriteQueryUtil.run(userDB, strSql, actionType);
 	}
 	

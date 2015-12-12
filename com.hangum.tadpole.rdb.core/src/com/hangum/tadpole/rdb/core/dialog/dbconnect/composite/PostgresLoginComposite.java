@@ -27,7 +27,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.util.ApplicationArgumentUtils;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
@@ -51,7 +51,7 @@ public class PostgresLoginComposite extends MySQLLoginComposite {
 	 * @param style
 	 */
 	public PostgresLoginComposite(Composite parent, int style, List<String> listGroupName, String selGroupName, UserDBDAO userDB) {
-		super("Sample PostgreSQL", DBDefine.POSTGRE_DEFAULT, parent, style, listGroupName, selGroupName, userDB);
+		super("Sample PostgreSQL", DBDefine.POSTGRE_DEFAULT, parent, style, listGroupName, selGroupName, userDB); //$NON-NLS-1$
 	}
 	
 	@Override
@@ -71,25 +71,25 @@ public class PostgresLoginComposite extends MySQLLoginComposite {
 		gl_compositeBody.marginHeight = 2;
 		gl_compositeBody.marginWidth = 2;
 		compositeBody.setLayout(gl_compositeBody);
-		compositeBody.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1));
+		compositeBody.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		
 		preDBInfo = new PreConnectionInfoGroup(compositeBody, SWT.NONE, listGroupName);
-		preDBInfo.setText(Messages.MSSQLLoginComposite_preDBInfo_text);
+		preDBInfo.setText(Messages.get().MSSQLLoginComposite_preDBInfo_text);
 		preDBInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
 		
 		Group grpConnectionType = new Group(compositeBody, SWT.NONE);
 		grpConnectionType.setLayout(new GridLayout(5, false));
 		grpConnectionType.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
-		grpConnectionType.setText(Messages.MSSQLLoginComposite_grpConnectionType_text);
+		grpConnectionType.setText(Messages.get().MSSQLLoginComposite_grpConnectionType_text);
 		
 		Label lblHost = new Label(grpConnectionType, SWT.NONE);
-		lblHost.setText(Messages.DBLoginDialog_1);
+		lblHost.setText(Messages.get().DBLoginDialog_1);
 		
 		textHost = new Text(grpConnectionType, SWT.BORDER);
 		textHost.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblNewLabelPort = new Label(grpConnectionType, SWT.NONE);
-		lblNewLabelPort.setText(Messages.DBLoginDialog_5);
+		lblNewLabelPort.setText(Messages.get().DBLoginDialog_5);
 		
 		textPort = new Text(grpConnectionType, SWT.BORDER);
 		textPort.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -102,44 +102,38 @@ public class PostgresLoginComposite extends MySQLLoginComposite {
 				String port 	= StringUtils.trimToEmpty(textPort.getText());
 				
 				if("".equals(host) || "".equals(port)) { //$NON-NLS-1$ //$NON-NLS-2$
-					MessageDialog.openError(null, Messages.DBLoginDialog_10, Messages.DBLoginDialog_11);
+					MessageDialog.openError(null, Messages.get().DBLoginDialog_10, Messages.get().DBLoginDialog_11);
 					return;
 				}
 				
 				try {
 					if(isPing(host, port)) {
-						MessageDialog.openInformation(null, Messages.DBLoginDialog_12, Messages.DBLoginDialog_13);
+						MessageDialog.openInformation(null, Messages.get().DBLoginDialog_12, Messages.get().DBLoginDialog_13);
 					} else {
-						MessageDialog.openError(null, Messages.DBLoginDialog_14, Messages.DBLoginDialog_15);
+						MessageDialog.openError(null, Messages.get().DBLoginDialog_14, Messages.get().DBLoginDialog_15);
 					}
 				} catch(NumberFormatException nfe) {
-					MessageDialog.openError(null, Messages.MySQLLoginComposite_3, Messages.MySQLLoginComposite_4);
+					MessageDialog.openError(null, Messages.get().MySQLLoginComposite_3, Messages.get().MySQLLoginComposite_4);
 				}
 			}
 		});
-		btnPing.setText(Messages.DBLoginDialog_btnPing_text);
+		btnPing.setText(Messages.get().DBLoginDialog_btnPing_text);
 		
 		Label lblNewLabelDatabase = new Label(grpConnectionType, SWT.NONE);
 		lblNewLabelDatabase.setLayoutData(new GridData(SWT.LEFT, SWT.BOTTOM, false, false, 1, 1));
-		lblNewLabelDatabase.setText(Messages.DBLoginDialog_4);
+		lblNewLabelDatabase.setText(Messages.get().DBLoginDialog_4);
 		
 		textDatabase = new Text(grpConnectionType, SWT.BORDER);
-		textDatabase.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));		
+		textDatabase.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
 		
-		Label lblUser = new Label(grpConnectionType, SWT.NONE);
-		lblUser.setText(Messages.DBLoginDialog_2);
+		Label lblJdbcOptions = new Label(grpConnectionType, SWT.NONE);
+		lblJdbcOptions.setText(Messages.get().MySQLLoginComposite_lblJdbcOptions_text);
 		
-		textUser = new Text(grpConnectionType, SWT.BORDER);
-		textUser.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		
-		Label lblPassword = new Label(grpConnectionType, SWT.NONE);
-		lblPassword.setText(Messages.DBLoginDialog_3);
-		
-		textPassword = new Text(grpConnectionType, SWT.BORDER | SWT.PASSWORD);
-		textPassword.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		textJDBCOptions = new Text(grpConnectionType, SWT.BORDER);
+		textJDBCOptions.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
 		
 		Label lblSupportSSL = new Label(grpConnectionType, SWT.NONE);
-		lblSupportSSL.setText("Support SSL?");
+		lblSupportSSL.setText(Messages.get().PostgresLoginComposite_1);
 		
 		comboSSL = new Combo(grpConnectionType, SWT.READ_ONLY);
 		comboSSL.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
@@ -147,12 +141,17 @@ public class PostgresLoginComposite extends MySQLLoginComposite {
 		comboSSL.add(PublicTadpoleDefine.YES_NO.NO.name());
 		comboSSL.select(1);
 		
-		Label lblJdbcOptions = new Label(grpConnectionType, SWT.NONE);
-		lblJdbcOptions.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblJdbcOptions.setText(Messages.MySQLLoginComposite_lblJdbcOptions_text);
+		Label lblUser = new Label(grpConnectionType, SWT.NONE);
+		lblUser.setText(Messages.get().DBLoginDialog_2);
 		
-		textJDBCOptions = new Text(grpConnectionType, SWT.BORDER);
-		textJDBCOptions.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
+		textUser = new Text(grpConnectionType, SWT.BORDER);
+		textUser.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		
+		Label lblPassword = new Label(grpConnectionType, SWT.NONE);
+		lblPassword.setText(Messages.get().DBLoginDialog_3);
+		
+		textPassword = new Text(grpConnectionType, SWT.BORDER | SWT.PASSWORD);
+		textPassword.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		
 		othersConnectionInfo = new OthersConnectionRDBGroup(this, SWT.NONE, getSelectDB());
 		othersConnectionInfo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -183,17 +182,19 @@ public class PostgresLoginComposite extends MySQLLoginComposite {
 
 			preDBInfo.setTextDisplayName(getDisplayName());
 			
-			textHost.setText("127.0.0.1");
-			textPort.setText("5432");
-			textDatabase.setText("tadpole");
-			textUser.setText("postgres");
-			textPassword.setText("tadpole");
+			textHost.setText("127.0.0.1"); //$NON-NLS-1$
+			textPort.setText("5432"); //$NON-NLS-1$
+			textDatabase.setText("tadpole"); //$NON-NLS-1$
+			textUser.setText("postgres"); //$NON-NLS-1$
+			textPassword.setText("tadpole"); //$NON-NLS-1$
 			
-			comboSSL.setText("NO");
+			comboSSL.setText("NO"); //$NON-NLS-1$
+			textJDBCOptions.setText("&loginTimeout=5&socketTimeout=5"); //$NON-NLS-1$
 			
 		} else {
-			textPort.setText("5432");
-			comboSSL.setText("NO");
+			textPort.setText("5432"); //$NON-NLS-1$
+			comboSSL.setText("NO"); //$NON-NLS-1$
+			textJDBCOptions.setText("&loginTimeout=5&socketTimeout=5"); //$NON-NLS-1$
 		}
 
 		Combo comboGroup = preDBInfo.getComboGroup();
@@ -201,7 +202,7 @@ public class PostgresLoginComposite extends MySQLLoginComposite {
 			comboGroup.add(strOtherGroupName);
 			comboGroup.select(0);
 		} else {
-			if("".equals(selGroupName)) {
+			if("".equals(selGroupName)) { //$NON-NLS-1$
 				comboGroup.setText(strOtherGroupName);
 			} else {
 				// 콤보 선택 
@@ -226,14 +227,14 @@ public class PostgresLoginComposite extends MySQLLoginComposite {
 							);
 		
 		if(PublicTadpoleDefine.YES_NO.YES.name().equals(comboSSL.getText())) {
-			dbUrl += "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory";
+			dbUrl += "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory"; //$NON-NLS-1$
 			
-			if(!"".equals(textJDBCOptions.getText())) {
-				dbUrl += "&" + textJDBCOptions.getText();
+			if(!"".equals(textJDBCOptions.getText())) { //$NON-NLS-1$
+				dbUrl += "&" + textJDBCOptions.getText(); //$NON-NLS-1$
 			}
 		} else {
-			if(!"".equals(textJDBCOptions.getText())) {
-				dbUrl += "?" + textJDBCOptions.getText();
+			if(!"".equals(textJDBCOptions.getText())) { //$NON-NLS-1$
+				dbUrl += "?" + textJDBCOptions.getText(); //$NON-NLS-1$
 			}
 		}
 
@@ -244,7 +245,14 @@ public class PostgresLoginComposite extends MySQLLoginComposite {
 		userDB.setDb(StringUtils.trimToEmpty(textDatabase.getText()));
 		userDB.setGroup_name(StringUtils.trimToEmpty(preDBInfo.getComboGroup().getText()));
 		userDB.setDisplay_name(StringUtils.trimToEmpty(preDBInfo.getTextDisplayName().getText()));
-		userDB.setOperation_type(PublicTadpoleDefine.DBOperationType.getNameToType(preDBInfo.getComboOperationType().getText()).toString());
+
+		String dbOpType = PublicTadpoleDefine.DBOperationType.getNameToType(preDBInfo.getComboOperationType().getText()).name();
+		userDB.setOperation_type(dbOpType);
+		if(dbOpType.equals(PublicTadpoleDefine.DBOperationType.PRODUCTION.name()) || dbOpType.equals(PublicTadpoleDefine.DBOperationType.BACKUP.name()))
+		{
+			userDB.setIs_lock(PublicTadpoleDefine.YES_NO.YES.name());
+		}
+
 		userDB.setHost(StringUtils.trimToEmpty(textHost.getText()));
 		userDB.setPort(StringUtils.trimToEmpty(textPort.getText()));
 		userDB.setUsers(StringUtils.trimToEmpty(textUser.getText()));

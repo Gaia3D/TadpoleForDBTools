@@ -93,7 +93,7 @@ public class AWSRDSLoginComposite extends AbstractLoginComposite {
 		compositeRDS.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		
 		Group groupLogin = new Group(compositeRDS, SWT.NONE);
-		groupLogin.setText("Amazon User Information"); //$NON-NLS-1$
+		groupLogin.setText(Messages.get().AWSRDSLoginComposite_3);
 		groupLogin.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1));
 		GridLayout gl_compositeLogin = new GridLayout(3, false);
 		gl_compositeLogin.verticalSpacing = 3;
@@ -103,18 +103,18 @@ public class AWSRDSLoginComposite extends AbstractLoginComposite {
 		groupLogin.setLayout(gl_compositeLogin);
 
 		Label lblAccesskey = new Label(groupLogin, SWT.NONE);
-		lblAccesskey.setText("Access Key");
+		lblAccesskey.setText(Messages.get().AWSRDSLoginComposite_4);
 		textAccesskey = new Text(groupLogin, SWT.BORDER);
 		textAccesskey.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		
 		Label lblSecretKey = new Label(groupLogin, SWT.NONE);
-		lblSecretKey.setText("Secret Key"); //$NON-NLS-1$
+		lblSecretKey.setText(Messages.get().AWSRDSLoginComposite_5);
 		textSecretKey = new Text(groupLogin, SWT.BORDER | SWT.PASSWORD);
 		textSecretKey.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		
 		Label lblEndpoint = new Label(groupLogin, SWT.NONE);
 		lblEndpoint.setSize(59, 14);
-		lblEndpoint.setText("Region"); //$NON-NLS-1$
+		lblEndpoint.setText(Messages.get().AWSRDSLoginComposite_6);
 		
 		comboRegionName = new Combo(groupLogin, SWT.READ_ONLY);
 		comboRegionName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -141,11 +141,11 @@ public class AWSRDSLoginComposite extends AbstractLoginComposite {
 				findDBList();
 			}
 		});
-		btnLogin.setText(Messages.AWSRDSLoginComposite_0);
+		btnLogin.setText(Messages.get().AWSRDSLoginComposite_0);
 		
 		// rds 입력 리스트..
 		Group compositeBody = new Group(compositeRDS, SWT.NONE);
-		compositeBody.setText(Messages.AWSRDSLoginComposite_1);
+		compositeBody.setText(Messages.get().AWSRDSLoginComposite_1);
 		compositeBody.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		
 		GridLayout gl_compositeBody = new GridLayout(1, false);
@@ -178,7 +178,7 @@ public class AWSRDSLoginComposite extends AbstractLoginComposite {
 				addDatabase();
 			}
 		});
-		btnAddDatabase.setText(Messages.AWSRDSLoginComposite_2);
+		btnAddDatabase.setText(Messages.get().AWSRDSLoginComposite_2);
 		
 		init();
 	}
@@ -189,7 +189,7 @@ public class AWSRDSLoginComposite extends AbstractLoginComposite {
 	private void addDatabase() {
 		StructuredSelection ss = (StructuredSelection)tvRDS.getSelection();
 		if(ss.isEmpty()) {
-			MessageDialog.openError(null, Messages.DBLoginDialog_14, Messages.AWSRDSLoginComposite_8);
+			MessageDialog.openError(null, Messages.get().DBLoginDialog_14, Messages.get().AWSRDSLoginComposite_8);
 		} else {
 			AWSRDSUserDBDAO amazonRDSDto = (AWSRDSUserDBDAO)ss.getFirstElement();
 			
@@ -213,8 +213,8 @@ public class AWSRDSLoginComposite extends AbstractLoginComposite {
 		String strSecretkey = textSecretKey.getText().trim();
 		String strRegionName = comboRegionName.getText().trim();
 		
-		if(!checkTextCtl(textAccesskey, "Access key")) return;
-		if(!checkTextCtl(textSecretKey, "Secret Key")) return;
+		if(!checkTextCtl(textAccesskey, Messages.get().AWSRDSLoginComposite_4)) return;
+		if(!checkTextCtl(textSecretKey, Messages.get().AWSRDSLoginComposite_5)) return;
 		
 		try {
 			Map<String, UserDBDAO> mapRegisteredDB = TadpoleSystem_UserDBQuery.getUserDBByHost();
@@ -242,8 +242,8 @@ public class AWSRDSLoginComposite extends AbstractLoginComposite {
 	 * create columns
 	 */
 	private void createColumns() {
-		String[] columnNames = {"Display Name", "Engine", "IP", "Port", "Instance", "Charset", "User", "Password"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
-		int[] columnSize = {120, 50, 200, 50, 100, 80, 80, 50};
+		String[] columnNames = {Messages.get().AWSRDSLoginComposite_10, Messages.get().AWSRDSLoginComposite_11, Messages.get().AWSRDSLoginComposite_12, Messages.get().AWSRDSLoginComposite_13, Messages.get().AWSRDSLoginComposite_14, Messages.get().AWSRDSLoginComposite_15, Messages.get().AWSRDSLoginComposite_16};
+		int[] columnSize = {120, 50, 200, 50, 100, 80, 80};
 		
 		for(int i=0; i<columnNames.length; i++) {
 			String name = columnNames[i];
@@ -279,12 +279,12 @@ public class AWSRDSLoginComposite extends AbstractLoginComposite {
 		String strAccesskey = textAccesskey.getText().trim();
 		String strSecretkey = textSecretKey.getText().trim();
 		
-		if("".equals(strAccesskey)) {
-			MessageDialog.openError(null, Messages.SQLiteLoginComposite_6, "Please enter the Access Key");
+		if("".equals(strAccesskey)) { //$NON-NLS-1$
+			MessageDialog.openError(null, Messages.get().SQLiteLoginComposite_6, Messages.get().AWSRDSLoginComposite_7);
 			textAccesskey.setFocus();
 			return false;
-		} else if("".equals(strSecretkey)) {
-			MessageDialog.openError(null, Messages.SQLiteLoginComposite_6, "Please enter the Secret Key");
+		} else if("".equals(strSecretkey)) { //$NON-NLS-1$
+			MessageDialog.openError(null, Messages.get().SQLiteLoginComposite_6, Messages.get().AWSRDSLoginComposite_20);
 			textSecretKey.setFocus();
 			return false;
 		}
@@ -325,7 +325,7 @@ class RDSInfoLabelProvider extends LabelProvider implements ITableLabelProvider 
 		case 4: return dto.getDb();
 		case 5: return dto.getLocale();
 		case 6: return dto.getUsers();
-		case 7: return dto.getPasswd();
+//		case 7: return dto.getPasswd();
 		}
 		
 		return "*** not set column ***"; //$NON-NLS-1$

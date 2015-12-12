@@ -64,12 +64,11 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.part.IPageSite;
-import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.xml.sax.InputSource;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBResource;
@@ -114,9 +113,6 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 	/** 처음로드될때부터 모든 테이블 로드 인지 */
 	private boolean isAllTable = false;
 	
-//	/** auto layout action */
-//	private AutoLayoutAction autoLayoutAction;
-	
 	/** short key handler */
 	private KeyHandler keyHandler;
 
@@ -134,7 +130,7 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 		Job job = new Job("ERD Initialize") {
 			@Override
 			public IStatus run(IProgressMonitor monitor) {
-				monitor.beginTask("ERD Initialize", IProgressMonitor.UNKNOWN);
+				monitor.beginTask("Painting table object", IProgressMonitor.UNKNOWN);
 		
 				try {
 					RdbFactory factory = RdbFactory.eINSTANCE;
@@ -143,7 +139,7 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 						
 						// 모든 table 정보를 가져온다.
 						if(isAllTable) {
-							db = TadpoleModelUtils.INSTANCE.getDBAllTable(userDB);
+							db = TadpoleModelUtils.INSTANCE.getDBAllTable(monitor, userDB);
 						// 부분 테이블 정보를 처리한다.
 						} else {
 							db = factory.createDB();
@@ -173,6 +169,7 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 		};
 		
 		// job의 event를 처리해 줍니다.
+		final TadpoleRDBEditor rdbEditor = this;
 		job.addJobChangeListener(new JobChangeAdapter() {
 			
 			public void done(IJobChangeEvent event) {
@@ -188,7 +185,7 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 							try {
 								Exception e = new Exception(jobEvent.getResult().getException());
 								Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-								ExceptionDetailsErrorDialog.openError(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), "Error", Messages.TadpoleModelUtils_2, errStatus); //$NON-NLS-1$
+								ExceptionDetailsErrorDialog.openError(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), "Error", Messages.get().TadpoleModelUtils_2, errStatus); //$NON-NLS-1$
 							} catch(Exception e) {
 								logger.error("https://github.com/hangum/TadpoleForDBTools/issues/169 검증오류...", e);
 							}
@@ -202,9 +199,9 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 							
 						}
 						getGraphicalViewer().setContents(db);
-						
+		
 						// dnd
-						getGraphicalViewer().addDropTargetListener(new TableTransferDropTargetListener(getGraphicalViewer(), userDB, db));
+						getGraphicalViewer().addDropTargetListener(new TableTransferDropTargetListener(rdbEditor, getGraphicalViewer(), userDB, db));
 					}
 					
 				});	// end display.asyncExec
@@ -214,7 +211,9 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 		
 		job.setName(userDB.getDisplay_name());
 		job.setUser(true);
-		job.schedule();		
+		job.schedule();
+		
+
 	}	
 	
 	@Override
@@ -427,7 +426,7 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 				logger.error("Load ERD Resource", e); //$NON-NLS-1$
 		        
 		        Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.TadpoleEditor_0, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.get().TadpoleEditor_0, errStatus); //$NON-NLS-1$
 			}
 			
 			setPartName(isAllTable?"All " + userDBErd.getName():userDBErd.getName());
@@ -503,7 +502,7 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 		if(userDBErd == null) {
 			
 			// file 이름 dialog
-			ResourceSaveDialog rsDialog = new ResourceSaveDialog(null, null, userDB, PublicTadpoleDefine.RESOURCE_TYPE.ERD);
+			ResourceSaveDialog rsDialog = new ResourceSaveDialog(null, null, userDB, PublicTadpoleDefine.RESOURCE_TYPE.ERD, "");
 			if (rsDialog.open() == Window.OK) {
 				
 				try {
@@ -523,10 +522,10 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 					PlatformUI.getPreferenceStore().setValue(PublicTadpoleDefine.SAVE_FILE, ""+userDBErd.getDb_seq() + ":" + System.currentTimeMillis()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					
 				} catch (Exception e) {
-					logger.error(Messages.TadpoleEditor_9, e);
+					logger.error(Messages.get().TadpoleEditor_9, e);
 					
 					Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-					ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.TadpoleEditor_3, errStatus); //$NON-NLS-1$
+					ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.get().TadpoleEditor_3, errStatus); //$NON-NLS-1$
 				}
 			}
 			
@@ -537,10 +536,10 @@ public class TadpoleRDBEditor extends GraphicalEditor {//WithFlyoutPalette {
 				TadpoleSystem_UserDBResource.updateResource(userDBErd, createResourceToString());
 				getCommandStack().markSaveLocation();
 			} catch(Exception e) {
-				logger.error(Messages.TadpoleEditor_12, e);
+				logger.error(Messages.get().TadpoleEditor_12, e);
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.TadpoleEditor_1, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(getSite().getShell(), "Error", Messages.get().TadpoleEditor_1, errStatus); //$NON-NLS-1$
 			}
 		}
 	}

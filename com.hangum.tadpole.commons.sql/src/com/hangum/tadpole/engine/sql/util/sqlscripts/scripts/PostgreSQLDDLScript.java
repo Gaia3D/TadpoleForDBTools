@@ -16,8 +16,7 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
-import com.hangum.tadpole.engine.define.DBDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
 import com.hangum.tadpole.engine.query.dao.mysql.InformationSchemaDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
@@ -37,7 +36,7 @@ import com.ibatis.sqlmap.client.SqlMapClient;
 public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 	private static final Logger logger = Logger.getLogger(PostgreSQLDDLScript.class);
 
-	public PostgreSQLDDLScript(UserDBDAO userDB, PublicTadpoleDefine.DB_ACTION actionType) {
+	public PostgreSQLDDLScript(UserDBDAO userDB, PublicTadpoleDefine.OBJECT_TYPE actionType) {
 		super(userDB, actionType);
 	}
 
@@ -54,7 +53,7 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 		List<HashMap> srcList = client.queryForList("getTableScript", tableDAO.getName());
 
 		StringBuilder result = new StringBuilder("");
-		result.append("/* DROP TABLE " + tableDAO.getName() + " ; */ \n\n");
+//		result.append("/* DROP TABLE " + tableDAO.getName() + " ; */ \n\n");
 		result.append("CREATE TABLE " + tableDAO.getName() + "( \n");
 		for (int i = 0; i < srcList.size(); i++) {
 			HashMap<String, Object> source = srcList.get(i);
@@ -163,7 +162,7 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 	public String getViewScript(String strName) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		StringBuilder result = new StringBuilder("");
-		result.append("/* DROP VIEW " + strName + "; */ \n\n");
+//		result.append("/* DROP VIEW " + strName + "; */ \n\n");
 
 		List<String> srcViewHeadList = client.queryForList("getViewScript.head", strName);
 		for (int i = 0; i < srcViewHeadList.size(); i++) {
@@ -191,7 +190,7 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 		StringBuilder result = new StringBuilder("");
 		List srcScriptList = client.queryForList("getIndexScript", indexDAO.getINDEX_NAME());
 
-		result.append("/* DROP INDEX " + indexDAO.getINDEX_NAME() + "; */ \n\n");
+//		result.append("/* DROP INDEX " + indexDAO.getINDEX_NAME() + "; */ \n\n");
 
 		for (int i = 0; i < srcScriptList.size(); i++) {
 			result.append((String) srcScriptList.get(i));
@@ -209,7 +208,7 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 	 */
 	@Override
 	public String getFunctionScript(ProcedureFunctionDAO functionDAO) throws Exception {
-		logger.debug("\n Function DDL Generation...");
+		if(logger.isDebugEnabled()) logger.debug("\n Function DDL Generation...");
 
 		return (getFunctionScript(functionDAO.getName()));
 
@@ -220,11 +219,11 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 		StringBuilder result = new StringBuilder("");
 
 		HashMap<String, String> srcProc = null;
-		result.append("/* DROP FUNCTION " + funcName + "; */ \n\n");
-		result.append("CREATE OR REPLACE FUNCTION " + funcName);
+//		result.append("/* DROP FUNCTION " + funcName + "; */ \n\n");
+		result.append("CREATE FUNCTION " + funcName);
 		srcProc = (HashMap<String, String>) client.queryForObject("getFunctionScript", funcName);
 		String parameters[] = String.valueOf(srcProc.get("parameter_types")).split(" ");
-
+		
 		result.append("(");
 		for (String param : parameters) {
 			if (!"".equals(param)) {
@@ -256,12 +255,12 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 	@Override
 	public String getProcedureScript(ProcedureFunctionDAO procedureDAO) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
-		logger.debug("\n Procedure DDL Generation...");
+		if(logger.isDebugEnabled()) logger.debug("\n Procedure DDL Generation...");
 
 		StringBuilder result = new StringBuilder("");
 
 		HashMap<String, String> srcProc = null;
-		result.append("/* DROP FUNCTION " + procedureDAO.getName() + "; */ \n\n");
+//		result.append("/* DROP FUNCTION " + procedureDAO.getName() + "; */ \n\n");
 		result.append("CREATE OR REPLACE FUNCTION " + procedureDAO.getName());
 		srcProc = (HashMap<String, String>) client.queryForObject("getProcedureScript", procedureDAO.getName());
 		String parameters[] = String.valueOf(srcProc.get("parameter_types")).split(" ");
@@ -299,7 +298,7 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		String objectName = triggerDAO.getTrigger();
 
-		logger.debug("\n Trigger DDL Generation...");
+		if(logger.isDebugEnabled()) logger.debug("\n Trigger DDL Generation...");
 
 		StringBuilder result = new StringBuilder("");
 
@@ -323,11 +322,12 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 		map.put("package_name", procedureDAO.getPackagename());
 		map.put("object_name", procedureDAO.getName());
 
-		logger.debug("\n getProcedureInParamter=" + map.get("package_name"));
-		logger.debug("\n getProcedureInParamter=" + map.get("object_name"));
-		logger.debug("\n procedureDAO=" + procedureDAO);
+		if(logger.isDebugEnabled()) {
+			logger.debug("\n package_name=" + map.get("package_name"));
+			logger.debug("\n object_name=" + map.get("object_name"));
+		}
 
-		return client.queryForList("getProcedureInParamter", map);
+		return client.queryForList("getProcedureInParamter", procedureDAO.getName());
 	}
 
 	@Override

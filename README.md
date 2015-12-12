@@ -1,6 +1,6 @@
 Tadpole DB Hub
 ==
-
+[![Join the chat at https://gitter.im/TadpoleDBHub](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TadpoleDBHub?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Tadpole DB Hub is Unified infrastructure tool, various environment based interface for managing <b>Apache Hive, Apache Tajo, Amazon RDS, MySQL, MariaDB, Oracle, SQLite, MSSQL, PostgreSQL, CUBRID and MongoDB</b> databases.
 It enables you to handle typical DB over the World Wide Web
@@ -23,8 +23,9 @@ It enables you to handle typical DB over the World Wide Web
 * SQL Audit And Export text
 * Generate SQL Statement (Select, Insert, Update, Delete, Table, View, Index, Procedure, Function, Trigger)
 * Generate ER Diagram (Auto Layout)
+* Schema Compare
 
-![screenshot](https://sites.google.com/site/tadpolefordb/_/rsrc/1359544319131/home/RDB-ERD-EDITOR.png?height=339&width=400)![screenshot](https://sites.google.com/site/tadpolefordb/_/rsrc/1359544341191/home/RDB-SQL-EDITOR.png?height=339&width=400)
+![screenshot](https://sites.google.com/site/tadpolefordb/_/rsrc/1359544319131/home/RDB-ERD-EDITOR.png?height=339&width=400)![screenshot](https://sites.google.com/site/tadpolefordb/_/rsrc/1359544341191/home/RDB-SQL-EDITOR.png?height=339&width=400)![screenshot](https://sites.google.com/site/tadpolefordb/_/rsrc/1449463441535/home/schemacompare.png?height=308&width=400)
 
 2.MongoDB Feature
 -
@@ -64,12 +65,11 @@ Document
  - English : https://github.com/hangum/TadpoleForDBTools/wiki/Developer-Guide-Eng
  - 한국어  : https://tadpoledbhub.atlassian.net/wiki/pages/viewpage.action?pageId=2621473
 * RDB User Guide
- - English : https://github.com/hangum/TadpoleForDBTools/wiki/RDB-User-Guide-Eng
- - 한국어  : https://tadpoledbhub.atlassian.net/wiki/display/TADPOLE/Tadpole+DB+Hub+DOC
+ - 한국어  : https://tadpoledbhub.atlassian.net/wiki/pages/viewpage.action?pageId=20578325
  - Indonesia : https://github.com/hangum/TadpoleForDBTools/wiki/RDB-User-Guide-ID
 * MongoDB User Guide
  - English : https://github.com/hangum/TadpoleForDBTools/wiki/MongoDB-User-Guide-Eng
- - 한국어  : https://tadpoledbhub.atlassian.net/wiki/pages/viewpage.action?pageId=2621445
+ - 한국어  : https://tadpoledbhub.atlassian.net/wiki/pages/viewpage.action?pageId=20578325
 * RDB Tutorial
  - English : http://www.cubrid.org/wiki_apps/entry/tadpole-sql-client-tutorial
 
@@ -77,10 +77,14 @@ Site
 *  http://tadpoledb.com
 
 Chrome web store
-*  https://chrome.google.com/webstore/detail/tadpoledbcom/nhfaneohnnijkdpgmiddcgbcgpjgdjnc?utm_source=gmail
+*  https://chrome.google.com/webstore/detail/tadpole-db-hub-db-client/nlelclofeoahhcfgfkcpbmhflfdimbie
+
+Extension
+* Tadpole Spatial Data Manager (https://github.com/Gaia3D/SpatialDataManager)
 
 Download
-* https://sourceforge.net/projects/tadpoledbhub/files/1.6.x/1.6.1-r0/
+* package : https://sourceforge.net/projects/tadpoledbhub/files/1.6.x/1.6.7/
+* docker hub : https://hub.docker.com/r/hyunjongcho/tadpoledbhub/
 
 License
 -

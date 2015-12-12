@@ -12,7 +12,7 @@ package com.hangum.tadpole.rdb.core.actions.connections;
 
 import org.eclipse.jface.action.IAction;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.core.util.FindEditorAndWriteQueryUtil;
 import com.hangum.tadpole.rdb.core.util.QueryTemplateUtils;
@@ -34,8 +34,8 @@ public class CreateTriggerAction extends AbstractQueryAction {
 		UserDBDAO userDB = (UserDBDAO)sel.getFirstElement();
 		
 		FindEditorAndWriteQueryUtil.run(userDB, 
-				QueryTemplateUtils.getQuery(userDB, PublicTadpoleDefine.DB_ACTION.TRIGGERS),
-				PublicTadpoleDefine.DB_ACTION.TRIGGERS);
+				QueryTemplateUtils.getQuery(userDB, PublicTadpoleDefine.OBJECT_TYPE.TRIGGERS),
+				PublicTadpoleDefine.OBJECT_TYPE.TRIGGERS);
 	}
 	
 }

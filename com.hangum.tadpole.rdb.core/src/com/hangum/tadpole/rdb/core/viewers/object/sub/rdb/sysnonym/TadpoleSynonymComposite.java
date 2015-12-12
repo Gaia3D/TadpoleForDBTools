@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -32,6 +33,7 @@ import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
@@ -44,8 +46,8 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPartSite;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
 import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
 import com.hangum.tadpole.engine.query.dao.rdb.OracleSynonymColumnDAO;
@@ -81,6 +83,7 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 	 */
 	private static final Logger logger = Logger.getLogger(TadpoleSynonymComposite.class);
 
+	private CTabItem tbtmSynonym;
 	/** select synonym name */
 	private String selectSynonymName = ""; //$NON-NLS-1$
 
@@ -112,11 +115,12 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 	}
 
 	private void createWidget(final CTabFolder tabFolderObject) {
-		CTabItem tbtmTable = new CTabItem(tabFolderObject, SWT.NONE);
-		tbtmTable.setText("Synonym"); //$NON-NLS-1$
+		tbtmSynonym = new CTabItem(tabFolderObject, SWT.NONE);
+		tbtmSynonym.setText(Messages.get().TadpoleSynonymComposite_0);
+		tbtmSynonym.setData(TAB_DATA_KEY, PublicTadpoleDefine.OBJECT_TYPE.SYNONYM.name());
 
 		Composite compositeTables = new Composite(tabFolderObject, SWT.NONE);
-		tbtmTable.setControl(compositeTables);
+		tbtmSynonym.setControl(compositeTables);
 		GridLayout gl_compositeTables = new GridLayout(1, false);
 		gl_compositeTables.verticalSpacing = 2;
 		gl_compositeTables.horizontalSpacing = 2;
@@ -138,12 +142,12 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 					if (null != is) {
 						OracleSynonymDAO tableDAO = (OracleSynonymDAO) is.getFirstElement();
 
-						if (PublicTadpoleDefine.DB_ACTION.FUNCTIONS.toString().startsWith(tableDAO.getObject_type())) {
-							AbstractRDBDDLScript rdbScript = new OracleDDLScript(userDB, PublicTadpoleDefine.DB_ACTION.FUNCTIONS);
+						if (PublicTadpoleDefine.OBJECT_TYPE.FUNCTIONS.toString().startsWith(tableDAO.getObject_type())) {
+							AbstractRDBDDLScript rdbScript = new OracleDDLScript(userDB, PublicTadpoleDefine.OBJECT_TYPE.FUNCTIONS);
 							ProcedureFunctionDAO dao = new ProcedureFunctionDAO();
 							dao.setName(tableDAO.getTable_name());
 
-							FindEditorAndWriteQueryUtil.run(userDB, rdbScript.getFunctionScript(dao), PublicTadpoleDefine.DB_ACTION.FUNCTIONS);
+							FindEditorAndWriteQueryUtil.run(userDB, rdbScript.getFunctionScript(dao), PublicTadpoleDefine.OBJECT_TYPE.FUNCTIONS);
 						}
 					}
 				} catch (Exception e) {
@@ -167,9 +171,9 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 
 						SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);
 						Map<String, String> mapParam = new HashMap<String, String>();
-						mapParam.put("db", userDB.getDb());
-						mapParam.put("owner", synonym.getTable_owner());
-						mapParam.put("table", synonym.getTable_name());
+						mapParam.put("db", userDB.getDb()); //$NON-NLS-1$
+						mapParam.put("owner", synonym.getTable_owner()); //$NON-NLS-1$
+						mapParam.put("table", synonym.getTable_name()); //$NON-NLS-1$
 
 						showSynonymColumns = sqlClient.queryForList("synonymColumnList", mapParam); //$NON-NLS-1$
 
@@ -225,11 +229,11 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 	private void createSysnonymListColumne() {
 
 		TableViewColumnDefine[] tableColumnDef = new TableViewColumnDefine[] { //
-		new TableViewColumnDefine("SYNONYM_NAME", "Name", 100, SWT.LEFT) //
-				, new TableViewColumnDefine("TABLE_OWNER", "Owner", 60, SWT.LEFT) //
-				, new TableViewColumnDefine("OBJECT_TYPE", "Type", 70, SWT.CENTER) //
-				, new TableViewColumnDefine("TABLE_NAME", "Object Name", 100, SWT.LEFT) //
-				, new TableViewColumnDefine("COMMENTS", "Comments", 100, SWT.LEFT) //
+		new TableViewColumnDefine("SYNONYM_NAME", Messages.get().TadpoleSynonymComposite_5, 100, SWT.LEFT) // //$NON-NLS-1$
+				, new TableViewColumnDefine("TABLE_OWNER", Messages.get().TadpoleSynonymComposite_7, 60, SWT.LEFT) // //$NON-NLS-1$
+				, new TableViewColumnDefine("OBJECT_TYPE", Messages.get().TadpoleSynonymComposite_9, 70, SWT.CENTER) // //$NON-NLS-1$
+				, new TableViewColumnDefine("TABLE_NAME", Messages.get().TadpoleSynonymComposite_11, 100, SWT.LEFT) // //$NON-NLS-1$
+				, new TableViewColumnDefine("COMMENTS", Messages.get().TadpoleSynonymComposite_13, 100, SWT.LEFT) // //$NON-NLS-1$
 		};
 
 		ColumnHeaderCreator.createColumnHeader(synonymListViewer, tableColumnDef);
@@ -241,12 +245,12 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 
 	private void createSynonymDetailColumne() {
 		TableViewColumnDefine[] tableColumnDef = new TableViewColumnDefine[] { //
-		new TableViewColumnDefine("COLUMN_ID", "No", 50, SWT.RIGHT) //
-				, new TableViewColumnDefine("COLUMN_NAME", "Name", 100, SWT.LEFT) //
-				, new TableViewColumnDefine("DATA_TYPE", "Type", 80, SWT.CENTER) //
-				, new TableViewColumnDefine("NULLABLE", "Null", 60, SWT.CENTER) //
-				, new TableViewColumnDefine("KEY", "Key", 50, SWT.CENTER) //
-				, new TableViewColumnDefine("COMMENTS", "Comments", 100, SWT.LEFT) //
+		new TableViewColumnDefine("COLUMN_ID", Messages.get().TadpoleSynonymComposite_15, 50, SWT.RIGHT) // //$NON-NLS-1$
+				, new TableViewColumnDefine("COLUMN_NAME", Messages.get().TadpoleSynonymComposite_17, 100, SWT.LEFT) // //$NON-NLS-1$
+				, new TableViewColumnDefine("DATA_TYPE", Messages.get().TadpoleSynonymComposite_19, 80, SWT.CENTER) // //$NON-NLS-1$
+				, new TableViewColumnDefine("NULLABLE", Messages.get().TadpoleSynonymComposite_21, 60, SWT.CENTER) // //$NON-NLS-1$
+				, new TableViewColumnDefine("KEY", Messages.get().TadpoleSynonymComposite_23, 50, SWT.CENTER) // //$NON-NLS-1$
+				, new TableViewColumnDefine("COMMENTS", Messages.get().TadpoleSynonymComposite_25, 100, SWT.LEFT) // //$NON-NLS-1$
 		};
 
 		ColumnHeaderCreator.createColumnHeader(synonymColumnViewer, tableColumnDef);
@@ -260,13 +264,13 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 	 * create Table menu
 	 */
 	private void createSynonymMenu() {
-		dropAction_Synonym = new ObjectDropAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.DB_ACTION.SYNONYM, "Synonym"); //$NON-NLS-1$
-		refreshAction_Synonym = new ObjectRefreshAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.DB_ACTION.SYNONYM, "Synonym"); //$NON-NLS-1$
-		executeAction = new ObjectExecuteProcedureAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.DB_ACTION.SYNONYM, "Synonym");
-		viewDDLAction = new GenerateViewDDLAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.DB_ACTION.SYNONYM, "View"); //$NON-NLS-1$
+		dropAction_Synonym = new ObjectDropAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.SYNONYM, "Drop Synonym"); //$NON-NLS-1$
+		refreshAction_Synonym = new ObjectRefreshAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.SYNONYM, "Refresh"); //$NON-NLS-1$
+		executeAction = new ObjectExecuteProcedureAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.SYNONYM, "Execute"); //$NON-NLS-1$
+		viewDDLAction = new GenerateViewDDLAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.SYNONYM, "View script"); //$NON-NLS-1$
 
 		// menu
-		final MenuManager menuMgr = new MenuManager("#PopupMenu", "Synonym"); //$NON-NLS-1$
+		final MenuManager menuMgr = new MenuManager("#PopupMenu", "Synonym"); //$NON-NLS-1$ //$NON-NLS-2$
 		menuMgr.setRemoveAllWhenShown(true);
 		menuMgr.addMenuListener(new IMenuListener() {
 			@Override
@@ -283,13 +287,13 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 					if (!is.isEmpty()) {
 						manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
 						OracleSynonymDAO synonymDAO = (OracleSynonymDAO) is.getFirstElement();
-						if (synonymDAO.getObject_type().startsWith("PROCEDURE") || synonymDAO.getObject_type().startsWith("FUNCTION")) {
+						if (synonymDAO.getObject_type().startsWith("PROCEDURE") || synonymDAO.getObject_type().startsWith("FUNCTION")) { //$NON-NLS-1$ //$NON-NLS-2$
 							viewDDLAction.setEnabled(true);
 							executeAction.setEnabled(true);
 							manager.add(viewDDLAction);
 							manager.add(executeAction);
-						} else if (synonymDAO.getObject_type().startsWith("PACKAGE") || synonymDAO.getObject_type().startsWith("VIEW")
-								|| synonymDAO.getObject_type().startsWith("TABLE")) {
+						} else if (synonymDAO.getObject_type().startsWith("PACKAGE") || synonymDAO.getObject_type().startsWith("VIEW") //$NON-NLS-1$ //$NON-NLS-2$
+								|| synonymDAO.getObject_type().startsWith("TABLE")) { //$NON-NLS-1$
 							viewDDLAction.setEnabled(true);
 							manager.add(viewDDLAction);
 						}
@@ -305,22 +309,21 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 
 	/**
 	 * 정보를 최신으로 리프레쉬합니다.
+	 * @param strObjectName 
 	 */
-	public void refreshSynonym(final UserDBDAO selectUserDb, boolean boolRefresh) {
-		if (!boolRefresh)
-			if (selectUserDb == null)
-				return;
+	public void refreshSynonym(final UserDBDAO selectUserDb, final boolean boolRefresh, final String strObjectName) {
+		if (!boolRefresh) if (selectUserDb == null) return;
 		this.userDB = selectUserDb;
 
-		Job job = new Job(Messages.MainEditor_45) {
+		Job job = new Job(Messages.get().MainEditor_45) {
 			@Override
 			public IStatus run(IProgressMonitor monitor) {
-				monitor.beginTask("Connect database", IProgressMonitor.UNKNOWN);
+				monitor.beginTask("Connect database", IProgressMonitor.UNKNOWN); //$NON-NLS-1$
 
 				try {
 					showSynonyms = getSynonymList(userDB);
 				} catch (Exception e) {
-					logger.error("Synonym Referesh", e);
+					logger.error("Synonym Referesh", e); //$NON-NLS-1$
 
 					return new Status(Status.WARNING, Activator.PLUGIN_ID, e.getMessage());
 				} finally {
@@ -343,6 +346,10 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 							synonymListViewer.refresh();
 							TableUtil.packTable(synonymListViewer.getTable());
 
+							// select tabitem
+							getTabFolderObject().setSelection(tbtmSynonym);
+							
+							selectDataOfTable(strObjectName);
 						} else {
 							if (showSynonyms != null)
 								showSynonyms.clear();
@@ -352,7 +359,7 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 
 							Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, jobEvent.getResult().getMessage(), jobEvent.getResult()
 									.getException()); //$NON-NLS-1$
-							ExceptionDetailsErrorDialog.openError(null, "Error", Messages.ExplorerViewer_86, errStatus); //$NON-NLS-1$
+							ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().ExplorerViewer_86, errStatus); //$NON-NLS-1$
 						}
 					}
 				}); // end display.asyncExec
@@ -392,7 +399,7 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 	 * 
 	 * @return
 	 */
-	public TableViewer getSynonymListViewer() {
+	public TableViewer getTableviewer() {
 		return synonymListViewer;
 	}
 
@@ -427,5 +434,21 @@ public class TadpoleSynonymComposite extends AbstractObjectComposite {
 	@Override
 	public void setSearchText(String searchText) {
 		synonymFilter.setSearchString(searchText);
+	}
+
+	@Override
+	public void selectDataOfTable(String strObjectName) {
+		if("".equals(strObjectName) || strObjectName == null) return;
+		
+		getTableviewer().getTable().setFocus();
+		
+		// find select object and viewer select
+		for(int i=0; i<showSynonymColumns.size(); i++) {
+			OracleSynonymDAO tableDao = (OracleSynonymDAO)getTableviewer().getElementAt(i);
+			if(StringUtils.equalsIgnoreCase(strObjectName, tableDao.getSynonym_name())) {
+				getTableviewer().setSelection(new StructuredSelection(getTableviewer().getElementAt(i)), true);
+				break;
+			}
+		}
 	}
 }

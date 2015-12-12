@@ -17,14 +17,15 @@ import org.apache.log4j.Logger;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.TableColumnDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.hangum.tadpole.engine.sql.util.SQLUtil;
 import com.hangum.tadpole.rdb.core.Activator;
 import com.hangum.tadpole.rdb.core.Messages;
-import com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.TadpoleObjectQuery;
+import com.hangum.tadpole.rdb.core.viewers.object.sub.utils.TadpoleObjectQuery;
 
 /**
  * generate ddl script utils
@@ -38,7 +39,14 @@ public class GenerateDDLScriptUtils {
 	 */
 	private static final Logger logger = Logger.getLogger(GenerateDDLScriptUtils.class); 
 	
-	
+	/**
+	 * get table script
+	 * 
+	 * @param userDB
+	 * @param tableDAO
+	 * @param showTableColumns
+	 * @return
+	 */
 	public static String genTableScript(UserDBDAO userDB, TableDAO tableDAO, List<TableColumnDAO> showTableColumns) {
 		if(showTableColumns == null) return "";
 		if(showTableColumns.isEmpty()) return "";
@@ -55,13 +63,16 @@ public class GenerateDDLScriptUtils {
 				else sbSQL.append(" "); //$NON-NLS-1$
 			}
 			
-			sbSQL.append(PublicTadpoleDefine.LINE_SEPARATOR + " FROM " + tableDAO.getSysName() + PublicTadpoleDefine.SQL_DELIMITER); //$NON-NLS-1$ //$NON-NLS-2$
+			
+			sbSQL.append(PublicTadpoleDefine.LINE_SEPARATOR + "FROM "); //$NON-NLS-1$ 
+			sbSQL.append(SQLUtil.getTableName(tableDAO));//tableDAO.getSchema_name() + "." + tableDAO.getSysName()); //$NON-NLS-2$
+			sbSQL.append(PublicTadpoleDefine.SQL_DELIMITER);
 			
 		} catch(Exception e) {
-			logger.error(Messages.GenerateSQLSelectAction_8, e);
+			logger.error(Messages.get().GenerateSQLSelectAction_8, e);
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.GenerateSQLSelectAction_0, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().GenerateSQLSelectAction_0, errStatus); //$NON-NLS-1$
 		}
 		
 		return sbSQL.toString();
@@ -76,13 +87,13 @@ public class GenerateDDLScriptUtils {
 	 */
 	public static String genTableScript(UserDBDAO userDB, TableDAO tableDAO) {
 		try {
-			List<TableColumnDAO> showTableColumns = TadpoleObjectQuery.makeShowTableColumns(userDB, tableDAO);
+			List<TableColumnDAO> showTableColumns = TadpoleObjectQuery.getTableColumns(userDB, tableDAO);
 			return genTableScript(userDB, tableDAO, showTableColumns);
 		} catch(Exception e) {
-			logger.error(Messages.GenerateSQLSelectAction_8, e);
+			logger.error(Messages.get().GenerateSQLSelectAction_8, e);
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.GenerateSQLSelectAction_0, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().GenerateSQLSelectAction_0, errStatus); //$NON-NLS-1$
 		}
 		
 		return "";

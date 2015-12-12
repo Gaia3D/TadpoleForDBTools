@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.ext.aws.rds.AWSRDSUserDBDAO;
@@ -61,7 +62,7 @@ public class SingleAddDBDialog extends Dialog {
 	 */
 	public SingleAddDBDialog(Shell parentShell, AWSRDSUserDBDAO amazonRDSDto, List<String> listGroupName, String selGroupName) {
 		super(parentShell);
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE);
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 		
 		this.amazonRDSDto = amazonRDSDto;
 		this.listGroupName = listGroupName;
@@ -72,6 +73,7 @@ public class SingleAddDBDialog extends Dialog {
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
 		newShell.setText(amazonRDSDto.getDbms_type() + " add Database"); //$NON-NLS-1$
+		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 
 	/**

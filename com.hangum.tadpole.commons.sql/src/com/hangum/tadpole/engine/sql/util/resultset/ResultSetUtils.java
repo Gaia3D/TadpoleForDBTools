@@ -44,7 +44,7 @@ public class ResultSetUtils {
 	 * @throws SQLException
 	 */
 	public static TadpoleResultSet getResultToList(final ResultSet rs, final int limitCount) throws SQLException {
-		return getResultToList(false, rs, limitCount);
+		return getResultToList(false, rs, limitCount, 0);
 	}
 	
 	/**
@@ -55,15 +55,16 @@ public class ResultSetUtils {
 	 * @param isShowRowNum 첫번째 컬럼의 로우 넘버를 추가할 것인지.
 	 * @param rs ResultSet
 	 * @param limitCount 
+	 * @param intLastIndex
 	 * @return
 	 * @throws SQLException
 	 */
-	public static TadpoleResultSet getResultToList(boolean isShowRowNum, final ResultSet rs, final int limitCount) throws SQLException {
+	public static TadpoleResultSet getResultToList(boolean isShowRowNum, final ResultSet rs, final int limitCount, int intLastIndex) throws SQLException {
 		TadpoleResultSet returnRS = new TadpoleResultSet();
 		Map<Integer, Object> tmpRow = null;
 		
 		// 결과를 프리퍼런스에서 처리한 맥스 결과 만큼만 거져옵니다.
-		int rowCnt = 0;
+		int rowCnt = intLastIndex;
 		while(rs.next()) {
 			tmpRow = new HashMap<Integer, Object>();
 			
@@ -129,7 +130,7 @@ public class ResultSetUtils {
 	 * @throws SQLException
 	 */
 	public static Map<Integer, Integer> getColumnType(boolean isShowRowNum, ResultSetMetaData rsm) throws SQLException {
-		Map<Integer, Integer> mapColumnType = new HashMap<>();
+		Map<Integer, Integer> mapColumnType = new HashMap<Integer, Integer>();
 		int intStartIndex = 0;
 		
 		if(isShowRowNum) {
@@ -158,7 +159,14 @@ public class ResultSetUtils {
 //			logger.debug("\t ColumnDisplaySize  :  " 	+ rsm.getColumnDisplaySize(i+1));
 //			logger.debug("\t ColumnType  		:  " 	+ rsm.getColumnType(i+1));
 //			logger.debug("\t ColumnTypeName 	:  " 	+ rsm.getColumnTypeName(i+1));
-			mapColumnType.put(i+intStartIndex, rsm.getColumnType(i+1));
+			//
+			// mysql json 타입의 자바 변수가 1로 매칭 되어 있어서, 이것을 pgsql의 json 타입의 값인 1111로 매칭합니다.
+			//							- 2015.10.21 mysql 5.7
+			if(StringUtils.equalsIgnoreCase("json", rsm.getColumnTypeName(i+1))) {
+				mapColumnType.put(i+intStartIndex, 1111);
+			} else {
+				mapColumnType.put(i+intStartIndex, rsm.getColumnType(i+1));
+			}
 //			logger.debug("\t Column Label " + rsm.getColumnLabel(i+1) );
 			
 //			logger.debug("\t Precision 			:  " 	+ rsm.getPrecision(i+1));
@@ -343,7 +351,7 @@ public class ResultSetUtils {
 				mapColumnName.put(i+intStartIndex, pgsqlMeta.getBaseTableName(i+1));
 				
 //				if(logger.isDebugEnabled()) logger.debug("Table name is " + pgsqlMeta.getBaseTableName(i+1));
-			} else if(userDB.getDBDefine() == DBDefine.HIVE_DEFAULT | userDB.getDBDefine() == DBDefine.HIVE2_DEFAULT) {
+			} else if(userDB.getDBDefine() == DBDefine.HIVE_DEFAULT || userDB.getDBDefine() == DBDefine.HIVE2_DEFAULT) {
 				mapColumnName.put(i+intStartIndex, "Apache Hive is not support this method.");
 			} else {
 				if(rsm.getSchemaName(i+1) == null || "".equals(rsm.getSchemaName(i+1))) {
@@ -382,7 +390,7 @@ public class ResultSetUtils {
 	 * @throws SQLException
 	 */
 	public static Map<Integer, Map> getColumnTableColumnName(UserDBDAO userDB, ResultSetMetaData rsm) {
-		Map<Integer, Map> mapTableColumn = new HashMap<>();
+		Map<Integer, Map> mapTableColumn = new HashMap<Integer, Map>();
 		
 		// 첫번째 컬럼 순번을 위해 삽입.
 		mapTableColumn.put(0, new HashMap());

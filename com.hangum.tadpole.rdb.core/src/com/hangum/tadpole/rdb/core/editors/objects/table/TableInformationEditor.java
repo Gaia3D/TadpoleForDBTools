@@ -24,10 +24,11 @@ import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.EditorPart;
 
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.TableColumnDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.hangum.tadpole.rdb.core.Messages;
 
 /**
  * table information editor
@@ -69,7 +70,7 @@ public class TableInformationEditor extends EditorPart {
 		
 		DBTableEditorInput qei = (DBTableEditorInput)input;
 		userDB = qei.getUserDB();
-		setPartName(qei.getName() + " data editor");		 //$NON-NLS-1$
+		setPartName(qei.getName() + Messages.get().TableInformationEditor_1);
 		
 		tableDao = qei.getTableDAO();
 		columnList = qei.getShowTableColumns();

@@ -16,9 +16,9 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 
 import com.google.gson.Gson;
-import com.hangum.tadpold.commons.libs.core.define.PublicTadpoleDefine;
-import com.hangum.tadpold.commons.libs.core.define.SystemDefine;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.SystemDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBQuery;
 import com.hangum.tadpole.manager.core.Messages;
@@ -87,7 +87,7 @@ public class SystemDBDataManager {
 		
 		String[] strUserdb =  StringUtils.split(strSource, PublicTadpoleDefine.LINE_SEPARATOR);
 		if(!StringUtils.startsWith(strUserdb[0], SystemDefine.NAME)) {
-			throw new RuntimeException(Messages.SystemDBDataManager_8);
+			throw new RuntimeException(Messages.get().SystemDBDataManager_8);
 		}
 		
 		// int 가 1인 이유는 시스템 버전 정보를 빼서입니다.
