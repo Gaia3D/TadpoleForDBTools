@@ -24,26 +24,27 @@ import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
  */
 public class QueryExecuteResultDTO extends ResultSetUtilDTO {
 	private PublicTadpoleDefine.QUERY_EXECUTE_STATUS execute_status = QUERY_EXECUTE_STATUS.SUCCESS;
-	private String strExceptionMsg = "";
+	private String queryMsg = "";
 	
 	public QueryExecuteResultDTO() {
 	}
 
 	public QueryExecuteResultDTO(
-			UserDBDAO userDB, 
+			UserDBDAO userDB,
+			String reqQuery,
 			boolean isShowRownum, 
 			ResultSet resultSet, 
 			int intSelectLimitCnt, 
 			int intLastIndex
 	) throws Exception {
-		super(userDB, isShowRownum, resultSet, intSelectLimitCnt, intLastIndex);
+		super(userDB, reqQuery, isShowRownum, resultSet, intSelectLimitCnt, intLastIndex);
 	}
 
 	public QueryExecuteResultDTO(
-			UserDBDAO userDB, boolean isShowRownum, ResultSet rs, int queryResultCount) throws Exception {
-		super(userDB, isShowRownum, rs, queryResultCount, 0);
+			UserDBDAO userDB, String reqQuery, boolean isShowRownum, ResultSet rs, int queryResultCount) throws Exception {
+		super(userDB, reqQuery, isShowRownum, rs, queryResultCount, 0);
 	}
-
+	
 	/**
 	 * @return the execute_status
 	 */
@@ -60,17 +61,17 @@ public class QueryExecuteResultDTO extends ResultSetUtilDTO {
 	}
 
 	/**
-	 * @return the strExceptionMsg
+	 * @return the queryMsg
 	 */
-	public String getStrExceptionMsg() {
-		return strExceptionMsg;
+	public String getQueryMsg() {
+		return queryMsg;
 	}
 
 	/**
-	 * @param strExceptionMsg the strExceptionMsg to set
+	 * @param queryMsg the queryMsg to set
 	 */
-	public void setStrExceptionMsg(String strExceptionMsg) {
-		this.strExceptionMsg = strExceptionMsg;
+	public void setQueryMsg(String queryMsg) {
+		this.queryMsg = queryMsg;
 	}
 
 }

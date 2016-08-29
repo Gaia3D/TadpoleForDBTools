@@ -20,6 +20,8 @@ import com.hangum.tadpole.engine.permission.PermissionChecker;
 import com.hangum.tadpole.engine.query.dao.ManagerListDTO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
+import com.hangum.tadpole.engine.query.dao.system.userdb.DBOtherDAO;
+import com.hangum.tadpole.engine.query.dao.system.userdb.ResourcesDAO;
 import com.hangum.tadpole.rdb.core.Activator;
 import com.swtdesigner.ResourceManager;
 
@@ -33,13 +35,13 @@ public class ManagerLabelProvider extends LabelProvider {
 	private static final Logger logger = Logger.getLogger(ManagerLabelProvider.class);
 	
 	/** production markup start tag */
-	public static String PRODUCTION_SERVER_START_TAG = "<em style='color:rgb(255, 0, 0)'>"; //$NON-NLS-1$
+//	public static String PRODUCTION_SERVER_START_TAG = "<em style='color:rgb(255, 0, 0)'>"; //$NON-NLS-1$
 //	/** development markup start tag */
 //	public static String DEVELOPMENT_SERVER_START_TAG = "<em style='color:rgb(224, 224, 224)'>"; //$NON-NLS-1$
 	/** development markup start tag */
-	public static String INFO_SERVER_START_TAG = "<em style='color:rgb(145, 129, 129)'>"; //$NON-NLS-1$
-	
-	/** Markup end tag */
+//	public static String INFO_SERVER_START_TAG = "<em style='color:rgb(145, 129, 129)'>"; //$NON-NLS-1$
+//	
+//	/** Markup end tag */
 	public static String END_TAG = "</em>"; //$NON-NLS-1$
 	
 	/**
@@ -60,7 +62,8 @@ public class ManagerLabelProvider extends LabelProvider {
 	public static String getDBText(UserDBDAO userDB) {
 		String retText = "";
 		if(PublicTadpoleDefine.DBOperationType.PRODUCTION.toString().equals(userDB.getOperation_type())) {
-			retText = String.format("%s [%s] %s", PRODUCTION_SERVER_START_TAG, StringUtils.substring(userDB.getOperation_type(), 0, 1), END_TAG);
+//			retText = String.format("%s [%s] %s", PRODUCTION_SERVER_START_TAG, StringUtils.substring(userDB.getOperation_type(), 0, 1), END_TAG);
+			retText = String.format("[%s] ", StringUtils.substring(userDB.getOperation_type(), 0, 1));
 //		} else {
 //			retText = String.format("%s [%s] %s", DEVELOPMENT_SERVER_START_TAG, StringUtils.substring(userDB.getOperation_type(), 0, 1), END_TAG);
 		}
@@ -88,8 +91,9 @@ public class ManagerLabelProvider extends LabelProvider {
 			return getGroupImage();
 
 		} else if(element instanceof UserDBDAO) {
-			return DBIconsUtils.getDBConnectionImage((UserDBDAO)element);			
-		
+			return DBIconsUtils.getDBConnectionImage((UserDBDAO)element);	
+		} else if(element instanceof ResourcesDAO) {
+			return ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/managerExplorer/resources.png"); //$NON-NLS-1$
 		} else if(element instanceof UserDBResourceDAO) {
 			UserDBResourceDAO dao = (UserDBResourceDAO)element;
 			
@@ -98,13 +102,14 @@ public class ManagerLabelProvider extends LabelProvider {
 				baseImage = ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/erd.png"); //$NON-NLS-1$
 			}
 			
-			if(PublicTadpoleDefine.SHARED_TYPE.PRIVATE.name().equals(dao.getShared_type())) {
-				try {
-					baseImage = DBIconsUtils.getDecorateImage(baseImage, "resources/icons/lock_0.28.png", ResourceManager.TOP_RIGHT);
-				} catch(Exception e) {
-					logger.error("image decorate error", e);
-				}
-			}
+			// 이미지 캐쉬에 문제가 있어서 주석처리.
+//			if(PublicTadpoleDefine.SHARED_TYPE.PRIVATE.name().equals(dao.getShared_type())) {
+//				try {
+//					baseImage = DBIconsUtils.getDecorateImage(baseImage, "resources/icons/lock_0.28.png", ResourceManager.TOP_RIGHT);
+//				} catch(Exception e) {
+//					logger.error("image decorate error", e);
+//				}
+//			}
 			
 			return baseImage;
 		}
@@ -120,6 +125,9 @@ public class ManagerLabelProvider extends LabelProvider {
 			
 		} else if(element instanceof UserDBDAO) {
 			return getDBText((UserDBDAO)element);
+		} else if(element instanceof ResourcesDAO) {
+			ResourcesDAO dto = (ResourcesDAO)element;
+			return dto.getName();
 		} else if(element instanceof UserDBResourceDAO) {
 			UserDBResourceDAO dao = (UserDBResourceDAO)element;
 			String strShareType = "[Pu] ";
@@ -128,10 +136,15 @@ public class ManagerLabelProvider extends LabelProvider {
 			}
 			
 			String strSupportAPI = PublicTadpoleDefine.YES_NO.YES.name().equals(dao.getRestapi_yesno())?
-										String.format("%s [%s] %s", INFO_SERVER_START_TAG, dao.getRestapi_uri(), END_TAG):"";
+//										String.format("%s [%s] %s", INFO_SERVER_START_TAG, dao.getRestapi_uri(), END_TAG):"";
+					String.format("[%s]",  dao.getRestapi_uri()):"";
 			String strComment = "".equals(dao.getDescription())?"":" (" + dao.getDescription() + ")";
 			
 			return strShareType + dao.getName() + " " + strSupportAPI + strComment;
+		} else if(element instanceof DBOtherDAO) {
+			DBOtherDAO dao = (DBOtherDAO)element;
+			if("".equals(dao.getComment()) || "null".equals(dao.getComment()) || null == dao.getComment()) return dao.getName();
+			else return String.format("%s (%s)", dao.getName(), dao.getComment());
 		}
 		
 		return "## not set ##"; //$NON-NLS-1$

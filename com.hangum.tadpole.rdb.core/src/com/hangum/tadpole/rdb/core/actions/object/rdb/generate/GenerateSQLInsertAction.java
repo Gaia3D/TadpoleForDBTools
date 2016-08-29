@@ -22,6 +22,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.TableColumnDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
@@ -58,7 +59,7 @@ public class GenerateSQLInsertAction extends GenerateSQLSelectAction {
 			try {
 				List<TableColumnDAO> showTableColumns = TadpoleObjectQuery.getTableColumns(userDB, tableDAO);
 				
-				sbSQL.append("INSERT INTO " + SQLUtil.getTableName(tableDAO) + PublicTadpoleDefine.LINE_SEPARATOR + "	("); //$NON-NLS-1$ //$NON-NLS-2$
+				sbSQL.append("INSERT INTO " + SQLUtil.getTableName(userDB, tableDAO) + PublicTadpoleDefine.LINE_SEPARATOR + "	("); //$NON-NLS-1$ //$NON-NLS-2$
 				for (int i=0; i<showTableColumns.size(); i++) {
 					TableColumnDAO dao = showTableColumns.get(i);
 					sbSQL.append(dao.getSysName());
@@ -75,10 +76,10 @@ public class GenerateSQLInsertAction extends GenerateSQLSelectAction {
 				
 				FindEditorAndWriteQueryUtil.run(userDB, sbSQL.toString(), actionType);
 			} catch(Exception e) {
-				logger.error(Messages.get().GenerateSQLInsertAction_9, e);
+				logger.error("Generate SQL Statement", e);
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().GenerateSQLInsertAction_0, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().GenerateSQLInsertAction_0, errStatus); //$NON-NLS-1$
 			}
 		// mongo db
 		} else if(userDB.getDBDefine() == DBDefine.MONGODB_DEFAULT) {

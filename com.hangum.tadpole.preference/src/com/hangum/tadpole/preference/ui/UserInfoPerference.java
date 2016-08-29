@@ -10,6 +10,8 @@
  ******************************************************************************/
 package com.hangum.tadpole.preference.ui;
 
+import java.util.Locale;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.log4j.Logger;
@@ -23,6 +25,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
@@ -34,11 +37,13 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.googleauth.GoogleAuthManager;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.manager.TadpoleApplicationContextManager;
 import com.hangum.tadpole.engine.manager.TadpoleSQLTransactionManager;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserRole;
+import com.hangum.tadpole.engine.utils.TimeZoneUtil;
 import com.hangum.tadpole.preference.Messages;
 import com.hangum.tadpole.preference.dialogs.user.ChangeUsePersonalToGrouprDialog;
 import com.hangum.tadpole.session.manager.SessionManager;
@@ -57,12 +62,16 @@ public class UserInfoPerference extends TadpoleDefaulPreferencePage implements I
 	private Text textRePassword;
 	private Text textName;
 	
+	private Combo comboLanguage;
+	private Combo comboTimezone;
+	
 	/** OTP code */
 	private String secretKey = ""; //$NON-NLS-1$
 	private Button btnGetOptCode;
 	private Text textSecretKey;
 	private Text textQRCodeURL;
 	private Text textOTPCode;
+	private Composite container_1;
 
 	/**
 	 * Create the preference page.
@@ -76,19 +85,19 @@ public class UserInfoPerference extends TadpoleDefaulPreferencePage implements I
 	 */
 	@Override
 	public Control createContents(Composite parent) {
-		Composite container = new Composite(parent, SWT.NULL);
-		container.setLayout(new GridLayout(2, false));
+		container_1 = new Composite(parent, SWT.NULL);
+		container_1.setLayout(new GridLayout(2, false));
 		
-		if(TadpoleApplicationContextManager.isPersonOperationType()) {
-			personView(container);
-		} else {
-			groupView(container);
-		}
+//		if(TadpoleApplicationContextManager.isPersonOperationType()) {
+//			personView(container);
+//		} else {
+			groupView(container_1);
+//		}
 		
 		// google analytic
 		AnalyticCaller.track(this.getClass().getName());
 		
-		return container;
+		return container_1;
 	}
 	
 	/**
@@ -122,6 +131,7 @@ public class UserInfoPerference extends TadpoleDefaulPreferencePage implements I
 		lblEmail.setText(Messages.get().UserInfoPerference_2);
 		
 		textEmail = new Text(container, SWT.BORDER);
+		textEmail.setEditable(false);
 		textEmail.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		textEmail.setText(SessionManager.getEMAIL());
 		
@@ -169,6 +179,25 @@ public class UserInfoPerference extends TadpoleDefaulPreferencePage implements I
 				textRePassword.setText(""); //$NON-NLS-1$
 			}
 		});
+		
+		Label lblLanguage = new Label(container_1, SWT.NONE);
+		lblLanguage.setText(Messages.get().Language);
+		comboLanguage = new Combo(container, SWT.READ_ONLY);
+		comboLanguage.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		comboLanguage.add(Locale.ENGLISH.getDisplayLanguage(Locale.ENGLISH));
+		comboLanguage.add(Locale.KOREAN.getDisplayLanguage(Locale.KOREAN));
+		comboLanguage.setData(Locale.ENGLISH.getDisplayLanguage(Locale.ENGLISH), Locale.ENGLISH);
+		comboLanguage.setData(Locale.KOREAN.getDisplayLanguage(Locale.KOREAN), Locale.KOREAN);
+		comboLanguage.setText(SessionManager.getLangeage());
+		
+		Label lblTimezone = new Label(container_1, SWT.NONE);
+		lblTimezone.setText(Messages.get().TimeZone);
+		comboTimezone = new Combo(container, SWT.READ_ONLY);
+		comboTimezone.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		for (String timzon : TimeZoneUtil.getTimezoneList()) {
+			comboTimezone.add(timzon);
+		}
+		comboTimezone.setText(SessionManager.getTimezone());
 		
 		new Label(container, SWT.NONE);
 		new Label(container, SWT.NONE);
@@ -223,18 +252,18 @@ public class UserInfoPerference extends TadpoleDefaulPreferencePage implements I
 		}
 		
 		Label lblOptCode = new Label(grpGoogleAuth, SWT.NONE);
-		lblOptCode.setText("OTP Code"); //$NON-NLS-1$
+		lblOptCode.setText(Messages.get().OTP); //$NON-NLS-1$
 		lblOptCode.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		
 		textOTPCode = new Text(grpGoogleAuth, SWT.BORDER);
 		textOTPCode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
-		if(!SessionManager.isAdmin()) {
+		if(!SessionManager.isSystemAdmin()) {
 			Button buttonWithdrawal = new Button(container, SWT.NONE);
 			buttonWithdrawal.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					if(MessageDialog.openConfirm(null, "Confirm", Messages.get().UserInfoPerference_9)) { //$NON-NLS-1$
+					if(MessageDialog.openConfirm(null, CommonMessages.get().Confirm, Messages.get().UserInfoPerference_9)) { //$NON-NLS-1$
 						try {
 							TadpoleSystem_UserRole.withdrawal(SessionManager.getUserSeq());
 							
@@ -284,36 +313,40 @@ public class UserInfoPerference extends TadpoleDefaulPreferencePage implements I
 		if(!TadpoleApplicationContextManager.isPersonOperationType()) {
 			String pass = textPassword.getText().trim();
 			String rePass = textRePassword.getText().trim();
-			String useOTP = btnGetOptCode.getSelection()?"YES":"NO"; //$NON-NLS-1$ //$NON-NLS-2$
+			String useOTP = btnGetOptCode.getSelection()?"YES":"NO"; //$NON-NLS-1$ //$NON-NLS-2$  
 			String otpSecretKey = textSecretKey.getText();
+			Locale locale = Locale.ENGLISH;
+			if(comboLanguage.getData(comboLanguage.getText()) != null) {
+				locale = (Locale)comboLanguage.getData(comboLanguage.getText());	
+			}
+			
+			String timezone = comboTimezone.getText();
 			
 			if(StringUtils.length(pass) < 5) {
-				MessageDialog.openError(getShell(), Messages.get().UserInfoPerference_0, Messages.get().UserInfoPerference_14);
+				MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().UserInfoPerference_14);
 				textPassword.setFocus();
 				return false;
 			}
 			
 			if(pass.equals("")) { //$NON-NLS-1$
-				MessageDialog.openError(getShell(), Messages.get().UserInfoPerference_0, Messages.get().UserInfoPerference_17);
+				MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().UserInfoPerference_17);
 				textPassword.setFocus();
 				return false;
 			} else if(!pass.equals(rePass)) {
-				MessageDialog.openError(getShell(), Messages.get().UserInfoPerference_0, Messages.get().UserInfoPerference_6);
+				MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().UserInfoPerference_6);
 				textPassword.setFocus();
 				return false;
 			} else if(btnGetOptCode.getSelection()) {
 				if("".equals(textOTPCode.getText())) { //$NON-NLS-1$
-					MessageDialog.openError(getShell(), "Error", Messages.get().UserInfoPerference_15); //$NON-NLS-1$
+					MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().UserInfoPerference_15); //$NON-NLS-1$
 					textOTPCode.setFocus();
 					return false;
 				} else if(!GoogleAuthManager.getInstance().isValidate(otpSecretKey, NumberUtils.toInt(textOTPCode.getText()))) {
-					MessageDialog.openError(getShell(), "Error", Messages.get().UserInfoPerference_16); //$NON-NLS-1$
+					MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().UserInfoPerference_16); //$NON-NLS-1$
 					textOTPCode.setFocus();
 					return false;
 				}
 			}
-			// Password double check
-			boolean isPasswordUpdated = !pass.equals(SessionManager.getPassword());
 			
 			UserDAO user = new UserDAO();
 			user.setSeq(SessionManager.getUserSeq());
@@ -322,21 +355,24 @@ public class UserInfoPerference extends TadpoleDefaulPreferencePage implements I
 			user.setUse_otp(useOTP);
 			user.setOtp_secret(otpSecretKey);
 			
+			user.setLanguage(locale.toLanguageTag());
+			user.setTimezone(timezone);
+			
 			try {
-				if (isPasswordUpdated) {
-					TadpoleSystem_UserQuery.updateUserPassword(user);
-					SessionManager.updateSessionAttribute(SessionManager.NAME.LOGIN_PASSWORD.toString(), user.getPasswd());			
-				}
+				TadpoleSystem_UserQuery.updateUserBasic(user);
 				
+				SessionManager.updateSessionAttribute(SessionManager.NAME.LOGIN_PASSWORD.toString(), user.getPasswd());			
 				TadpoleSystem_UserQuery.updateUserOTPCode(user);
 				SessionManager.updateSessionAttribute(SessionManager.NAME.USE_OTP.toString(), useOTP);			
 				SessionManager.updateSessionAttribute(SessionManager.NAME.OTP_SECRET_KEY.toString(), otpSecretKey);
+				SessionManager.updateSessionAttribute(SessionManager.NAME.LANGUAGE.toString(), locale.toLanguageTag());
+				SessionManager.updateSessionAttribute(SessionManager.NAME.TIMEZONE.toString(), timezone);
 				
 				//fix https://github.com/hangum/TadpoleForDBTools/issues/243
 				SessionManager.setPassword(user.getPasswd());
 			} catch (Exception e) {
 				logger.error("password change", e); //$NON-NLS-1$
-				MessageDialog.openError(getShell(), "Error", e.getMessage());			 //$NON-NLS-1$
+				MessageDialog.openError(getShell(),CommonMessages.get().Error, e.getMessage());			 //$NON-NLS-1$
 				
 				return false;
 			}

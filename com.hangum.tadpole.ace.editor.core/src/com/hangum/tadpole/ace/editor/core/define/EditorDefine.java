@@ -17,23 +17,13 @@ package com.hangum.tadpole.ace.editor.core.define;
  *
  */
 public class EditorDefine {
-	/**
-	 * 에디터에서 사용할 확장자로 sql을 지정. 
-	 */
-	private static String EXT_SQL_PREFIX = "ace/mode/";
-	
-	public static String EXT_SQLite = EXT_SQL_PREFIX + "sqlite";
-	public static String EXT_MYSQL 	= EXT_SQL_PREFIX + "mysql";
-	public static String EXT_PGSQL 	= EXT_SQL_PREFIX + "pgsql";
-	public static String EXT_MSSQL 	= EXT_SQL_PREFIX + "sqlserver";
-
-	// dose not define
-	public static String EXT_DEFAULT = EXT_SQL_PREFIX + "sql";
+	/** dose not define */
+	public static String EXT_DEFAULT = "sql";
 	
 	/**
 	 * 에디터에서 사용할 확장자로 json을 지정.
 	 */
-	public static String EXT_JSON = "ace/mode/json";
+	public static String EXT_JSON = "json";
 	/** 에디터에서 사용할 json의 initialize text */ 
 	public static String JSON_INITIALIZE_TXT = "{\n\n}";
 	
@@ -47,7 +37,7 @@ public class EditorDefine {
     public enum EXECUTE_TYPE {ALL, BLOCK, NONE};
 
 	/** sql을 각 언어로 컨버팅 해줍니다 */
-	public static enum SQL_TO_APPLICATION {Java_StringBuffer, PHP};
+	public static enum SQL_TO_APPLICATION {AXISJ, Java_StringBuffer, PHP, ASP, MyBatis/*, REAL_GRID*/};
 
 	/** tab index name */
 	public enum RESULT_TAB {RESULT_SET, QUERY_PLAN, SQL_RECALL, TADPOLE_MESSAGE};

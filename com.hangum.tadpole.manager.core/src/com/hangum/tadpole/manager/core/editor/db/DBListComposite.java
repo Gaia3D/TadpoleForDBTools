@@ -51,8 +51,8 @@ import org.eclipse.ui.PlatformUI;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.USER_ROLE_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
-import com.hangum.tadpole.commons.util.Utils;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.ManagerListDTO;
 import com.hangum.tadpole.engine.query.dao.system.TadpoleUserDbRoleDAO;
@@ -60,6 +60,7 @@ import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBQuery;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserRole;
+import com.hangum.tadpole.engine.utils.TimeZoneUtil;
 import com.hangum.tadpole.manager.core.Activator;
 import com.hangum.tadpole.manager.core.Messages;
 import com.hangum.tadpole.manager.core.dialogs.users.DetailUserAndDBRoleDialog;
@@ -73,6 +74,7 @@ import com.hangum.tadpole.rdb.core.editors.main.MainEditor;
 import com.hangum.tadpole.rdb.core.editors.main.MainEditorInput;
 import com.hangum.tadpole.rdb.core.viewers.connections.DBIconsUtils;
 import com.hangum.tadpole.rdb.core.viewers.connections.ManagerLabelProvider;
+import com.hangum.tadpole.session.manager.SessionManager;
 import com.swtdesigner.SWTResourceManager;
 
 /**
@@ -144,9 +146,9 @@ public class DBListComposite extends Composite {
 				initData();
 			}
 		});
-		tltmRefresh.setToolTipText(Messages.get().DBListComposite_0);
+		tltmRefresh.setToolTipText(CommonMessages.get().Refresh);
 		
-		ToolItem toolItem_0 = new ToolItem(toolBar, SWT.SEPARATOR);
+		new ToolItem(toolBar, SWT.SEPARATOR);
 		
 		tltmConfigurationDB = new ToolItem(toolBar, SWT.NONE);
 		tltmConfigurationDB.setImage(GlobalImageUtils.getConfigurationDatabase());
@@ -176,11 +178,11 @@ public class DBListComposite extends Composite {
 		tltmOtherInformation.setEnabled(false);
 		tltmOtherInformation.setToolTipText(Messages.get().DBListComposite_2);
 		
-		ToolItem toolItem_1 = new ToolItem(toolBar, SWT.SEPARATOR);
+		new ToolItem(toolBar, SWT.SEPARATOR);
 
 		tltmAddUser = new ToolItem(toolBar, SWT.NONE);
 		tltmAddUser.setImage(GlobalImageUtils.getUserAdd());
-		tltmAddUser.setEnabled(false);
+		tltmAddUser.setEnabled(false);//"YES".equalsIgnoreCase(SessionManager.getIsSharedDB()));
 		tltmAddUser.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -266,9 +268,9 @@ public class DBListComposite extends Composite {
 			}
 		});
 		tltmQueryHistory.setEnabled(false);
-		tltmQueryHistory.setToolTipText(Messages.get().DBListComposite_7);
+		tltmQueryHistory.setToolTipText(Messages.get().QueryHistory);
 		
-		ToolItem toolItem_2 = new ToolItem(toolBar, SWT.SEPARATOR);
+		new ToolItem(toolBar, SWT.SEPARATOR);
 		tltmSQLEditor = new ToolItem(toolBar, SWT.NONE);
 		tltmSQLEditor.setImage(GlobalImageUtils.getSQLEditor()); //$NON-NLS-1$
 		tltmSQLEditor.addSelectionListener(new SelectionAdapter() {
@@ -294,7 +296,7 @@ public class DBListComposite extends Composite {
 		}
 		Label lblSearch = new Label(compositeHead, SWT.NONE);
 		lblSearch.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblSearch.setText(Messages.get().DBListComposite_9);
+		lblSearch.setText(CommonMessages.get().Search);
 		
 		textSearch = new Text(compositeHead, SWT.SEARCH | SWT.ICON_SEARCH | SWT.ICON_CANCEL);
 		textSearch.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 4, 1));
@@ -315,7 +317,7 @@ public class DBListComposite extends Composite {
 		compositeBody.setLayout(gl_compositeBody);
 		compositeBody.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		
-		tvDBList = new TreeViewer(compositeBody, SWT.BORDER | SWT.FULL_SELECTION | SWT.VIRTUAL);
+		tvDBList = new TreeViewer(compositeBody, SWT.BORDER | SWT.FULL_SELECTION /* | SWT.VIRTUAL */);
 		tvDBList.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
 				
@@ -342,8 +344,8 @@ public class DBListComposite extends Composite {
 					
 					tltmConfigurationDB.setEnabled(true);
 					tltmOtherInformation.setEnabled(true);
-					
-					tltmAddUser.setEnabled(true);
+					if("YES".equalsIgnoreCase(SessionManager.getIsSharedDB())) tltmAddUser.setEnabled(true);
+					else tltmAddUser.setEnabled(false);
 					
 					tltmUserDelete.setEnabled(false);
 					tltmUserInfo.setEnabled(false);
@@ -398,7 +400,7 @@ public class DBListComposite extends Composite {
 		treeAdmin.setLinesVisible(true);
 		treeAdmin.setHeaderVisible(true);
 		treeAdmin.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-		treeAdmin.setData( RWT.MARKUP_ENABLED, Boolean.TRUE );
+//		treeAdmin.setData( RWT.MARKUP_ENABLED, Boolean.TRUE );
 		
 		TreeViewerColumn colGroupName = new TreeViewerColumn(tvDBList, SWT.NONE);
 		colGroupName.getColumn().setWidth(250);
@@ -406,15 +408,15 @@ public class DBListComposite extends Composite {
 				
 		TreeViewerColumn colRoleName = new TreeViewerColumn(tvDBList, SWT.NONE);
 		colRoleName.getColumn().setWidth(80);
-		colRoleName.getColumn().setText(Messages.get().DBListComposite_12);
+		colRoleName.getColumn().setText(Messages.get().Role);
 		
 		TreeViewerColumn colName = new TreeViewerColumn(tvDBList, SWT.NONE);
 		colName.getColumn().setWidth(330);
-		colName.getColumn().setText(Messages.get().DBListComposite_13 + "(" + Messages.get().DBListComposite_16 + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+		colName.getColumn().setText(Messages.get().DBInfo + "(" + Messages.get().DBListComposite_16 + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 		
 		TreeViewerColumn colApproval = new TreeViewerColumn(tvDBList, SWT.NONE);
 		colApproval.getColumn().setWidth(70);
-		colApproval.getColumn().setText(Messages.get().DBListComposite_14);
+		colApproval.getColumn().setText(Messages.get().User);
 		
 		TreeViewerColumn colVisible = new TreeViewerColumn(tvDBList, SWT.NONE);
 		colVisible.getColumn().setWidth(50);
@@ -476,7 +478,7 @@ public class DBListComposite extends Composite {
 		TadpoleUserDbRoleDAO userDBRole = (TadpoleUserDbRoleDAO)ss.getFirstElement();
 		if(userDBRole.getParent().getUser_seq() == userDBRole.getUser_seq()) return;
 		
-		if(!MessageDialog.openConfirm(null, Messages.get().DBListComposite_17, Messages.get().DBListComposite_18) ) return;
+		if(!MessageDialog.openConfirm(null, CommonMessages.get().Confirm, Messages.get().DBListComposite_18) ) return;
 
 		try {
 			TadpoleSystem_UserDBQuery.removeUserRoleDB(userDBRole.getSeq());
@@ -488,7 +490,7 @@ public class DBListComposite extends Composite {
 		} catch (Exception e) { 
 			logger.error("delete user exception", e); //$NON-NLS-1$
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e);
-			ExceptionDetailsErrorDialog.openError(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), Messages.get().DBListComposite_19, Messages.get().DBListComposite_20, errStatus);
+			ExceptionDetailsErrorDialog.openError(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),CommonMessages.get().Error, Messages.get().DBListComposite_6, errStatus);
 		}
 	}
 	
@@ -508,7 +510,7 @@ public class DBListComposite extends Composite {
 				logger.error("Query History open", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e);
-				ExceptionDetailsErrorDialog.openError(null, Messages.get().DBListComposite_21, Messages.get().DBListComposite_22, errStatus);
+				ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().QueryHistory, errStatus);
 			}
 		}
 	}
@@ -527,7 +529,7 @@ public class DBListComposite extends Composite {
 			logger.error("SQL Editor open", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e);
-			ExceptionDetailsErrorDialog.openError(null, Messages.get().DBListComposite_23, Messages.get().DBListComposite_24, errStatus);
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().DBListComposite_24, errStatus);
 		}
 	}
 	
@@ -625,7 +627,7 @@ class DBListLabelProvider extends LabelProvider implements ITableLabelProvider {
 			switch(columnIndex) {
 				case 0: return String.format("%s (%s)", roleDao.getName(), roleDao.getEmail()); //$NON-NLS-1$
 				case 1: return roleDao.getRole_id();
-				case 2: return Utils.dateToStr(roleDao.getTerms_of_use_starttime()) + " ~ " + Utils.dateToStr(roleDao.getTerms_of_use_endtime()); //$NON-NLS-1$
+				case 2: return TimeZoneUtil.dateToStr(roleDao.getTerms_of_use_starttime()) + " ~ " + TimeZoneUtil.dateToStr(roleDao.getTerms_of_use_endtime()); //$NON-NLS-1$
 			}
 		}
 		

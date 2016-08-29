@@ -96,16 +96,17 @@ public enum TadpoleModelUtils {
 		for(int i=0; i<tables.size(); i++) {
 			monitor.subTask(String.format("Working %s/%s", i, tables.size()));
 			
-			final TableDAO table = tables.get(i);
+			final TableDAO tableDao = tables.get(i);
 			Table tableModel = factory.createTable();
 			tableModel.setDb(db);
-			tableModel.setName(table.getName());
+			tableModel.setName(tableDao.getName());
 			
 			if(userDB.getDBDefine() == DBDefine.SQLite_DEFAULT) {
 				tableModel.setComment("");	
 			} else {
-				String tableComment = table.getComment();
-				tableComment = StringUtils.substring(""+tableComment, 0, 10);
+				String tableComment = tableDao.getComment();
+				if(tableComment == null) tableComment = "";
+				tableComment = StringUtils.substring(tableComment, 0, 10);
 				tableModel.setComment(tableComment);
 			}
 			
@@ -130,7 +131,7 @@ public enum TadpoleModelUtils {
 			tableModel.setConstraints(prevRectangle);
 			
 			// column add
-			List<TableColumnDAO> columnList = getColumns(userDB, table);
+			List<TableColumnDAO> columnList = TDBDataHandler.getColumns(userDB, tableDao);
 			for (TableColumnDAO columnDAO : columnList) {
 				
 				Column column = factory.createColumn();
@@ -143,7 +144,7 @@ public enum TadpoleModelUtils {
 				
 				String strComment = columnDAO.getComment();
 				if(strComment == null) strComment = "";
-				strComment = StringUtils.substring(""+strComment, 0, 10);
+				strComment = StringUtils.substring(strComment, 0, 10);
 				column.setComment(strComment);
 				
 				column.setTable(tableModel);
@@ -185,7 +186,7 @@ public enum TadpoleModelUtils {
 			listAllTables = new TajoConnectionManager().tableList(userDB);
 		} else {
 			SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);
-			listAllTables = sqlClient.queryForList("tableList", userDB.getDb()); //$NON-NLS-1$
+			listAllTables = sqlClient.queryForList("tableList", StringUtils.isBlank(userDB.getSchema()) ? userDB.getDb() : userDB.getSchema()); //$NON-NLS-1$
 		}
 		
 		// 시스템에서 사용하는 용도록 수정합니다. '나 "를 붙이도록.
@@ -211,7 +212,7 @@ public enum TadpoleModelUtils {
 			listAllTables = new TajoConnectionManager().tableList(userDB);
 		} else {
 			SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);
-			listAllTables = sqlClient.queryForList("tableList", userDB.getDb()); //$NON-NLS-1$
+			listAllTables = sqlClient.queryForList("tableList",StringUtils.isBlank(userDB.getSchema()) ? userDB.getDb() : userDB.getSchema()); //$NON-NLS-1$
 		}
 
 		Map<String, TableDAO> mapTabls = new HashMap<String, TableDAO>();
@@ -233,30 +234,4 @@ public enum TadpoleModelUtils {
 		
 		return listWantTables;
 	}
-	
-	
-	/**
-	 * table의 컬럼 정보를 가져옵니다.
-	 * 
-	 * @param strTBName
-	 * @return
-	 * @throws Exception
-	 */
-	public List<TableColumnDAO> getColumns(final UserDBDAO userDB, final TableDAO table) throws Exception {
-		Map<String, String> param = new HashMap<String, String>();
-		param.put("db", userDB.getDb());
-		if(userDB.getDBDefine() == DBDefine.SQLite_DEFAULT) {
-			param.put("table", table.getSysName());
-		} else {
-			param.put("table", table.getName());
-		}
-
-		if(DBDefine.TAJO_DEFAULT == userDB.getDBDefine()) {
-			return new TajoConnectionManager().tableColumnList(userDB, param);
-		} else {
-			SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);
-			return sqlClient.queryForList("tableColumnList", param);
-		}
-	}
-	
 }

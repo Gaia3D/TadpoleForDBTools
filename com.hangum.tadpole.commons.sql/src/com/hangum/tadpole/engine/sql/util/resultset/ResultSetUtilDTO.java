@@ -30,6 +30,11 @@ public class ResultSetUtilDTO {
 	 */
 	private UserDBDAO userDB;
 	
+	/**
+	 * 요청 쿼리
+	 */
+	private String reqQuery;
+	
 	/** 
 	 * column 이름. <columnIndex, name>
 	 */
@@ -55,13 +60,23 @@ public class ResultSetUtilDTO {
 	 * 
 	 * result map is schema, table, column
 	 */
-	private Map<Integer, Map> columnMetaData = new HashMap<Integer, Map>();
+//	private Map<Integer, Map> columnMetaData = new HashMap<Integer, Map>();
 	
 	/**
 	 * data <columnIndex, data>
 	 */
 	private TadpoleResultSet dataList = null;//new TadpoleResultSet();
 	
+	/**
+	 *  extension 결과를 정의한다.
+	 *  
+	 *  ex) mysql의 Show status, show profile 정보를 입력한다.
+	 */
+	protected Map<String, Object> mapExtendResult = new HashMap<String, Object>();
+	
+	/**
+	 * 
+	 */
 	public ResultSetUtilDTO() {
 	}
 	
@@ -75,12 +90,14 @@ public class ResultSetUtilDTO {
 	 */
 	public ResultSetUtilDTO(
 			UserDBDAO userDB, 
+			String reqQuery,
 			Map<Integer, String> columnName,
 			Map<Integer, String> columnTableName,
 			Map<Integer, Integer> columnType, 
 			TadpoleResultSet dataList
 	) {
 		this.userDB 	= userDB;
+		this.reqQuery 	= reqQuery;
 		this.columnName = columnName;
 		this.columnTableName = columnTableName;
 		this.columnType = columnType;
@@ -100,14 +117,16 @@ public class ResultSetUtilDTO {
 	 */
 	public ResultSetUtilDTO(
 						final UserDBDAO userDB, 
+						final String reqQuery,
 						final boolean isShowRownum, final ResultSet rs, final int limitCount, int intLastIndex) throws Exception {
 		this.userDB = userDB;
+		this.reqQuery = reqQuery;
 		
 		if(rs != null) {
 			columnTableName = ResultSetUtils.getColumnTableName(userDB, isShowRownum, rs);
 			columnName 		= ResultSetUtils.getColumnName(userDB, columnTableName, isShowRownum, rs);
 			columnLabelName = ResultSetUtils.getColumnLabelName(userDB, columnTableName, isShowRownum, rs);
-			columnType = ResultSetUtils.getColumnType(isShowRownum, rs.getMetaData());
+			columnType 		= ResultSetUtils.getColumnType(isShowRownum, rs.getMetaData());
 			
 			if(isShowRownum && (columnName.size() == 1)) {
 				dataList = new TadpoleResultSet();
@@ -115,7 +134,7 @@ public class ResultSetUtilDTO {
 				dataList = ResultSetUtils.getResultToList(isShowRownum, rs, limitCount, intLastIndex);
 			}
 			
-			columnMetaData = ResultSetUtils.getColumnTableColumnName(userDB, rs.getMetaData());
+//			columnMetaData = ResultSetUtils.getColumnTableColumnName(userDB, rs.getMetaData());
 		}
 	}
 	
@@ -133,6 +152,20 @@ public class ResultSetUtilDTO {
 		this.userDB = userDB;
 	}
 
+	/**
+	 * @return the reqQuery
+	 */
+	public String getReqQuery() {
+		return reqQuery;
+	}
+
+	/**
+	 * @param reqQuery the reqQuery to set
+	 */
+	public void setReqQuery(String reqQuery) {
+		this.reqQuery = reqQuery;
+	}
+	
 	/**
 	 * @return the columnName
 	 */
@@ -179,13 +212,13 @@ public class ResultSetUtilDTO {
 		this.dataList.getData().addAll(resultToList);
 	}
 
-	public Map<Integer, Map> getColumnMetaData() {
-		return columnMetaData;
-	}
-
-	public void setColumnMetaData(Map<Integer, Map> columnMetaData) {
-		this.columnMetaData = columnMetaData;
-	}
+//	public Map<Integer, Map> getColumnMetaData() {
+//		return columnMetaData;
+//	}
+//
+//	public void setColumnMetaData(Map<Integer, Map> columnMetaData) {
+//		this.columnMetaData = columnMetaData;
+//	}
 
 	/**
 	 * @return the columnTableName
@@ -213,6 +246,22 @@ public class ResultSetUtilDTO {
 	 */
 	public void setColumnLabelName(Map<Integer, String> columnLabelName) {
 		this.columnLabelName = columnLabelName;
+	}
+	
+	/**
+	 * 확장 결과를 가져온다.
+	 * @return
+	 */
+	public Map<String, Object> getMapExtendResult() {
+		return mapExtendResult;
+	}
+	
+	/**
+	 * 확장 결과를 설정한다.
+	 * @param mapExtendResult
+	 */
+	public void setMapExtendResult(String key, Object obj) {
+		this.mapExtendResult.put(key, obj);
 	}
 
 }

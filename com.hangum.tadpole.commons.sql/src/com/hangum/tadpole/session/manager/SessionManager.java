@@ -10,26 +10,33 @@
  ******************************************************************************/
 package com.hangum.tadpole.session.manager;
 
+import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionContext;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.client.service.JavaScriptExecutor;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
+import com.hangum.tadpole.cipher.core.manager.CipherManager;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.engine.query.dao.ManagerListDTO;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserInfoDataDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserInfoData;
+
+import oracle.net.aso.s;
 
 /**
  * tadpole의 session manager입니다
@@ -42,6 +49,9 @@ public class SessionManager {
 	 * Logger for this class
 	 */
 	private static final Logger logger = Logger.getLogger(SessionManager.class);
+	
+	/** login ip를 가져온 경로를 지정한다 */
+	public static enum LOGIN_IP_TYPE {WEB_RTC, SERVLET_REQUEST};
 
 	/**
 	 * <pre>
@@ -50,12 +60,23 @@ public class SessionManager {
 	 * 
 	 * @author hangum
 	 */
-	public static enum NAME {	
+	public static enum NAME {
+														/** webrtc, request.getRemoteAddrress */
+														LOGIN_IP_TYPE,
+														LOGIN_IP,
+														
 								/* 자신의 유저 seq */		USER_SEQ, 
 														LOGIN_EMAIL, 
 														LOGIN_PASSWORD, 
 														LOGIN_NAME,
 														IS_REGIST_DB,
+														
+														IS_SHARED_DB,
+														LIMIT_ADD_DB_CNT,
+														SERVICE_END,
+														LANGUAGE,
+														TIMEZONE,
+														
 								/* 대표적인 권한 타입 */		REPRESENT_ROLE_TYPE, 
 														USER_INFO_DATA,
 														
@@ -63,9 +84,46 @@ public class SessionManager {
 														
 														UNLOCK_DB_LIST,
 														
-														PERSPECTIVE
+														PERSPECTIVE,
+														
+														ALL_MANAGER_DB_LIST
 														}
+	/**
+	 * UserManager Object list를 설정한다.
+	 * 
+	 * @param managerDTO
+	 */
+	public static void initManagerDBList() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		sStore.setAttribute(NAME.ALL_MANAGER_DB_LIST.name(), new ArrayList<ManagerListDTO>());
+	}
+	
+	/**
+	 * UserManager Object list를 설정한다.
+	 * 
+	 * @param managerDTO
+	 */
+	public static void setManagerDBList(List<ManagerListDTO> listManagerDTO) {
+		if(logger.isDebugEnabled()) logger.debug("========> " + listManagerDTO.size());
+		HttpSession sStore = RWT.getRequest().getSession();
+		sStore.setAttribute(NAME.ALL_MANAGER_DB_LIST.name(), listManagerDTO);
+	}
 
+	/**
+	 * UserManager object list를 가져온다.
+	 * 
+	 * @return
+	 */
+	public static List<ManagerListDTO> getManagerDBList() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		Object listObj = sStore.getAttribute(NAME.ALL_MANAGER_DB_LIST.name());
+		if(listObj == null) {
+			return new ArrayList<ManagerListDTO>();
+		} else {
+			return (List<ManagerListDTO>)listObj;
+		}
+	}
+	
 	/**
 	 * is login?
 	 * 
@@ -95,21 +153,52 @@ public class SessionManager {
 	 * 사용자를 session에 등록
 	 * 
 	 * @param userDao
+	 * @param loginType
+	 * @param ip
 	 */
-	public static void addSession(UserDAO userDao) {
+	public static void addSession(UserDAO userDao, String loginType, String ip) {
 		HttpSession sStore = RWT.getRequest().getSession();
+		
+		sStore.setAttribute(NAME.LOGIN_IP_TYPE.name(), loginType);
+		sStore.setAttribute(NAME.LOGIN_IP.name(), ip);
 		sStore.setAttribute(NAME.REPRESENT_ROLE_TYPE.name(), userDao.getRole_type());
 		sStore.setAttribute(NAME.USER_SEQ.name(), userDao.getSeq());
 		sStore.setAttribute(NAME.LOGIN_EMAIL.name(), userDao.getEmail());
-		sStore.setAttribute(NAME.LOGIN_PASSWORD.name(), userDao.getPasswd());
+		sStore.setAttribute(NAME.LOGIN_PASSWORD.name(), CipherManager.getInstance().decryption(userDao.getPasswd()));
 		sStore.setAttribute(NAME.LOGIN_NAME.name(), userDao.getName());
 		sStore.setAttribute(NAME.IS_REGIST_DB.name(), userDao.getIs_regist_db());
+		sStore.setAttribute(NAME.LANGUAGE.name(), userDao.getLanguage());
+		sStore.setAttribute(NAME.TIMEZONE.name(), userDao.getTimezone());
+		
+		sStore.setAttribute(NAME.IS_SHARED_DB.name(), userDao.getIs_shared_db());
+		sStore.setAttribute(NAME.LIMIT_ADD_DB_CNT.name(), userDao.getLimit_add_db_cnt());
+		sStore.setAttribute(NAME.SERVICE_END.name(), userDao.getService_end());
+		
 		sStore.setAttribute(NAME.PERSPECTIVE.name(), "default");
 		
 		sStore.setAttribute(NAME.USE_OTP.name(), userDao.getUse_otp());
 		sStore.setAttribute(NAME.OTP_SECRET_KEY.name(), userDao.getOtp_secret());
 		
 		sStore.setAttribute(NAME.UNLOCK_DB_LIST.name(), new ArrayList<Integer>());
+	}
+	
+	/**
+	 * get login ip type
+	 * 
+	 * @param getLoginIpType
+	 */
+	public static String getLoginIpType() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		return (String)sStore.getAttribute(NAME.LOGIN_IP_TYPE.name());
+	}
+	
+	/**
+	 * get login ip
+	 * @return
+	 */
+	public static String getLoginIp() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		return (String)sStore.getAttribute(NAME.LOGIN_IP.name());
 	}
 	
 	/**
@@ -136,6 +225,7 @@ public class SessionManager {
 	
 	public static String getEMAIL() {
 		HttpSession sStore = RWT.getRequest().getSession();
+		
 		return (String)sStore.getAttribute(NAME.LOGIN_EMAIL.name());
 	}
 	
@@ -153,6 +243,21 @@ public class SessionManager {
 		return (String)sStore.getAttribute(NAME.IS_REGIST_DB.name());
 	}
 	
+	public static String getIsSharedDB() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		return (String)sStore.getAttribute(NAME.IS_SHARED_DB.name());
+	}
+	
+	public static Integer getLimitAddDBCnt() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		return (Integer)sStore.getAttribute(NAME.LIMIT_ADD_DB_CNT.name());
+	}
+	
+	public static Timestamp getServiceEnd() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		return (Timestamp)sStore.getAttribute(NAME.SERVICE_END.name());
+	}
+	
 	public static String getUseOTP() {
 		HttpSession sStore = RWT.getRequest().getSession();
 		return (String)sStore.getAttribute(NAME.USE_OTP.name());
@@ -160,6 +265,14 @@ public class SessionManager {
 	public static String getOTPSecretKey() {
 		HttpSession sStore = RWT.getRequest().getSession();
 		return (String)sStore.getAttribute(NAME.OTP_SECRET_KEY.name());
+	}
+	public static String getLangeage() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		return (String)sStore.getAttribute(NAME.LANGUAGE.name());
+	}
+	public static String getTimezone() {
+		HttpSession sStore = RWT.getRequest().getSession();
+		return (String)sStore.getAttribute(NAME.TIMEZONE.name());
 	}
 	
 	/**
@@ -184,7 +297,7 @@ public class SessionManager {
 		return (String)sStore.getAttribute(NAME.REPRESENT_ROLE_TYPE.name());
 	}
 	
-	public static boolean isAdmin() {
+	public static boolean isSystemAdmin() {
 		return PublicTadpoleDefine.USER_ROLE_TYPE.SYSTEM_ADMIN.name().equals(getRepresentRole()) ? true : false;
 	}
 
@@ -207,10 +320,7 @@ public class SessionManager {
 		Map<String, Object> mapUserInfoData = (Map<String, Object>)sStore.getAttribute(NAME.USER_INFO_DATA.name());
 		UserInfoDataDAO userInfoDataDAO = (UserInfoDataDAO)mapUserInfoData.get(key);
 		if(userInfoDataDAO == null) {
-			userInfoDataDAO = new UserInfoDataDAO();
-			userInfoDataDAO.setName(key);
-			userInfoDataDAO.setUser_seq(SessionManager.getUserSeq());
-			userInfoDataDAO.setValue0(obj);
+			userInfoDataDAO = new UserInfoDataDAO(SessionManager.getUserSeq(), key, obj);
 		
 			try {
 				TadpoleSystem_UserInfoData.insertUserInfoData(userInfoDataDAO);
@@ -222,7 +332,6 @@ public class SessionManager {
 		}
 			
 		mapUserInfoData.put(key, userInfoDataDAO);
-		
 		sStore.setAttribute(NAME.USER_INFO_DATA.name(), mapUserInfoData);
 	}
 	
@@ -230,13 +339,26 @@ public class SessionManager {
 	 * 사용자 User 정보 .
 	 * 
 	 * @param key
+	 * @param value 
 	 * @return
 	 */
-	public static UserInfoDataDAO getUserInfo(String key) {
+	public static UserInfoDataDAO getUserInfo(String key, String value) {
 		HttpSession sStore = RWT.getRequest().getSession();
 		Map<String, Object> mapUserInfoData = (Map<String, Object>)sStore.getAttribute(NAME.USER_INFO_DATA.name());
 		
-		return (UserInfoDataDAO)mapUserInfoData.get(key);
+		UserInfoDataDAO userData = (UserInfoDataDAO)mapUserInfoData.get(key);
+		if(userData == null) {
+			userData = new UserInfoDataDAO(SessionManager.getUserSeq(), key, value);
+			try {
+				TadpoleSystem_UserInfoData.insertUserInfoData(userData);
+			} catch(Exception e) {
+				logger.error("User data save exception [key]" + key + "[value]" + value, e);
+			}
+			
+			mapUserInfoData.put(key, userData);
+		}
+		
+		return userData;
 	}
 	
 	/**
@@ -267,26 +389,22 @@ public class SessionManager {
 	 * logout 처리를 합니다.
 	 */
 	public static void logout() {
+		HttpServletRequest request = RWT.getRequest();
 		try {
-			HttpSession sStore = RWT.getRequest().getSession();			
+			HttpSession sStore = request.getSession();			
 			sStore.setAttribute(NAME.USER_SEQ.toString(), 0);
 			sStore.invalidate();
-			
-			//fixed https://github.com/hangum/TadpoleForDBTools/issues/647
-			String defaultUrl = MessageFormat.format(
-				"{0}://{1}:{2}{3}",
-				new Object[] {	RWT.getRequest().getScheme(), 
-								RWT.getRequest().getLocalName(),
-								Integer.toString(RWT.getRequest().getLocalPort()),
-								RWT.getRequest().getRequestURI() 
-							}
-			);
-	     	String browserText = MessageFormat.format("parent.window.location.href = \"{0}\";", defaultUrl);
-	     	JavaScriptExecutor executor = RWT.getClient().getService( JavaScriptExecutor.class );
-	     	executor.execute("setTimeout('"+browserText+"', 100)" );
-		} catch(Exception e) {
+		} catch(Throwable e) {
 			// ignore exception
 		}
+		
+		// fixed https://github.com/hangum/TadpoleForDBTools/issues/708
+		// ps - 사용자 session id를 보여주고 싶지 않아서 배열을 이용해서 뺐어요. - hangum
+		String[] arryRequestURL = StringUtils.split(request.getRequestURL().toString(), ";");
+     	String browserText = MessageFormat.format("parent.window.location.href = \"{0}\";", arryRequestURL[0]);
+     	JavaScriptExecutor executor = RWT.getClient().getService( JavaScriptExecutor.class );
+     	executor.execute("setTimeout('"+browserText+"', 100)" );
+		
 	}
 	
 	/**
@@ -310,8 +428,8 @@ public class SessionManager {
 	}
 	
 	public static String getPerspective() {
-		UserInfoDataDAO userInfo = SessionManager.getUserInfo(NAME.PERSPECTIVE.name());
-		return userInfo == null ? "" : userInfo.getValue0();
+		UserInfoDataDAO userInfo = SessionManager.getUserInfo(NAME.PERSPECTIVE.name(), "default");
+		return userInfo.getValue0();
 	}
 	
 	public static void setPerspective(String persp) { 
@@ -332,4 +450,5 @@ public class SessionManager {
 			window.getActivePage().resetPerspective();	
 		}
 	}
+
 }

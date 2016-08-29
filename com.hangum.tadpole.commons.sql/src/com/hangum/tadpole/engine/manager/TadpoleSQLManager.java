@@ -28,12 +28,12 @@ import org.apache.log4j.Logger;
 
 import com.hangum.tadpole.commons.exception.TadpoleSQLManagerException;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
-import com.hangum.tadpole.db.metadata.MakeContentAssistUtil;
 import com.hangum.tadpole.db.metadata.TadpoleMetaData;
+import com.hangum.tadpole.db.metadata.constants.SQLConstants;
 import com.hangum.tadpole.engine.define.DBDefine;
-import com.hangum.tadpole.engine.define.SQLConstants;
 import com.hangum.tadpole.engine.manager.internal.map.SQLMap;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.hangum.tadpole.session.manager.SessionManager;
 import com.ibatis.sqlmap.client.SqlMapClient;
 
 /**
@@ -42,19 +42,22 @@ import com.ibatis.sqlmap.client.SqlMapClient;
  * @author hangum
  *
  */
-public class TadpoleSQLManager {
+public class TadpoleSQLManager extends AbstractTadpoleManager {
 	private static final Logger logger = Logger.getLogger(TadpoleSQLManager.class);
 	
 	/** db 인스턴스를 가지고 있는 아이 */
 	private static Map<String, SqlMapClient> dbManager = null;
-	private static Map<String, TadpoleMetaData> dbMetadata = new HashMap<String, TadpoleMetaData>();
-	
+	private static Map<String, TadpoleMetaData> dbMetadata = null;
+	/** dbManager 의 키를 가지고 있는 친구 - logout시에 키를 사용하여 인스턴스를 삭제하기 위해 */
+	private static Map<String, List<String>> managerKey = null;//
 	private static TadpoleSQLManager tadpoleSQLManager = null;
 	
 	static {
 		if(tadpoleSQLManager == null) {
 			tadpoleSQLManager = new TadpoleSQLManager();
 			dbManager = new HashMap<String, SqlMapClient>();
+			dbMetadata = new HashMap<String, TadpoleMetaData>();
+			managerKey = new HashMap<String, List<String>>();
 		} 
 	}
 	
@@ -69,77 +72,73 @@ public class TadpoleSQLManager {
 	 * 
 	 * </pre>
 	 * 
-	 * @param dbDao
+	 * @param userDB
 	 * @return
 	 * @throws Exception
 	 */
-	public static SqlMapClient getInstance(final UserDBDAO dbDao) throws TadpoleSQLManagerException {
+	public static SqlMapClient getInstance(final UserDBDAO userDB) throws TadpoleSQLManagerException {
 		SqlMapClient sqlMapClient = null;
 		Connection conn = null;
 		
-//		synchronized (dbManager) {
-			String searchKey = getKey(dbDao);
+		String searchKey = getKey(userDB);
+		
 			try {
 				sqlMapClient = dbManager.get( searchKey );
 				if(sqlMapClient == null) {
-
-					// oracle 일 경우 설정 
-					try { 
-						if(DBDefine.getDBDefine(dbDao) == DBDefine.ORACLE_DEFAULT) {
-							DriverManager.setLoginTimeout(10);
-							
-							if(dbDao.getLocale() != null && !"".equals(dbDao.getLocale())) {
-								Locale.setDefault(new Locale(dbDao.getLocale()));
+//					synchronized(dbManager) {
+						sqlMapClient = dbManager.get(searchKey);
+						if(sqlMapClient != null) return sqlMapClient;
+						
+						if(logger.isDebugEnabled()) logger.debug("==[search key]=============================> " + searchKey);
+						// oracle 일 경우 locale 설정 
+						try { 
+							if(userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT ||
+									userDB.getDBDefine() == DBDefine.TIBERO_DEFAULT) {
+								DriverManager.setLoginTimeout(10);
+								if(userDB.getLocale() != null && !"".equals(userDB.getLocale())) {
+									Locale.setDefault(new Locale(userDB.getLocale()));
+								}
 							}
+						} catch(Exception e) {
+							logger.error(String.format("set locale error: %s", e.getMessage()));
 						}
-					} catch(Exception e) {
-						logger.error("set locale error", e);
-					}
-					
-					// connection pool 을 가져옵니다.
-					sqlMapClient = SQLMap.getInstance(dbDao);
-					dbManager.put(searchKey, sqlMapClient);
-					
+						
+						// connection pool 을 가져옵니다.
+						sqlMapClient = SQLMap.getInstance(userDB);
+						dbManager.put(searchKey, sqlMapClient);
+						List<String> listSearchKey = managerKey.get(userDB.getTdbUserID());
+						if(listSearchKey == null) {
+							listSearchKey = new ArrayList<String>();
+							listSearchKey.add(searchKey);
+							
+							managerKey.put(userDB.getTdbUserID(), listSearchKey);
+						} else {
+							listSearchKey.add(searchKey);
+						}
+//					}	// end  synchronized
+						
 					// metadata를 가져와서 저장해 놓습니다.
 					conn = sqlMapClient.getDataSource().getConnection();
 					
+					// connection initialize
+					setConnectionInitialize(userDB, conn);
+					
 					// don't belive keyword. --;;
-					DatabaseMetaData dbMetadata = conn.getMetaData();
-					setMetaData(searchKey, dbDao, dbMetadata);
+					initializeConnection(searchKey, userDB, conn.getMetaData());
 				}
 				
 			} catch(Exception e) {
-//				String strAddReqInfo = "";
-//				try {
-//					strAddReqInfo = RequestInfoUtils.requestInfo("db connection exception ", SessionManager.getEMAIL());
-//				} catch(Exception ee) {
-//					logger.error("request error", ee);
-//				}
-				logger.error("===\n get DB Instance \n seq is " + dbDao.getSeq() + "\n" , e);
-				
+				logger.error("***** get DB Instance seq is " + userDB.getSeq() + "\n" , e);
+				managerKey.remove(userDB.getTdbUserID());
 				dbManager.remove(searchKey);
 				
 				throw new TadpoleSQLManagerException(e);
 			} finally {
 				if(conn != null) try {conn.close();} catch(Exception e) {}
 			}
-//		}
 
 		return sqlMapClient;
 	}
-
-//	/**
-//	 * 전체 connection pool 정보를 가져옵니다.
-//	 */
-//	public static void getConnectionPoolStatus() {
-//		SqlMapClient[] sqlMaps = (SqlMapClient[])dbManager.values().toArray();
-//		for (SqlMapClient sqlMapClient : sqlMaps) {
-//
-//			BasicDataSource basicDataSource = (BasicDataSource)sqlMapClient.getDataSource();
-////			logger.info("NumActive 	: " + basicDataSource.getNumActive());
-////			logger.info("NumIdle 	: " + basicDataSource.getNumIdle());
-//		}
-//	}
 	
 	/**
 	 * 각 DB의 metadata를 넘겨줍니다.
@@ -149,65 +148,65 @@ public class TadpoleSQLManager {
 	 * @param dbMetadata
 	 * @return
 	 */
-	public static void setMetaData(String searchKey, final UserDBDAO userDB, DatabaseMetaData tmpDBMetadata) throws Exception {
+	public static void initializeConnection(String searchKey, final UserDBDAO userDB, DatabaseMetaData metaData) throws Exception {
+		
 		// 엔진디비는 메타데이터를 저장하지 않는다.
-		if(dbManager.size() == 1) return;
+		if(userDB.getDBDefine() == DBDefine.TADPOLE_SYSTEM_DEFAULT || userDB.getDBDefine() == DBDefine.TADPOLE_SYSTEM_MYSQL_DEFAULT) return;
+				
+		String strIdentifierQuoteString = "";
+		try {
+			strIdentifierQuoteString = metaData.getIdentifierQuoteString();
+		} catch(Exception e) {
+			// ignore exception, not support quoteString
+		}
 		
-		TadpoleMetaData tmd = null;
-		
-		// https://github.com/hangum/TadpoleForDBTools/issues/412 디비의 메타데이터가 틀려서 설정하였습니다. 
+		// https://github.com/hangum/TadpoleForDBTools/issues/412 디비의 메타데이터가 틀려서 설정하였습니다.
+		TadpoleMetaData tadpoleMetaData = null;
 		switch ( userDB.getDBDefine() ) {
-			case ORACLE_DEFAULT:		
-				tmd = new TadpoleMetaData("\"", TadpoleMetaData.STORES_FIELD_TYPE.LOWCASE_BLANK);
+			case ORACLE_DEFAULT:
+			case TIBERO_DEFAULT:
+				tadpoleMetaData = new TadpoleMetaData(strIdentifierQuoteString, TadpoleMetaData.STORES_FIELD_TYPE.LOWCASE_BLANK);
 				break;
 			case MSSQL_DEFAULT:			
 			case MSSQL_8_LE_DEFAULT:
 			case MYSQL_DEFAULT:
 			case MARIADB_DEFAULT:
 			case SQLite_DEFAULT:		
-				tmd = new TadpoleMetaData("\"", TadpoleMetaData.STORES_FIELD_TYPE.BLANK);
+				tadpoleMetaData = new TadpoleMetaData(strIdentifierQuoteString, TadpoleMetaData.STORES_FIELD_TYPE.BLANK);
 				break;
 			case POSTGRE_DEFAULT:		
 			case TAJO_DEFAULT: 			
-				tmd = new TadpoleMetaData("\"", TadpoleMetaData.STORES_FIELD_TYPE.UPPERCASE_BLANK);
+				tadpoleMetaData = new TadpoleMetaData(strIdentifierQuoteString, TadpoleMetaData.STORES_FIELD_TYPE.UPPERCASE_BLANK);
 				break;
 			default:
-				tmd = new TadpoleMetaData("'", TadpoleMetaData.STORES_FIELD_TYPE.NONE);
+				tadpoleMetaData = new TadpoleMetaData(strIdentifierQuoteString, TadpoleMetaData.STORES_FIELD_TYPE.NONE);
 		}
-
+		
 		// set keyword
 		if(userDB.getDBDefine() == DBDefine.SQLite_DEFAULT) {
 			// not support keyword http://sqlite.org/lang_keywords.html
-			tmd.setKeywords(StringUtils.join(SQLConstants.SQLITE_KEYWORDS, ","));
-		} else if(userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT | userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT | userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT) {
-			String strFullKeywords = StringUtils.join(SQLConstants.MYSQL_KEYWORDS, ",") + "," + dbMetadata;
-			tmd.setKeywords(strFullKeywords);
+			tadpoleMetaData.setKeywords(StringUtils.join(SQLConstants.QUOTE_SQLITE_KEYWORDS, ","));
+		} else if(userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT || 
+					userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT || 
+					userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT ||
+					userDB.getDBDefine() == DBDefine.TIBERO_DEFAULT) {
+			String strFullKeywords = StringUtils.join(SQLConstants.QUOTE_MYSQL_KEYWORDS, ",") + "," + dbMetadata;
+			tadpoleMetaData.setKeywords(strFullKeywords);
 		} else if(userDB.getDBDefine() == DBDefine.MONGODB_DEFAULT) {
 			// not support this method
-		} else if(userDB.getDBDefine() == DBDefine.HIVE_DEFAULT ||
-				userDB.getDBDefine() == DBDefine.HIVE2_DEFAULT
-		) {
-			// not support this methods
-			tmd.setKeywords("");
+			tadpoleMetaData.setKeywords("");
 		} else if(userDB.getDBDefine() == DBDefine.MSSQL_8_LE_DEFAULT ||
 				userDB.getDBDefine() == DBDefine.MSSQL_DEFAULT
 		) {
-			String strFullKeywords = StringUtils.join(SQLConstants.MSSQL_KEYWORDS, ",") + "," + tmpDBMetadata.getSQLKeywords();
-			tmd.setKeywords(strFullKeywords);
+			String strFullKeywords = StringUtils.join(SQLConstants.QUOTE_MSSQL_KEYWORDS, ",") + "," + metaData.getSQLKeywords();
+			tadpoleMetaData.setKeywords(strFullKeywords);
 		} else {
-			tmd.setKeywords(tmpDBMetadata.getSQLKeywords());
+			tadpoleMetaData.setKeywords(metaData.getSQLKeywords());
 		}
-		
-		tmd.setDbMajorVersion(tmpDBMetadata.getDatabaseMajorVersion());
-		tmd.setMinorVersion(tmpDBMetadata.getDatabaseMinorVersion());
-		dbMetadata.put(searchKey, tmd);
-
-		// make assist data
-		MakeContentAssistUtil assistUtil = new MakeContentAssistUtil();
-		userDB.setTableListSeparator(assistUtil.getAssistTableList(userDB));
-		userDB.setViewListSeparator(assistUtil.getAssistViewList(userDB));
-		userDB.setFunctionLisstSeparator(assistUtil.getFunctionList(userDB));
-		
+						
+		tadpoleMetaData.setDbMajorVersion(metaData.getDatabaseMajorVersion());
+		tadpoleMetaData.setMinorVersion(metaData.getDatabaseMinorVersion());
+		dbMetadata.put(searchKey, tadpoleMetaData);
 	}
 	
 	/**
@@ -218,44 +217,50 @@ public class TadpoleSQLManager {
 	public static Map<String, SqlMapClient> getDbManager() {
 		return dbManager;
 	}
-	public static Map<String, TadpoleMetaData> getDbMetadata() {
-		return dbMetadata;
-	}
-	
+
 	/**
 	 * dbcp pool info
+	 * @param isAdmin
 	 * 
 	 * @return
 	 */
-	public static List<DBCPInfoDAO> getDBCPInfo() {
+	public static List<DBCPInfoDAO> getDBCPInfo(boolean isAdmin) {
 		List<DBCPInfoDAO> listDbcpInfo = new ArrayList<DBCPInfoDAO>();
+		final String strLoginEmail = SessionManager.getEMAIL();
 		
 		Set<String> setKeys = getDbManager().keySet();
 		for (String stKey : setKeys) {
+			String strArryKey[] = StringUtils.splitByWholeSeparator(stKey, PublicTadpoleDefine.DELIMITER);
 			
+			// 시스템 디비는 보여주지 않습니다.
+			if(StringUtils.equals(PublicTadpoleDefine.USER_ROLE_TYPE.SYSTEM_ADMIN.name(), strArryKey[0])) continue;
+			
+			// 어드민 만이 모두 호출한다.
+			if(!isAdmin) if(!StringUtils.equals(strLoginEmail, strArryKey[0])) continue;
+			
+			// add connection information
 			SqlMapClient sqlMap = dbManager.get(stKey);
 			DataSource ds = sqlMap.getDataSource();
 			BasicDataSource bds = (BasicDataSource)ds;
+				
+			DBCPInfoDAO dao = new DBCPInfoDAO();
+			dao.setEngineKey(stKey);
+			dao.setUser(strArryKey[0]);
+			dao.setDbSeq(Integer.parseInt(strArryKey[1]));
+			dao.setDbType(strArryKey[2]);
+			dao.setDisplayName(strArryKey[3]);
 			
-			String[] strArryKey = StringUtils.splitByWholeSeparator(stKey, PublicTadpoleDefine.DELIMITER);
-			if(!DBDefine.TADPOLE_SYSTEM_DEFAULT.getDBToString().equals(strArryKey[1])) {
-				
-				DBCPInfoDAO dao = new DBCPInfoDAO();
-				dao.setDbSeq(Integer.parseInt(strArryKey[0]));
-				dao.setDbType(strArryKey[1]);
-				dao.setDisplayName(strArryKey[2]);
-				
-				dao.setNumberActive(bds.getNumActive());
-				dao.setMaxActive(bds.getMaxActive());
-				dao.setNumberIdle(bds.getNumIdle());
-				dao.setMaxWait(bds.getMaxWait());
-				
-				listDbcpInfo.add(dao);
-			}
+			dao.setNumberActive(bds.getNumActive());
+			dao.setMaxActive(bds.getMaxActive());
+			dao.setNumberIdle(bds.getNumIdle());
+			dao.setMaxWait(bds.getMaxWait());
+			
+			listDbcpInfo.add(dao);
 		}
 		
 		return listDbcpInfo;
 	}
+	
 	
 	/**
 	 * DBMetadata
@@ -266,31 +271,66 @@ public class TadpoleSQLManager {
 	}
 	
 	/**
+	 * 사용자의 모든 인스턴스를 삭제한다.
+	 */
+	public static void removeAllInstance(String id) {
+		List<String> listKeyMap = managerKey.get(id);
+		if(listKeyMap == null) return;
+		for (String searchKey : listKeyMap) {
+			removeInstance(searchKey);
+		}
+	}
+	
+	/**
 	 * DB 정보를 삭제한다.
 	 * 
 	 * @param dbInfo
 	 */
 	public static void removeInstance(UserDBDAO dbInfo) {
-		synchronized (dbManager) {
-			String key = getKey(dbInfo);
-			SqlMapClient sqlMapClient = dbManager.remove(key);
-			TadpoleMetaData metaData = dbMetadata.remove(key);
-			
-			sqlMapClient = null;
-			metaData = null;
+		String key = getKey(dbInfo);
+		removeInstance(key);
+	}
+	
+	/**
+	 * remove instance
+	 * @param searchKey
+	 */
+	public static void removeInstance(String searchKey) {
+		TadpoleMetaData metaData = dbMetadata.remove(searchKey);
+		metaData = null;
+		
+		SqlMapClient sqlMapClient = null;
+		try {
+			sqlMapClient = dbManager.remove(searchKey);
+			if(sqlMapClient == null) return;
+			DataSource ds = sqlMapClient.getDataSource();
+			if(ds != null) {
+				if(logger.isDebugEnabled()) logger.debug("\t #### [TadpoleSQLManager] remove Instance: " + searchKey);
+				BasicDataSource basicDataSource = (BasicDataSource)ds;
+				basicDataSource.close();
+				
+				basicDataSource= null;
+				ds = null;
+			}
+		} catch (Exception e) {
+			logger.error("remove connection", e);
+		} finally {
+			sqlMapClient = null;	
 		}
 	}
 	
 	/**
 	 * map의 카를 가져옵니다.
-	 * @param dbInfo
+	 * @param userDB
 	 * @return
 	 */
-	public static String getKey(UserDBDAO dbInfo) {
-		return dbInfo.getSeq()  		+ PublicTadpoleDefine.DELIMITER + 
-				dbInfo.getDbms_type()  	+ PublicTadpoleDefine.DELIMITER +
-				dbInfo.getDisplay_name()+ PublicTadpoleDefine.DELIMITER +
-				dbInfo.getUrl()  		+ PublicTadpoleDefine.DELIMITER +
-				dbInfo.getUsers()  		+ PublicTadpoleDefine.DELIMITER;
+	public static String getKey(final UserDBDAO userDB) {
+		return 	userDB.getTdbUserID()   + PublicTadpoleDefine.DELIMITER +
+				userDB.getSeq()  		+ PublicTadpoleDefine.DELIMITER + 
+				userDB.getDbms_type()  	+ PublicTadpoleDefine.DELIMITER +
+				userDB.getDisplay_name()+ PublicTadpoleDefine.DELIMITER +
+				userDB.getUrl()  		+ PublicTadpoleDefine.DELIMITER +
+				userDB.getUsers()  		+ PublicTadpoleDefine.DELIMITER;
 	}
+
 }

@@ -36,6 +36,7 @@ import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.query.dao.mongodb.CollectionFieldDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.mongodb.core.query.MongoDBQuery;
@@ -58,6 +59,8 @@ import com.hangum.tadpole.mongodb.model.Table;
 public class TableTransferDropTargetListener extends AbstractTransferDropTargetListener {
 	private static final Logger logger = Logger.getLogger(TableTransferDropTargetListener.class);
 	private MongodbFactory tadpoleFactory = MongodbFactory.eINSTANCE;
+	/** object view에서 넘어오는 테이블 네임 인텍스, 0번은 스키마 이름(rdb에서만 사용하는.) */
+	private int IDX_TABLE_NAME = 1;
 	
 	private TadpoleMongoDBERDEditor mongoEditor = null;
 	private TableTransferFactory transferFactory = new TableTransferFactory();
@@ -102,12 +105,12 @@ public class TableTransferDropTargetListener extends AbstractTransferDropTargetL
 
 			int sourceDBSeq = Integer.parseInt(arrayDragSourceData[0]);
 			if(userDB.getSeq() != sourceDBSeq) {
-				MessageDialog.openError(null, "Error", Messages.get().TableTransferDropTargetListener_1); //$NON-NLS-1$
+				MessageDialog.openWarning(null, CommonMessages.get().Warning, Messages.get().TableTransferDropTargetListener_1); //$NON-NLS-1$
 				return;
 			}
 		} catch(Exception e) {
 			logger.error("dragger error", e); //$NON-NLS-1$
-			MessageDialog.openError(null, "Error", "Draging exception : " + e.getMessage()); //$NON-NLS-1$
+			MessageDialog.openError(null,CommonMessages.get().Error, "Draging exception : " + e.getMessage()); //$NON-NLS-1$
 			return;
 		}
 		
@@ -130,7 +133,7 @@ public class TableTransferDropTargetListener extends AbstractTransferDropTargetL
 						String[] arryTable = StringUtils.splitByWholeSeparator(strTable, PublicTadpoleDefine.DELIMITER);
 						if(arryTable.length == 0) continue;
 						
-						String tableName = arryTable[0];
+						String tableName = arryTable[IDX_TABLE_NAME];
 						mapTable.put(tableName, getColumns(tableName));
 					}
 					
@@ -158,7 +161,7 @@ public class TableTransferDropTargetListener extends AbstractTransferDropTargetL
 						if(jobEvent.getResult().isOK()) {
 							paintingModel(nextTableX, nextTableY, arryTables, mapTable);
 						} else {
-							MessageDialog.openError(null, "confirm", jobEvent.getResult().getMessage());
+							MessageDialog.openError(null, CommonMessages.get().Confirm, jobEvent.getResult().getMessage());
 						}
 					}
 				});	// end display.asyncExec
@@ -191,7 +194,7 @@ public class TableTransferDropTargetListener extends AbstractTransferDropTargetL
 			String[] arryTable = StringUtils.splitByWholeSeparator(strTable, PublicTadpoleDefine.DELIMITER);
 			if(arryTable.length == 0) continue;
 			
-			String tableName = arryTable[0];
+			String tableName = arryTable[IDX_TABLE_NAME];
 			String refTableNames = "'" + tableName + "',"; //$NON-NLS-1$ //$NON-NLS-2$
 			
 			// 이미 editor 상에 테이블 정보를 가져온다.
@@ -246,7 +249,7 @@ public class TableTransferDropTargetListener extends AbstractTransferDropTargetL
 					logger.error("GEF Table Drag and Drop Exception", e); //$NON-NLS-1$
 					
 					Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-					ExceptionDetailsErrorDialog.openError(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), "Error", Messages.get().TadpoleModelUtils_2, errStatus); //$NON-NLS-1$
+					ExceptionDetailsErrorDialog.openError(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),CommonMessages.get().Error, Messages.get().TadpoleModelUtils_2, errStatus); //$NON-NLS-1$
 				}
 				
 				transferFactory.setTable(tableModel);

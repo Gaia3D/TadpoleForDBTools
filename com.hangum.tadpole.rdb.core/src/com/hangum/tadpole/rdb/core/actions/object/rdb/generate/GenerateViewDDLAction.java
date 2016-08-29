@@ -17,6 +17,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.rdb.OracleSynonymDAO;
@@ -106,7 +107,7 @@ public class GenerateViewDDLAction extends AbstractObjectSelectAction {
 			FindEditorAndWriteQueryUtil.run(userDB, strObjectName, strScript, true, actionType);
 		} catch (Exception e) {
 			logger.error("view ddl", e);
-			MessageDialog.openError(null, "Confirm", "Not support this function.");
+			MessageDialog.openError(null,CommonMessages.get().Error, e.getMessage());
 		}
 	}
 

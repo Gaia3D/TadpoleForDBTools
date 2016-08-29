@@ -10,7 +10,9 @@
  ******************************************************************************/
 package com.hangum.tadpole.commons.admin.core.dialogs.users;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import java.util.Locale;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.log4j.Logger;
@@ -41,13 +43,15 @@ import com.hangum.tadpole.commons.libs.core.mails.SendEmails;
 import com.hangum.tadpole.commons.libs.core.mails.dto.EmailDTO;
 import com.hangum.tadpole.commons.libs.core.mails.dto.SMTPDTO;
 import com.hangum.tadpole.commons.libs.core.mails.template.NewUserMailBodyTemplate;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.libs.core.utils.ValidChecker;
-import com.hangum.tadpole.commons.util.ApplicationArgumentUtils;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.commons.util.Utils;
 import com.hangum.tadpole.engine.initialize.AddDefaultSampleDBToUser;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
-import com.hangum.tadpole.preference.get.GetAdminPreference;
+import com.hangum.tadpole.engine.utils.TimeZoneUtil;
+import com.hangum.tadpole.preference.define.GetAdminPreference;
 
 /**
  * Add new user Dialog
@@ -66,20 +70,26 @@ public class NewUserDialog extends Dialog {
 	private Text textName;
 	
 	private Combo comboLanguage;
+	private Combo comboTimezone;
 	
 	/** OTP code */
 	private String secretKey = ""; //$NON-NLS-1$
 	private Button btnGetOptCode;
 	private Text textSecretKey;
-	private Label labelQRCodeURL;
+	private Text labelQRCodeURL;
 	private Label lblOtpCdoe;
 	private Text textOTPCode;
 	
 	private UserDAO userDao = new UserDAO();
+	private Composite composite;
+	private Label label;
+	private Button btnServiceContract;
+	private Button btnPersonContract;
 	
 	/**
 	 * Create the dialog.
 	 * @param parentShell
+	 * @wbp.parser.constructor
 	 */
 	public NewUserDialog(Shell parentShell) {
 		super(parentShell);
@@ -91,7 +101,7 @@ public class NewUserDialog extends Dialog {
 	 */
 	public NewUserDialog(Shell parentShell, boolean isAdmin) {
 		super(parentShell);
-		
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);		
 		this.isAdmin = isAdmin;
 	}
 
@@ -99,8 +109,7 @@ public class NewUserDialog extends Dialog {
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
 		newShell.setText(Messages.get().NewUserDialog_0);
-		
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
+		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 	
 	/**
@@ -118,7 +127,7 @@ public class NewUserDialog extends Dialog {
 		gridLayout.numColumns = 2;
 		
 		Label lblIdemail = new Label(container, SWT.NONE);
-		lblIdemail.setText(Messages.get().NewUserDialog_1);
+		lblIdemail.setText(CommonMessages.get().Email);
 		
 		textEMail = new Text(container, SWT.BORDER);
 		textEMail.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -136,7 +145,7 @@ public class NewUserDialog extends Dialog {
 		textRePasswd.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblName = new Label(container, SWT.NONE);
-		lblName.setText(Messages.get().NewUserDialog_4);
+		lblName.setText(CommonMessages.get().Name);
 		
 		textName = new Text(container, SWT.BORDER);
 		textName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -146,9 +155,68 @@ public class NewUserDialog extends Dialog {
 		
 		comboLanguage = new Combo(container, SWT.READ_ONLY);
 		comboLanguage.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		comboLanguage.add("ko"); //$NON-NLS-1$
-		comboLanguage.add("en_us"); //$NON-NLS-1$
-		comboLanguage.select(1);
+		comboLanguage.add(Locale.ENGLISH.getDisplayLanguage(Locale.ENGLISH));
+		comboLanguage.add(Locale.KOREAN.getDisplayLanguage(Locale.KOREAN));
+		comboLanguage.setData(Locale.ENGLISH.getDisplayLanguage(Locale.ENGLISH), Locale.ENGLISH);
+		comboLanguage.setData(Locale.KOREAN.getDisplayLanguage(Locale.KOREAN), Locale.KOREAN);
+		comboLanguage.select(0);
+		
+		Label lblTimezone = new Label(container, SWT.NONE);
+		lblTimezone.setText(Messages.get().Timezone);
+		
+		comboTimezone = new Combo(container, SWT.READ_ONLY);
+		comboTimezone.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		for (String timzon : TimeZoneUtil.getTimezoneList()) {
+			comboTimezone.add(timzon);
+		}
+		comboTimezone.setText(PublicTadpoleDefine.DEFAULT_TIME_ZONE);
+		
+		label = new Label(container, SWT.NONE);
+		label.setText(Messages.get().Agreement);
+		
+		composite = new Composite(container, SWT.NONE);
+		GridLayout gl_composite = new GridLayout(2, false);
+		gl_composite.verticalSpacing = 0;
+		gl_composite.horizontalSpacing = 0;
+		gl_composite.marginHeight = 0;
+		gl_composite.marginWidth = 0;
+		composite.setLayout(gl_composite);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		
+		btnServiceContract = new Button(composite, SWT.CHECK);
+		btnServiceContract.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				
+				if(!btnServiceContract.getSelection()) return;
+				
+				try {
+					String strContract = IOUtils.toString(NewUserDialog.class.getResourceAsStream("serviceContract.txt"));
+					ServiceContractDialog dialog = new ServiceContractDialog(getShell(), Messages.get().TermsOfService, strContract);
+					dialog.open();
+				} catch(Exception e3) {
+					logger.error("Doesn't read service contract", e3);
+				}
+			}
+		});
+		btnServiceContract.setText(Messages.get().TermsOfService);
+		
+		btnPersonContract = new Button(composite, SWT.CHECK);
+		btnPersonContract.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if(!btnPersonContract.getSelection()) return;
+				
+				try {
+					String strContract = IOUtils.toString(NewUserDialog.class.getResourceAsStream("personServiceContract.txt"));
+					ServiceContractDialog dialog = new ServiceContractDialog(getShell(), Messages.get().PrivacyTermsandConditions, strContract);
+					dialog.open();
+				} catch(Exception e3) {
+					logger.error("Doesn't read service contract", e3);
+				}
+			}
+		});
+		btnPersonContract.setText(Messages.get().PrivacyTermsandConditions);
 		
 		btnGetOptCode = new Button(container, SWT.CHECK);
 		btnGetOptCode.addSelectionListener(new SelectionAdapter() {
@@ -178,10 +246,8 @@ public class NewUserDialog extends Dialog {
 		Label lblQrcodeUrl = new Label(grpGoogleOtp, SWT.NONE);
 		lblQrcodeUrl.setText(Messages.get().NewUserDialog_lblQrcodeUrl_text);
 		
-		labelQRCodeURL = new Label(grpGoogleOtp, SWT.NONE);
-		labelQRCodeURL.setText(""); //$NON-NLS-1$
+		labelQRCodeURL = new Text(grpGoogleOtp, SWT.BORDER | SWT.READ_ONLY);
 		labelQRCodeURL.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		labelQRCodeURL.setData(RWT.MARKUP_ENABLED, Boolean.TRUE);
 		
 		lblOtpCdoe = new Label(grpGoogleOtp, SWT.NONE);
 		lblOtpCdoe.setText(Messages.get().NewUserDialog_lblOtpCdoe_text);
@@ -201,7 +267,7 @@ public class NewUserDialog extends Dialog {
 	 */
 	private void generateGoogleOTP() {
 		if(!btnGetOptCode.getSelection()) {
-			getShell().setSize(370, 240);
+			getShell().setSize(370, 294);
 			textSecretKey.setText(""); //$NON-NLS-1$
 			labelQRCodeURL.setText(""); //$NON-NLS-1$
 			
@@ -210,19 +276,19 @@ public class NewUserDialog extends Dialog {
 		
 		String strEmail = textEMail.getText();
 		if("".equals(strEmail)) { //$NON-NLS-1$
-			getShell().setSize(370, 240);
+			getShell().setSize(370, 294);
 			btnGetOptCode.setSelection(false);      
 			textEMail.setFocus();
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_7);
+			MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_7);
 			return;
 		} else if(!ValidChecker.isValidEmailAddress(strEmail)) {
-			getShell().setSize(370, 240);
+			getShell().setSize(370, 294);
 			btnGetOptCode.setSelection(false);      
 			textEMail.setFocus();
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_15);
+			MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_15);
 			return;
 		}
-		getShell().setSize(380, 370);
+		getShell().setSize(380, 412);
 		secretKey = GoogleAuthManager.getInstance().getSecretKey();
 		textSecretKey.setText(secretKey);
 		
@@ -233,8 +299,7 @@ public class NewUserDialog extends Dialog {
 			logger.debug("url is " + strURL); //$NON-NLS-1$
 		}
 		
-		strURL = StringEscapeUtils.escapeHtml(strURL);
-		labelQRCodeURL.setText(String.format("<a href='%s' target='_blank'>Show QRCode(Only support Google Chrome)</a>", strURL)); //$NON-NLS-1$
+		labelQRCodeURL.setText(strURL); //$NON-NLS-1$
 	}
 	
 	@Override
@@ -245,14 +310,22 @@ public class NewUserDialog extends Dialog {
 		String name = StringUtils.trimToEmpty(textName.getText());
 		
 		if(!validation(strEmail, passwd, rePasswd, name)) return;
+		if(!btnServiceContract.getSelection()) {
+			MessageDialog.openError(getShell(), CommonMessages.get().Warning, Messages.get().PlzConfirmTermsService);
+			return;
+		} else if(!btnPersonContract.getSelection()) {
+			MessageDialog.openError(getShell(), CommonMessages.get().Warning, Messages.get().PlzConfirmTermsService);
+			return;
+		}
+		
 		if(btnGetOptCode.getSelection()) {
 			if("".equals(textOTPCode.getText())) { //$NON-NLS-1$
-				MessageDialog.openError(getShell(), Messages.get().NewUserDialog_24, Messages.get().NewUserDialog_40);
+				MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_40);
 				textOTPCode.setFocus();
 				return;
 			}
 			if(!GoogleAuthManager.getInstance().isValidate(secretKey, NumberUtils.toInt(textOTPCode.getText()))) {
-				MessageDialog.openError(getShell(), "Error", Messages.get().NewUserDialog_42); //$NON-NLS-1$
+				MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_42); //$NON-NLS-1$
 				textOTPCode.setFocus();
 				return;
 			}
@@ -262,7 +335,7 @@ public class NewUserDialog extends Dialog {
 			/**
 			 * 어드민의 허락이 필요하면 디비에 등록할때는 NO를 입력, 필요치 않으면 YES를 입력.
 			 */
-			String approvalYn = ApplicationArgumentUtils.getNewUserPermit()?PublicTadpoleDefine.YES_NO.NO.name():PublicTadpoleDefine.YES_NO.YES.name();
+			String approvalYn = GetAdminPreference.getNewUserPermit();
 			String isEmamilConrim = PublicTadpoleDefine.YES_NO.NO.name();
 			
 			SMTPDTO smtpDto = new SMTPDTO();
@@ -271,23 +344,27 @@ public class NewUserDialog extends Dialog {
 			} catch(Exception e) {
 				// igonre exception
 			}
-			if(isAdmin || "".equals(smtpDto.getEmail())) { //$NON-NLS-1$
+			if(isAdmin || !smtpDto.isValid()) { //$NON-NLS-1$
 				isEmamilConrim 	= PublicTadpoleDefine.YES_NO.YES.name();
 			}
 			
 			String strEmailConformKey = Utils.getUniqueDigit(7);
+			Locale locale = (Locale)comboLanguage.getData(comboLanguage.getText());
 			userDao = TadpoleSystem_UserQuery.newUser(
 					PublicTadpoleDefine.INPUT_TYPE.NORMAL.toString(),
 					strEmail, strEmailConformKey, isEmamilConrim, 
 					passwd, 
 					PublicTadpoleDefine.USER_ROLE_TYPE.ADMIN.toString(),
-					name, comboLanguage.getText(), approvalYn,  
+					name, 
+					locale.toLanguageTag(), 
+					comboTimezone.getText(),
+					approvalYn,  
 					btnGetOptCode.getSelection()?"YES":"NO",  //$NON-NLS-1$ //$NON-NLS-2$
 					textSecretKey.getText(),
 					"*"); //$NON-NLS-1$ //$NON-NLS-2$
 		
 			boolean isSentMail = false;
-			if(!"".equals(smtpDto.getEmail())) { //$NON-NLS-1$
+			if(smtpDto.isValid()) {
 				sendEmailAccessKey(name, strEmail, strEmailConformKey);
 				isSentMail = true;
 			}
@@ -298,12 +375,12 @@ public class NewUserDialog extends Dialog {
 				logger.error("Sample db copy error", e); //$NON-NLS-1$
 			}
 			
-			if(isSentMail) MessageDialog.openInformation(null, Messages.get().NewUserDialog_14, Messages.get().NewUserDialog_31);
-			else MessageDialog.openInformation(null, Messages.get().NewUserDialog_14, Messages.get().NewUserDialog_29); //$NON-NLS-1$
+			if(isSentMail) MessageDialog.openInformation(null, CommonMessages.get().Confirm, String.format(Messages.get().NewUserDialog_31, strEmail));
+			else MessageDialog.openInformation(null, CommonMessages.get().Confirm, Messages.get().NewUserDialog_29); //$NON-NLS-1$
 			
 		} catch (Exception e) {
 			logger.error(Messages.get().NewUserDialog_8, e);
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_14, e.getMessage());
+			MessageDialog.openError(getParentShell(), CommonMessages.get().Confirm, e.getMessage());
 			return;
 		}
 		
@@ -329,6 +406,9 @@ public class NewUserDialog extends Dialog {
 			// 
 			NewUserMailBodyTemplate mailContent = new NewUserMailBodyTemplate();
 			String strContent = mailContent.getContent(name, email, strConfirmKey);
+			
+//			if(logger.isDebugEnabled()) logger.debug(strContent);
+			
 			emailDao.setContent(strContent);
 			emailDao.setTo(email);
 			
@@ -337,7 +417,7 @@ public class NewUserDialog extends Dialog {
 		} catch(Exception e) {
 			logger.error(String.format("New user key sening error name %s, email %s, confirm key %s", name, email, strConfirmKey), e); //$NON-NLS-1$
 			
-			MessageDialog.openError(getShell(), Messages.get().NewUserDialog_24, Messages.get().NewUserDialog_34);
+			MessageDialog.openError(getShell(),CommonMessages.get().Error, Messages.get().NewUserDialog_34);
 		}
 	}
 	
@@ -353,29 +433,33 @@ public class NewUserDialog extends Dialog {
 	private boolean validation(String strEmail, String strPass, String rePasswd, String name) {
 
 		if("".equals(strEmail)) { //$NON-NLS-1$
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_7);
+			MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_7);
 			textEMail.setFocus();
 			return false;
 		} else if("".equals(strPass)) { //$NON-NLS-1$
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_10);
+			MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_10);
 			textPasswd.setFocus();
 			return false;
 		} else if("".equals(name)) { //$NON-NLS-1$
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_13);
+			MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_13);
 			textName.setFocus();
 			return false;
 		} else if(!ValidChecker.isValidEmailAddress(strEmail)) {
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_15);
+			MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_15);
 			textEMail.setFocus();
 			return false;
-		} else if(StringUtils.length(strPass) < 5) {
-			MessageDialog.openError(getShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_25);
+		} else if(!ValidChecker.isSimplePasswordChecker(strPass)) {
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_25);
 			textPasswd.setFocus();
+			return false;
+		} else if("".equals(rePasswd)) {
+			MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_10);
+			textRePasswd.setFocus();
 			return false;
 		}
 		
 		if(!strPass.equals(rePasswd)) {
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_17);
+			MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_17);
 			textPasswd.setFocus();
 			return false;
 		}
@@ -383,13 +467,13 @@ public class NewUserDialog extends Dialog {
 		try {
 			// 기존 중복 이메일인지 검사합니다.
 			if(!TadpoleSystem_UserQuery.isDuplication(strEmail)) {
-				MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_9);
+				MessageDialog.openWarning(getParentShell(), CommonMessages.get().Warning, Messages.get().NewUserDialog_9);
 				textEMail.setFocus();
 				return false;
 			}
 		} catch(Exception e) {
-			logger.error(Messages.get().NewUserDialog_11, e);
-			MessageDialog.openError(getParentShell(), Messages.get().NewUserDialog_6, Messages.get().NewUserDialog_12 + e.getMessage());
+			logger.error("new user", e);
+			MessageDialog.openError(getParentShell(),CommonMessages.get().Error, Messages.get().NewUserDialog_12 + e.getMessage());
 			return false;
 		}
 		
@@ -402,8 +486,8 @@ public class NewUserDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, Messages.get().NewUserDialog_19,	true);
-		createButton(parent, IDialogConstants.CANCEL_ID, Messages.get().NewUserDialog_20, false);
+		createButton(parent, IDialogConstants.OK_ID, CommonMessages.get().Save,	true);
+		createButton(parent, IDialogConstants.CANCEL_ID, CommonMessages.get().Cancel, false);
 	}
 
 	/**
@@ -411,7 +495,7 @@ public class NewUserDialog extends Dialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(370, 242);
+		return new Point(370, 294);
 	}
 	
 	/**

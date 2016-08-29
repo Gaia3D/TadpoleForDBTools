@@ -33,6 +33,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.sql.util.resultset.QueryExecuteResultDTO;
 import com.hangum.tadpole.rdb.core.Messages;
@@ -59,8 +60,7 @@ public class RecordViewDialog extends Dialog {
 	private Label lblCurrentCount;
 	private Label lblMaxCount;
 
-	public RecordViewDialog(Shell parentShell, QueryExecuteResultDTO dto,
-			Object selection) {
+	public RecordViewDialog(Shell parentShell, QueryExecuteResultDTO dto, Object selection) {
 		super(parentShell);
 		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 		this.dto = dto;
@@ -86,8 +86,7 @@ public class RecordViewDialog extends Dialog {
 
 		Composite compositeNavigation = new Composite(container, SWT.NONE);
 		compositeNavigation.setLayout(new GridLayout(7, false));
-		compositeNavigation.setLayoutData(new GridData(SWT.FILL, SWT.CENTER,
-				true, false, 1, 1));
+		compositeNavigation.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
 		Button btnFirst = new Button(compositeNavigation, SWT.CENTER);
 		btnFirst.setToolTipText(Messages.get().RecordViewDialog_1);
@@ -153,19 +152,14 @@ public class RecordViewDialog extends Dialog {
 		lblMaxCount.setText(String.valueOf(resultSet.size()));
 
 		Label label = new Label(container, SWT.SEPARATOR | SWT.HORIZONTAL);
-		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1,
-				1));
+		label.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 
-		ScrolledComposite compositeScrolled = new ScrolledComposite(container,
-				SWT.H_SCROLL | SWT.V_SCROLL);
-		compositeScrolled.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true,
-				true, 1, 1));
+		ScrolledComposite compositeScrolled = new ScrolledComposite(container, SWT.H_SCROLL | SWT.V_SCROLL);
+		compositeScrolled.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 		compositeScrolled.setLayout(new FillLayout());
-		Composite compositeContent = new Composite(compositeScrolled,
-				SWT.BORDER);
+		Composite compositeContent = new Composite(compositeScrolled, SWT.BORDER);
 		compositeContent.setLayout(new GridLayout(3, false));
-		compositeContent.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true,
-				true, 1, 1));
+		compositeContent.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 
 		// LOOP -------------------------------------------------------
 		Map<Integer, String> column = dto.getColumnName();
@@ -173,18 +167,14 @@ public class RecordViewDialog extends Dialog {
 			Label lblValueName = new Label(compositeContent, SWT.NONE);
 			lblValueName.setText(column.get(index));
 			Label lblSeperator = new Label(compositeContent, SWT.NONE);
-			lblSeperator.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER,
-					false, false, 1, 1));
+			lblSeperator.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 			lblSeperator.setText(":"); //$NON-NLS-1$
-			Text txtValue = new Text(compositeContent, SWT.BORDER
-					| SWT.READ_ONLY);
-			txtValue.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
-					false, 1, 1));
+			Text txtValue = new Text(compositeContent, SWT.BORDER | SWT.READ_ONLY);
+			txtValue.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 			controlList.put(index, txtValue);
 		}
 		compositeScrolled.setContent(compositeContent);
-		compositeScrolled.setMinSize(compositeContent.computeSize(SWT.DEFAULT,
-				SWT.DEFAULT));
+		compositeScrolled.setMinSize(compositeContent.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 		compositeScrolled.setExpandHorizontal(true);
 		compositeScrolled.setExpandVertical(true);
 
@@ -210,7 +200,7 @@ public class RecordViewDialog extends Dialog {
 		Map<Integer, Object> record = resultSet.get(loc);
 		for (Integer index : record.keySet()) {
 			Text txt = controlList.get(index);
-			txt.setText(record.get(index)==null?"":record.get(index).toString()); //$NON-NLS-1$
+			if(txt != null) txt.setText(record.get(index)==null?"":record.get(index).toString()); //$NON-NLS-1$
 		}
 		if (getDialogArea() != null) {
 			getDialogArea().redraw();
@@ -224,7 +214,7 @@ public class RecordViewDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, Messages.get().RecordViewDialog_13, false);
+		createButton(parent, IDialogConstants.OK_ID, CommonMessages.get().Close, false);
 	}
 
 	@Override

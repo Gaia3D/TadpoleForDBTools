@@ -20,10 +20,12 @@ import org.eclipse.ui.IWorkbenchWindow;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleJavaDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.sql.util.OracleObjectCompileUtils;
 import com.hangum.tadpole.rdb.core.Activator;
@@ -54,7 +56,7 @@ public class OracleObjectCompileAction extends AbstractObjectSelectAction {
 
 	@Override
 	public void run(IStructuredSelection selection, UserDBDAO userDB, OBJECT_TYPE actionType) {
-		if (DBDefine.getDBDefine(userDB) != DBDefine.ORACLE_DEFAULT) return;
+		if (userDB.getDBDefine() != DBDefine.ORACLE_DEFAULT && userDB.getDBDefine() != DBDefine.TIBERO_DEFAULT) return;
 		
 		if(actionType == PublicTadpoleDefine.OBJECT_TYPE.TABLES) {			
 			
@@ -65,15 +67,18 @@ public class OracleObjectCompileAction extends AbstractObjectSelectAction {
 		
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.PROCEDURES) {
 			ProcedureFunctionDAO dao = (ProcedureFunctionDAO)selection.getFirstElement();
-			otherObjectCompile(PublicTadpoleDefine.QUERY_DDL_TYPE.PROCEDURE, "PROCEDURE", dao.getName().trim().toUpperCase(), userDB);			 //$NON-NLS-1$
+			otherObjectCompile(PublicTadpoleDefine.QUERY_DDL_TYPE.PROCEDURE, "PROCEDURE", dao.getName(), userDB);			 //$NON-NLS-1$
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.PACKAGES) {
 			packageCompile((ProcedureFunctionDAO)selection.getFirstElement(), userDB);
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.FUNCTIONS) {
 			ProcedureFunctionDAO dao = (ProcedureFunctionDAO)selection.getFirstElement();
-			otherObjectCompile(PublicTadpoleDefine.QUERY_DDL_TYPE.FUNCTION, "FUNCTION",  dao.getName().trim().toUpperCase(), userDB);			 //$NON-NLS-1$
+			otherObjectCompile(PublicTadpoleDefine.QUERY_DDL_TYPE.FUNCTION, "FUNCTION",  dao.getName(), userDB);			 //$NON-NLS-1$
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.TRIGGERS) {
 			TriggerDAO dao = (TriggerDAO)selection.getFirstElement();
-			otherObjectCompile(PublicTadpoleDefine.QUERY_DDL_TYPE.TRIGGER, "TRIGGER",  dao.getName().trim().toUpperCase(), userDB);			 //$NON-NLS-1$
+			otherObjectCompile(PublicTadpoleDefine.QUERY_DDL_TYPE.TRIGGER, "TRIGGER",  dao.getName(), userDB);			 //$NON-NLS-1$
+		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.JAVA) {
+			OracleJavaDAO dao = (OracleJavaDAO)selection.getFirstElement();
+			otherObjectCompile(PublicTadpoleDefine.QUERY_DDL_TYPE.JAVA, dao.getObjectType(),  dao.getObjectName(), userDB);			 //$NON-NLS-1$
 		}
 	}
 	
@@ -85,14 +90,14 @@ public class OracleObjectCompileAction extends AbstractObjectSelectAction {
 	 */
 	public void viewCompile(TableDAO tableDao, UserDBDAO userDB) {
 		try {
-			String result = OracleObjectCompileUtils.viewCompile(tableDao.getName(), userDB);
+			String result = OracleObjectCompileUtils.viewCompile(tableDao.getFullName(), userDB);
 			showMessage(result);
 			
 		} catch (Exception e) {
 			logger.error(tableDao.getName() + " compile", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", tableDao.getName() + Messages.get().OracleObjectCompileAction_5, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, tableDao.getName() + Messages.get().OracleObjectCompileAction_5, errStatus); //$NON-NLS-1$
 		} finally {
 			refreshObject(PublicTadpoleDefine.QUERY_DDL_TYPE.VIEW, tableDao.getName(), userDB);
 		}
@@ -115,7 +120,7 @@ public class OracleObjectCompileAction extends AbstractObjectSelectAction {
 			logger.error(objName + " compile", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", objName + Messages.get().OracleObjectCompileAction_5, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, objName + Messages.get().OracleObjectCompileAction_5, errStatus); //$NON-NLS-1$
 		} finally {
 			refreshObject(actionType, objName, userDB);
 		}
@@ -129,14 +134,14 @@ public class OracleObjectCompileAction extends AbstractObjectSelectAction {
 	 */
 	public void packageCompile(ProcedureFunctionDAO procedureDAO, UserDBDAO userDB) {
 		try {
-			String result = OracleObjectCompileUtils.packageCompile(procedureDAO.getName(), userDB);
+			String result = OracleObjectCompileUtils.packageCompile(procedureDAO.getFullName(true), userDB);
 			showMessage(result);
 			
 		} catch (Exception e) {
 			logger.error(procedureDAO.getName() + " compile", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", procedureDAO.getName() + Messages.get().OracleObjectCompileAction_5, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, procedureDAO.getName() + Messages.get().OracleObjectCompileAction_5, errStatus); //$NON-NLS-1$
 		} finally {
 			refreshObject(PublicTadpoleDefine.QUERY_DDL_TYPE.PACKAGE, procedureDAO.getName(), userDB);
 		}

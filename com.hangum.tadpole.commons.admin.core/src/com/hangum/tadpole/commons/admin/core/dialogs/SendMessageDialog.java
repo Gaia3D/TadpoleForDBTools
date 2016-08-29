@@ -41,9 +41,11 @@ import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.mails.SendEmails;
 import com.hangum.tadpole.commons.libs.core.mails.dto.EmailDTO;
+import com.hangum.tadpole.commons.libs.core.mails.dto.SMTPDTO;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
-import com.hangum.tadpole.preference.get.GetAdminPreference;
+import com.hangum.tadpole.preference.define.GetAdminPreference;
 
 /**
  * 모든 사용자에게 메시지를 보냅니다.
@@ -135,12 +137,12 @@ public class SendMessageDialog extends Dialog {
 	protected void okPressed() {
 
 		if(StringUtils.isEmpty(textTitle.getText())) {
-			MessageDialog.openError(null, Messages.get().SendMessageDialog_7, Messages.get().SendMessageDialog_8);
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, Messages.get().SendMessageDialog_8);
 			textTitle.setFocus();
 			return;
 		}
 		if(StringUtils.isEmpty(textMessage.getText())) {
-			MessageDialog.openError(null, Messages.get().SendMessageDialog_9, Messages.get().SendMessageDialog_10);
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, Messages.get().SendMessageDialog_10);
 			textMessage.setFocus();
 			return;
 		}
@@ -150,20 +152,30 @@ public class SendMessageDialog extends Dialog {
 		final String strTitle = textTitle.getText();
 		final String strMessage = textMessage.getText();
 		
+		SMTPDTO smtpDao = null;
+		try {
+			smtpDao = GetAdminPreference.getSessionSMTPINFO();
+		} catch (Exception e1) {
+			logger.error("not set email info" + e1);
+			MessageDialog.openError(getShell(),CommonMessages.get().Error, Messages.get().DoNotSettingEmailServer);
+			return;
+		}
+		final SMTPDTO finalSMTDao = smtpDao;
+		
 		Job job = new Job("AdminSendingmail") { //$NON-NLS-1$
 			@Override
 			public IStatus run(IProgressMonitor monitor) {
 				
 				try {
 					List<UserDAO> listUser = TadpoleSystem_UserQuery.getLiveAllUser();
-					SendEmails email = new SendEmails(GetAdminPreference.getSMTPINFO());
 					
-					monitor.beginTask(Messages.get().SendMessageDialog_12, listUser.size());
+					final SendEmails email = new SendEmails(finalSMTDao);					
+					monitor.beginTask("Start send mail", listUser.size());
 					
 					for (int i=0; i<listUser.size(); i++) {
 						UserDAO userDAO = listUser.get(i);
 						
-						monitor.setTaskName(String.format(Messages.get().SendMessageDialog_13, i, listUser.size(), userDAO.getEmail()));
+						monitor.setTaskName(String.format("%d/%d, user %s ", i, listUser.size(), userDAO.getEmail()));
 						logger.info("admin user sender " + userDAO.getEmail()); //$NON-NLS-1$
 						try {
 							EmailDTO emailDto = new EmailDTO();
@@ -184,7 +196,7 @@ public class SendMessageDialog extends Dialog {
 						}
 					}
 				} catch(Exception e) {
-					logger.error(Messages.get().SendMessageDialog_19, e);
+					logger.error("sending mail", e);
 					return new Status(Status.WARNING, Activator.PLUGIN_ID, e.getMessage(), e);
 				} finally {
 					resultMessage("done."); //$NON-NLS-1$
@@ -217,10 +229,10 @@ public class SendMessageDialog extends Dialog {
 				shell.getDisplay().asyncExec(new Runnable() {
 					public void run() {
 						if(jobEvent.getResult().isOK()) {
-							MessageDialog.openInformation(shell, Messages.get().SendMessageDialog_22, Messages.get().SendMessageDialog_23);
+							MessageDialog.openInformation(shell, CommonMessages.get().Confirm, Messages.get().SendMessageDialog_23);
 						} else {
 							Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, jobEvent.getResult().getMessage(), jobEvent.getResult().getException()); //$NON-NLS-1$
-							ExceptionDetailsErrorDialog.openError(shell, "Error", Messages.get().SendMessageDialog_11, errStatus); //$NON-NLS-1$
+							ExceptionDetailsErrorDialog.openError(shell,CommonMessages.get().Error, Messages.get().SendMessageDialog_11, errStatus); //$NON-NLS-1$
 						}
 					}
 				});	// end display.asyncExec
@@ -241,8 +253,8 @@ public class SendMessageDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, Messages.get().SendMessageDialog_26, true);
-		createButton(parent, IDialogConstants.CANCEL_ID, Messages.get().SendMessageDialog_27, false);
+		createButton(parent, IDialogConstants.OK_ID, CommonMessages.get().Confirm, true);
+		createButton(parent, IDialogConstants.CANCEL_ID, CommonMessages.get().Cancel, false);
 	}
 
 	/**

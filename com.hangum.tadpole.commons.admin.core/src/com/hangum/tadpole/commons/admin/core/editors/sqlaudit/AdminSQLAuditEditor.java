@@ -54,6 +54,7 @@ import com.hangum.tadpole.commons.admin.core.Messages;
 import com.hangum.tadpole.commons.dialogs.message.dao.RequestResultDAO;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.CSVFileUtils;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.commons.util.Utils;
@@ -64,6 +65,7 @@ import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_ExecutedSQL;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBQuery;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBResource;
+import com.hangum.tadpole.engine.utils.TimeZoneUtil;
 import com.hangum.tadpole.rdb.core.util.FindEditorAndWriteQueryUtil;
 import com.hangum.tadpole.session.manager.SessionManager;
 import com.swtdesigner.SWTResourceManager;
@@ -87,7 +89,7 @@ public class AdminSQLAuditEditor extends EditorPart {
 	
 	private Text textMillis;
 	private Grid gridHistory;
-	private final String[] strArrHeader = {"#", Messages.get().AdminSQLAuditEditor_0, Messages.get().AdminSQLAuditEditor_1, Messages.get().AdminSQLAuditEditor_2, Messages.get().AdminSQLAuditEditor_3, Messages.get().AdminSQLAuditEditor_4, Messages.get().AdminSQLAuditEditor_5, Messages.get().AdminSQLAuditEditor_6, Messages.get().AdminSQLAuditEditor_7, Messages.get().AdminSQLAuditEditor_8}; //$NON-NLS-1$
+	private final String[] strArrHeader = {"#", Messages.get().Database, Messages.get().User, Messages.get().AdminSQLAuditEditor_2, Messages.get().AdminSQLAuditEditor_3, Messages.get().AdminSQLAuditEditor_4, Messages.get().AdminSQLAuditEditor_5, Messages.get().AdminSQLAuditEditor_6, Messages.get().AdminSQLAuditEditor_7, Messages.get().IP}; //$NON-NLS-1$
 
 	private Button btnSearch;
 
@@ -175,7 +177,7 @@ public class AdminSQLAuditEditor extends EditorPart {
 		tltmSecondsRefresh.setText(Messages.get().AdminSQLAuditEditor_17);
 		
 		Group compositeHead = new Group(parent, SWT.NONE);
-		compositeHead.setText(Messages.get().AdminSQLAuditEditor_9);
+		compositeHead.setText(CommonMessages.get().Search);
 		GridLayout gl_compositeHead2 = new GridLayout(4, false);
 		compositeHead.setLayout(gl_compositeHead2);
 		compositeHead.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 1, 1));
@@ -201,7 +203,7 @@ public class AdminSQLAuditEditor extends EditorPart {
 		comboTypes.select(0);
 		
 		Label lblEmail = new Label(compositeHead, SWT.NONE);
-		lblEmail.setText(Messages.get().AdminSQLAuditEditor_12);
+		lblEmail.setText(CommonMessages.get().Email);
 		
 		textEmail = new Text(compositeHead, SWT.BORDER);
 		textEmail.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -280,7 +282,7 @@ public class AdminSQLAuditEditor extends EditorPart {
 				search();
 			}
 		});
-		btnSearch.setText(Messages.get().AdminSQLAuditEditor_18);
+		btnSearch.setText(CommonMessages.get().Search);
 		textSearch.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
@@ -353,7 +355,7 @@ public class AdminSQLAuditEditor extends EditorPart {
 	 */
 	private void download() {
 		if(gridHistory.getItemCount() == 0) return;
-		if(!MessageDialog.openConfirm(getSite().getShell(), Messages.get().AdminSQLAuditEditor_21, Messages.get().AdminSQLAuditEditor_22)) return;
+		if(!MessageDialog.openConfirm(getSite().getShell(), CommonMessages.get().Confirm, Messages.get().AdminSQLAuditEditor_22)) return;
 			
 		List<String[]> listCsvData = new ArrayList<String[]>();
 		
@@ -375,7 +377,7 @@ public class AdminSQLAuditEditor extends EditorPart {
 			String strCVSContent = CSVFileUtils.makeData(listCsvData);
 			downloadExtFile("SQLAudit.csv", strCVSContent); //$NON-NLS-1$
 			
-			MessageDialog.openInformation(getSite().getShell(), Messages.get().AdminSQLAuditEditor_21, Messages.get().AdminSQLAuditEditor_24);
+			MessageDialog.openInformation(getSite().getShell(), CommonMessages.get().Confirm, Messages.get().AdminSQLAuditEditor_24);
 		} catch (Exception e) {
 			logger.error("Save CSV Data", e); //$NON-NLS-1$
 		}		
@@ -462,7 +464,7 @@ public class AdminSQLAuditEditor extends EditorPart {
 				item.setText(0, ""+i); //$NON-NLS-1$
 				item.setText(1, reqResultDAO.getDbName());
 				item.setText(2, reqResultDAO.getUserName());
-				item.setText(3, Utils.dateToStr(reqResultDAO.getStartDateExecute()));
+				item.setText(3, TimeZoneUtil.dateToStr(reqResultDAO.getStartDateExecute()));
 				item.setText(4, Utils.convLineToHtml(strSQL));
 				item.setToolTipText(4, strSQL);
 				
@@ -519,7 +521,7 @@ public class AdminSQLAuditEditor extends EditorPart {
 					});
 					
 					// 20 seconds
-					try{ Thread.sleep(1000 * 5); } catch(Exception e) {}
+					try{ Thread.sleep(1000 * 10); } catch(Exception e) {}
 				}
 			};
 		};

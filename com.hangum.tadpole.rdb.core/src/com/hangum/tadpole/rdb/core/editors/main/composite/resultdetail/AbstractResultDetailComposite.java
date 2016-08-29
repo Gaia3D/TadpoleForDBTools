@@ -21,8 +21,8 @@ import com.hangum.tadpole.engine.sql.util.resultset.TadpoleResultSet;
 import com.hangum.tadpole.preference.get.GetPreferenceGeneral;
 import com.hangum.tadpole.rdb.core.Messages;
 import com.hangum.tadpole.rdb.core.editors.main.composite.ResultSetComposite;
+import com.hangum.tadpole.rdb.core.editors.main.composite.tail.ResultTailComposite;
 import com.hangum.tadpole.rdb.core.editors.main.utils.RequestQuery;
-import com.hangum.tadpole.session.manager.SessionManager;
 
 /**
  * abstract result detail composite
@@ -68,41 +68,42 @@ public abstract class AbstractResultDetailComposite extends Composite {
 	 * print ui
 	 * @param rsDAO 
 	 * @param reqQuery 
+	 * @param isMakePing 
 	 */
-	public void printUI(RequestQuery reqQuery, QueryExecuteResultDTO rsDAO) {
+	public void printUI(RequestQuery reqQuery, QueryExecuteResultDTO rsDAO, boolean isMakePing) {
 		this.reqQuery = reqQuery;
 		this.rsDAO = rsDAO;
+		
+		compositeTail.setBtnPint(isMakePing);
 	}
 	
 	public void endQuery() {
 		eventTableSelect = null;
 	}
 	
-	/**
-	 * get last data
-	 */
-	public void getLastData() {
-		// 데이터를 마지막 까지 가져왔는지 비교합니다. // 나머지 데이터를 가져온다.
-		final int intSelectLimitCnt = GetPreferenceGeneral.getSelectLimitCount();
-		final String strUserEmail 	= SessionManager.getEMAIL();
-		final int queryTimeOut 		= GetPreferenceGeneral.getQueryTimeOut();
-		
-		try {
-			final TadpoleResultSet oldTadpoleResultSet = getRsDAO().getDataList();
-			boolean isContinue = true;
-			while(isContinue) {
-				QueryExecuteResultDTO newRsDAO = getRdbResultComposite().runSelect(reqQuery.getSql(), queryTimeOut, strUserEmail, intSelectLimitCnt, oldTadpoleResultSet.getData().size());
-				if(newRsDAO.getDataList().getData().isEmpty()) isContinue = false;
-			
-				if(logger.isDebugEnabled()) logger.debug("==> old count is " + oldTadpoleResultSet.getData().size() );
-				oldTadpoleResultSet.getData().addAll(newRsDAO.getDataList().getData());
-			}
-		
-		} catch(Exception e) {
-			logger.error("continue result set", e);
-		}
-
-	}
+//	/**
+//	 * get last data
+//	 */
+//	public void getLastData() {
+//		// 데이터를 마지막 까지 가져왔는지 비교합니다. // 나머지 데이터를 가져온다.
+//		final int intSelectLimitCnt = GetPreferenceGeneral.getSelectLimitCount();
+//		final String strUserEmail 	= SessionManager.getEMAIL();
+//		final int queryTimeOut 		= GetPreferenceGeneral.getQueryTimeOut();
+//		
+//		try {
+//			final TadpoleResultSet oldTadpoleResultSet = getRsDAO().getDataList();
+//			boolean isContinue = true;
+//			while(isContinue) {
+//				QueryExecuteResultDTO newRsDAO = getRdbResultComposite().runSelect(reqQuery, queryTimeOut, strUserEmail, intSelectLimitCnt, oldTadpoleResultSet.getData().size());
+//				if(newRsDAO.getDataList().getData().isEmpty()) isContinue = false;
+//				oldTadpoleResultSet.getData().addAll(newRsDAO.getDataList().getData());
+//			}
+//		
+//		} catch(Exception e) {
+//			logger.error("continue result set", e);
+//		}
+//
+//	}
 	
 	/**
 	 * 쿼리 결과 메시지를 출력합니다. 
@@ -117,14 +118,14 @@ public abstract class AbstractResultDetailComposite extends Composite {
 		float longExecuteTime = (getReqResultDAO().getEndDateExecute().getTime() - getReqResultDAO().getStartDateExecute().getTime()) / 1000f;
 		String strResultMsg = ""; //$NON-NLS-1$
 		if(trs.isEndOfRead()) {
-			strResultMsg = String.format("%s %s (%s %s)", NumberFormatUtils.commaFormat(trs.getData().size()), Messages.get().MainEditor_33, longExecuteTime, Messages.get().MainEditor_74); //$NON-NLS-1$
+			strResultMsg = String.format("%s %s (%s %s)", NumberFormatUtils.commaFormat(trs.getData().size()), Messages.get().Rows, longExecuteTime, Messages.get().Sec); //$NON-NLS-1$
 		} else {
 			if( (trs.getData().size() % GetPreferenceGeneral.getSelectLimitCount()) == 0) {
 				// 데이터가 한계가 넘어 갔습니다.
 				String strMsg = String.format(Messages.get().MainEditor_34, NumberFormatUtils.commaFormat(trs.getData().size()));
-				strResultMsg = String.format("%s (%s %s)", strMsg, longExecuteTime, Messages.get().MainEditor_74); //$NON-NLS-1$
+				strResultMsg = String.format("%s (%s %s)", strMsg, longExecuteTime, Messages.get().Sec); //$NON-NLS-1$
 			} else { 
-				strResultMsg = String.format("%s %s (%s %s)", NumberFormatUtils.commaFormat(trs.getData().size()), Messages.get().MainEditor_33, longExecuteTime, Messages.get().MainEditor_74); //$NON-NLS-1$
+				strResultMsg = String.format("%s %s (%s %s)", NumberFormatUtils.commaFormat(trs.getData().size()), Messages.get().Rows, longExecuteTime, Messages.get().Sec); //$NON-NLS-1$
 			}
 		}
 		

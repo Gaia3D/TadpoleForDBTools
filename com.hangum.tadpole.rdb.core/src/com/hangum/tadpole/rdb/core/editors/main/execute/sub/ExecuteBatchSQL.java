@@ -24,7 +24,6 @@ import com.hangum.tadpole.engine.manager.TadpoleSQLTransactionManager;
 import com.hangum.tadpole.engine.permission.PermissionChecker;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.sql.util.SQLUtil;
-import com.hangum.tadpole.rdb.core.Messages;
 import com.hangum.tadpole.rdb.core.editors.main.execute.TransactionManger;
 import com.hangum.tadpole.rdb.core.editors.main.utils.RequestQuery;
 import com.ibatis.sqlmap.client.SqlMapClient;
@@ -123,10 +122,10 @@ public class ExecuteBatchSQL {
 			logger.error("Execute batch update", e); //$NON-NLS-1$
 			throw e;
 		} finally {
-			try { statement.close();} catch(Exception e) {}
+			try { if(statement != null) statement.close();} catch(Exception e) {}
 
 			if(reqQuery.isAutoCommit()) {
-				try { javaConn.close(); } catch(Exception e){}
+				try { if(javaConn != null) javaConn.close(); } catch(Exception e){}
 			}
 		}
 	}

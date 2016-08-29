@@ -25,11 +25,11 @@ import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.manager.core.Activator;
 import com.hangum.tadpole.manager.core.Messages;
 import com.hangum.tadpole.manager.core.editor.db.DBMgmtEditor;
 import com.hangum.tadpole.manager.core.editor.db.DBMgntEditorInput;
-import com.hangum.tadpole.session.manager.SessionManager;
 import com.swtdesigner.ResourceManager;
 
 /**
@@ -53,7 +53,7 @@ public class DBManagerAction extends Action implements ISelectionListener, IWork
 		
 		setId(ID);
 		setText(Messages.get().UserPermissionAction_3);
-		setToolTipText(Messages.get().UserPermissionAction_4);
+		setToolTipText(Messages.get().UserPermissionAction_3);
 		setImageDescriptor( ResourceManager.getPluginImageDescriptor(Activator.PLUGIN_ID, "resources/icons/db.png")); //$NON-NLS-1$
 		window.getSelectionService().addPostSelectionListener(this);
 	}
@@ -67,15 +67,13 @@ public class DBManagerAction extends Action implements ISelectionListener, IWork
 			logger.error("Database Management editor", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().UserPermissionAction_2, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().UserPermissionAction_2, errStatus); //$NON-NLS-1$
 		}
 	}
 
 	@Override
 	public void selectionChanged(IWorkbenchPart part, ISelection selection) {
 		sel = (IStructuredSelection)selection;
-		
-		if("NO".equals(SessionManager.getIsRegistDB())) setEnabled(false);
 	}
 
 	@Override

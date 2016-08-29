@@ -59,6 +59,7 @@ import com.hangum.tadpole.ace.editor.core.widgets.TadpoleEditorWidget;
 import com.hangum.tadpole.commons.dialogs.message.dao.TadpoleMessageDAO;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.JSONUtil;
 import com.hangum.tadpole.commons.util.TadpoleWidgetUtils;
 import com.hangum.tadpole.commons.util.download.DownloadServiceHandler;
@@ -222,7 +223,7 @@ public class MongodbResultComposite extends Composite {
 		gl_compositeTreeView.marginWidth = 2;
 		compositeTreeView.setLayout(gl_compositeTreeView);
 		
-		treeViewerMongo = new TreeViewer(compositeTreeView, SWT.BORDER | SWT.VIRTUAL | SWT.FULL_SELECTION);
+		treeViewerMongo = new TreeViewer(compositeTreeView, SWT.BORDER /* | SWT.VIRTUAL */ | SWT.FULL_SELECTION);
 		treeViewerMongo.addDoubleClickListener(new IDoubleClickListener() {
 			public void doubleClick(DoubleClickEvent event) {
 				IStructuredSelection iss = (IStructuredSelection)treeViewerMongo.getSelection();
@@ -300,7 +301,7 @@ public class MongodbResultComposite extends Composite {
 		
 		Label lblFilter = new Label(compositeBodyTable, SWT.NONE);
 		lblFilter.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblFilter.setText(Messages.get().MongodbResultComposite_11);
+		lblFilter.setText(CommonMessages.get().Filter);
 		
 		textFilter = new Text(compositeBodyTable, SWT.SEARCH | SWT.ICON_SEARCH | SWT.ICON_CANCEL);
 		textFilter.addKeyListener(new KeyAdapter() {
@@ -311,7 +312,7 @@ public class MongodbResultComposite extends Composite {
 		});
 		textFilter.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
-		resultTableViewer = new TableViewer(compositeBodyTable, SWT.BORDER | SWT.VIRTUAL | SWT.FULL_SELECTION);
+		resultTableViewer = new TableViewer(compositeBodyTable, SWT.BORDER /* | SWT.VIRTUAL */ | SWT.FULL_SELECTION);
 		resultTableViewer.addDoubleClickListener(new IDoubleClickListener() {
 			public void doubleClick(DoubleClickEvent event) {
 				IStructuredSelection iss = (IStructuredSelection)resultTableViewer.getSelection();
@@ -458,7 +459,7 @@ public class MongodbResultComposite extends Composite {
 		TableViewerColumn tableViewerColumn = new TableViewerColumn(tableViewerMessage, SWT.NONE);
 		TableColumn tblclmnDate = tableViewerColumn.getColumn();
 		tblclmnDate.setWidth(140);
-		tblclmnDate.setText(Messages.get().MongodbResultComposite_18);
+		tblclmnDate.setText(CommonMessages.get().Date);
 		tblclmnDate.addSelectionListener(getSelectionAdapter(tableViewerMessage, sorterMessage, tblclmnDate, 0));
 		
 		TableViewerColumn tableViewerColumn_1 = new TableViewerColumn(tableViewerMessage, SWT.NONE);
@@ -819,7 +820,7 @@ public class MongodbResultComposite extends Composite {
 		treeViewerMongo.refresh();
 		
 		List<HashMap<Integer, Object>> tmpTable = new ArrayList<HashMap<Integer,Object>>();
-		resultTableViewer.setLabelProvider( new SQLResultLabelProvider(GetPreferenceGeneral.getISRDBNumberIsComma()) );
+		resultTableViewer.setLabelProvider( new SQLResultLabelProvider(GetPreferenceGeneral.getISRDBNumberIsComma(), GetPreferenceGeneral.getResultNull()) );
 		resultTableViewer.setContentProvider(new SQLResultContentProvider(sourceDataList) );
 		resultTableViewer.setInput(tmpTable);
 		resultTableViewer.refresh();
@@ -933,9 +934,9 @@ public class MongodbResultComposite extends Composite {
 	private void deleteDocumentTree() {
 		IStructuredSelection iss = (IStructuredSelection)treeViewerMongo.getSelection();
 		if(iss.isEmpty()) {
-			MessageDialog.openError(null, Messages.get().MongodbResultComposite_9, Messages.get().MongodbResultComposite_10);
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, Messages.get().MongodbResultComposite_10);
 			return;
-		} else if(MessageDialog.openConfirm(null, Messages.get().MongodbResultComposite_9, Messages.get().MongodbResultComposite_12)) {
+		} else if(MessageDialog.openConfirm(null, CommonMessages.get().Confirm, Messages.get().MongodbResultComposite_12)) {
 			
 			MongodbTreeViewDTO dto = (MongodbTreeViewDTO)iss.getFirstElement();
 			if(logger.isDebugEnabled()) logger.info("[delete object id is]" + dto.getDbObject().toString()); //$NON-NLS-1$
@@ -946,7 +947,7 @@ public class MongodbResultComposite extends Composite {
 			} catch (Exception e) {
 				logger.error(collectionName + " collection document remove object id is" + dto.getDbObject(), e); //$NON-NLS-1$
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", "Document remove", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
+				ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, "Document remove", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 	}
@@ -957,9 +958,9 @@ public class MongodbResultComposite extends Composite {
 	private void deleteDocumentTable() {
 		IStructuredSelection iss = (IStructuredSelection)resultTableViewer.getSelection();
 		if(iss.isEmpty()) {
-			MessageDialog.openError(null, Messages.get().MongodbResultComposite_9, Messages.get().MongodbResultComposite_10);
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, Messages.get().MongodbResultComposite_10);
 			return;
-		} else if(MessageDialog.openConfirm(null, Messages.get().MongodbResultComposite_9, Messages.get().MongodbResultComposite_12)) {
+		} else if(MessageDialog.openConfirm(null, CommonMessages.get().Confirm, Messages.get().MongodbResultComposite_12)) {
 			HashMap<Integer, Object> rsResult = (HashMap<Integer, Object>)iss.getFirstElement();
 			Object dbObject = rsResult.get(MongoDBDefine.PRIMARY_ID_KEY);
 			
@@ -969,7 +970,7 @@ public class MongodbResultComposite extends Composite {
 			} catch (Exception e) {
 				logger.error(collectionName + " collection document remove object id is" + dbObject, e); //$NON-NLS-1$
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", "Document remove", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
+				ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, "Document remove", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 	}

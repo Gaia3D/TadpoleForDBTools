@@ -45,12 +45,14 @@ import org.eclipse.ui.part.EditorPart;
 
 import com.hangum.tadpole.ace.editor.core.widgets.TadpoleCompareWidget;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.SchemaHistoryDAO;
 import com.hangum.tadpole.engine.query.dao.system.SchemaHistoryDetailDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_SchemaHistory;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBQuery;
+import com.hangum.tadpole.engine.utils.TimeZoneUtil;
 import com.hangum.tadpole.manager.core.Messages;
 import com.swtdesigner.ResourceManager;
 
@@ -86,7 +88,7 @@ public class SchemaHistoryEditor extends EditorPart {
 		compositeHead.setLayout(new GridLayout(6, false));
 		
 		Label lblDb = new Label(compositeHead, SWT.NONE);
-		lblDb.setText(Messages.get().SchemaHistoryEditor_1);
+		lblDb.setText(Messages.get().Database);
 		
 		comboDisplayName = new Combo(compositeHead, SWT.READ_ONLY);
 		comboDisplayName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -135,7 +137,7 @@ public class SchemaHistoryEditor extends EditorPart {
 		composite.setLayout(gl_composite);
 		
 		Label lblStart = new Label(composite, SWT.NONE);
-		lblStart.setText(Messages.get().SchemaHistoryEditor_16);
+		lblStart.setText(CommonMessages.get().Date);
 		
 		dateTimeStart = new DateTime(composite, SWT.BORDER | SWT.DROP_DOWN);
 		
@@ -152,7 +154,7 @@ public class SchemaHistoryEditor extends EditorPart {
 			}
 		});
 		btnSearch.setImage(ResourceManager.getPluginImage("com.hangum.tadpole.manager.core", "resources/icons/search.png")); //$NON-NLS-1$ //$NON-NLS-2$
-		btnSearch.setText(Messages.get().SchemaHistoryEditor_20);
+		btnSearch.setText(CommonMessages.get().Search);
 		
 		SashForm sashForm = new SashForm(parent, SWT.VERTICAL);
 		sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
@@ -313,7 +315,7 @@ public class SchemaHistoryEditor extends EditorPart {
 	 * create table columns
 	 */
 	private void createTableColumn() {
-		String[] names = {Messages.get().SchemaHistoryEditor_35, Messages.get().SchemaHistoryEditor_36, Messages.get().SchemaHistoryEditor_37, Messages.get().SchemaHistoryEditor_38, Messages.get().SchemaHistoryEditor_39};
+		String[] names = {Messages.get().SchemaHistoryEditor_35, Messages.get().SchemaHistoryEditor_36, Messages.get().SchemaHistoryEditor_37, Messages.get().SchemaHistoryEditor_38, CommonMessages.get().Date};
 		int[] sizes = {120, 120, 100, 100, 200};
 				
 		for(int i=0; i<names.length; i++) {
@@ -380,7 +382,7 @@ class SchemaHistorLabelProvider extends LabelProvider implements ITableLabelProv
 		case 1: return dao.getObject_id();
 		case 2: return dao.getWork_type();
 		case 3: return dao.getObject_type();
-		case 4: return dao.getCreate_date().toLocaleString();
+		case 4: return TimeZoneUtil.dateToStr(dao.getCreate_date());
 		}
 		
 		return dao.toString();

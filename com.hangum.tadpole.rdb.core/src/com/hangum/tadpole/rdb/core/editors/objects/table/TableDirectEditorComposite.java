@@ -53,6 +53,7 @@ import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
@@ -176,13 +177,13 @@ public class TableDirectEditorComposite extends Composite {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				if(tltmSave.getEnabled()) {
-					if(!MessageDialog.openConfirm(null, "Confirm", Messages.get().TableDirectEditorComposite_1)) return;
+					if(!MessageDialog.openConfirm(null, CommonMessages.get().Confirm, Messages.get().TableDirectEditorComposite_1)) return;
 				}
 				
 				refreshEditor();
 			}
 		});
-		tltmRefresh.setToolTipText(Messages.get().TableDirectEditorComposite_tltmRefersh_text);
+		tltmRefresh.setToolTipText(CommonMessages.get().Refresh);
 		
 		tltmSave = new ToolItem(toolBar, SWT.NONE);
 		tltmSave.setImage(GlobalImageUtils.getSave());
@@ -193,7 +194,7 @@ public class TableDirectEditorComposite extends Composite {
 				saveTableData();
 			}
 		});
-		tltmSave.setToolTipText(Messages.get().TableEditPart_0);
+		tltmSave.setToolTipText(CommonMessages.get().Save);
 		
 		tltmInsert = new ToolItem(toolBar, SWT.NONE);
 		tltmInsert.setImage(GlobalImageUtils.getAdd());
@@ -203,7 +204,7 @@ public class TableDirectEditorComposite extends Composite {
 				insertRow();
 			}
 		});
-		tltmInsert.setToolTipText(Messages.get().TableEditPart_tltmInsert_text);
+		tltmInsert.setToolTipText(CommonMessages.get().Add);
 		
 		tltmDelete = new ToolItem(toolBar, SWT.NONE);
 		tltmDelete.setImage(GlobalImageUtils.getDelete());
@@ -219,7 +220,7 @@ public class TableDirectEditorComposite extends Composite {
 			}
 		});
 		tltmDelete.setEnabled(false);
-		tltmDelete.setToolTipText(Messages.get().TableEditPart_1);
+		tltmDelete.setToolTipText(CommonMessages.get().Delete);
 		
 		Composite compositeBody = new Composite(compositeBase, SWT.NONE);
 		GridLayout gl_compositeBody = new GridLayout(2, false);
@@ -256,7 +257,7 @@ public class TableDirectEditorComposite extends Composite {
 		textOrderBy.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblNewLabel = new Label(compositeBody, SWT.NONE);
-		lblNewLabel.setText(Messages.get().TableEditPart_3);
+		lblNewLabel.setText(CommonMessages.get().Filter);
 		
 		textFilter = new Text(compositeBody, SWT.SEARCH | SWT.ICON_SEARCH | SWT.ICON_CANCEL);
 		textFilter.addKeyListener(new KeyAdapter() {
@@ -300,7 +301,7 @@ public class TableDirectEditorComposite extends Composite {
 					DDLScriptManager scriptManager = new DDLScriptManager(userDB, PublicTadpoleDefine.OBJECT_TYPE.TABLES);
 					FindEditorAndWriteQueryUtil.run(userDB, scriptManager.getScript(tableDao), PublicTadpoleDefine.OBJECT_TYPE.TABLES);
 				} catch(Exception ee) {
-					MessageDialog.openError(null, "Confirm", ee.getMessage());
+					MessageDialog.openError(null, CommonMessages.get().Confirm, ee.getMessage());
 				}
 			}
 		});
@@ -348,10 +349,10 @@ public class TableDirectEditorComposite extends Composite {
 			resultView();
 			
 		} catch(Exception e) {
-			logger.error(Messages.get().TableEditPart_4, e);
+			logger.error("Data moidfying..", e);
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().TableViewerEditPart_2, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().TableViewerEditPart_2, errStatus); //$NON-NLS-1$
 			return;
 		}
 		
@@ -378,24 +379,24 @@ public class TableDirectEditorComposite extends Composite {
 		List<TableColumnDAO> tmpTableColumns = TadpoleObjectQuery.getTableColumns(userDB, tableDao);
 		for(int i=0 ; i<tmpTableColumns.size(); i++) {
 			TableColumnDAO tabledao = tmpTableColumns.get(i);
-			requestQuery += tabledao.getName();
-			if(i < (columnList.size()-1)) requestQuery += ","; //$NON-NLS-1$
+			requestQuery += SQLUtil.makeIdentifierName(userDB, tabledao.getName());
+			if(i < (tmpTableColumns.size()-1)) requestQuery += ","; //$NON-NLS-1$
 		}
 		
-		requestQuery += " FROM " + tableDao.getSysName(); //$NON-NLS-1$
-
+		requestQuery += " FROM " + tableDao.getFullName();
 		
 		if(!"".equals( strWhere )) requestQuery += " where " + strWhere; //$NON-NLS-1$ //$NON-NLS-2$
 		if(!"".equals( strOrderBy )) requestQuery += " order by " + strOrderBy; //$NON-NLS-1$ //$NON-NLS-2$
+		if(logger.isDebugEnabled()) logger.debug("Last query is " + requestQuery);
 					
 		ResultSet rs = null;
+		PreparedStatement stmt = null;
 		java.sql.Connection javaConn = null;
 		
 		try {
 			SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 			javaConn = client.getDataSource().getConnection();
 			
-			PreparedStatement stmt = null;
 			stmt = javaConn.prepareStatement(requestQuery);
 			stmt.setMaxRows(GetPreferenceGeneral.getSelectLimitCount());
 			
@@ -446,8 +447,9 @@ public class TableDirectEditorComposite extends Composite {
 			}
 
 		} finally {
-			try { rs.close(); } catch(Exception e) {}
-			try { javaConn.close(); } catch(Exception e){}
+			try { if(rs != null) rs.close(); } catch(Exception e) {}
+			try { if(stmt != null) stmt.close(); } catch(Exception e){}
+			try { if(javaConn != null) javaConn.close(); } catch(Exception e){}
 		}
 	}
 	
@@ -466,7 +468,7 @@ public class TableDirectEditorComposite extends Composite {
 		sqlResultTableViewer.setSorter(sqlSorter);
 		
 		// 결과 후처리 
-		tableResult.setToolTipText(tableDataList.size() + Messages.get().MainEditor_33);
+		tableResult.setToolTipText(tableDataList.size() + Messages.get().Rows);
 		sqlFilter.setTable(tableResult);
 		
 		// Pack the columns
@@ -495,7 +497,7 @@ public class TableDirectEditorComposite extends Composite {
 		try {
 			// column info
 			final TableViewerColumn tableColumnInfo = new TableViewerColumn(tableViewer, SWT.LEFT);
-			tableColumnInfo.getColumn().setText( Messages.get().TableViewerEditPart_0 );
+			tableColumnInfo.getColumn().setText( Messages.get().DataStatus );
 			tableColumnInfo.getColumn().setResizable(true);
 			tableColumnInfo.getColumn().setMoveable(false);
 			
@@ -588,7 +590,7 @@ public class TableDirectEditorComposite extends Composite {
 		
 		querys = SQLTextUtil.delLineChar(changedSQL).split(";"); //$NON-NLS-1$
 		try {
-			RequestQuery reqQuery = new RequestQuery(changedSQL, OBJECT_TYPE.TABLES, QUERY_MODE.QUERY, EXECUTE_TYPE.ALL, true);
+			RequestQuery reqQuery = new RequestQuery(userDB, changedSQL, OBJECT_TYPE.TABLES, QUERY_MODE.QUERY, EXECUTE_TYPE.ALL, true);
 			ExecuteBatchSQL.runSQLExecuteBatch(Messages.get().MainEditor_21, Arrays.asList(querys), reqQuery, userDB, userDB.getRole_id(), 1000, SessionManager.getEMAIL());
 			
 			// 정상적으로 모든 결과 처리 완료.
@@ -721,13 +723,18 @@ public class TableDirectEditorComposite extends Composite {
 			if(!primaryKeyListIndex.isEmpty()) {
 				for(int i=0; i<primaryKeyListIndex.size(); i++) {
 					int keyIndex = primaryKeyListIndex.get(i);
-					strWhere += primaryKEYIntStrList.get(keyIndex) + " = " + SQLUtil.makeQuote(TbUtils.getOriginalData(orgRs.get(keyIndex+1).toString())); //$NON-NLS-1$ //$NON-NLS-2$
+					strWhere += SQLUtil.makeIdentifierName(userDB, primaryKEYIntStrList.get(keyIndex)) + " = " + SQLUtil.makeQuote(TbUtils.getOriginalData(orgRs.get(keyIndex+1).toString())); //$NON-NLS-1$ //$NON-NLS-2$
 					
 					if(i < (primaryKeyListIndex.size()-1)) strWhere += " AND "; //$NON-NLS-1$
 				}
 			} else {
 				for(int i=1; i<tmpRs.size(); i++) {
-					strWhere += mapColumns.get(i-1) + " = " + SQLUtil.makeQuote(TbUtils.getOriginalData(orgRs.get(i).toString()) ); //$NON-NLS-1$ //$NON-NLS-2$
+					
+					if (StringUtils.isBlank( TbUtils.getOriginalData(orgRs.get(i).toString()) ) ) {
+						strWhere += SQLUtil.makeIdentifierName(userDB, mapColumns.get(i-1)) + " IS NULL "; //$NON-NLS-1$ //$NON-NLS-2$
+					}else{
+						strWhere += SQLUtil.makeIdentifierName(userDB, mapColumns.get(i-1)) + " = " + SQLUtil.makeQuote(TbUtils.getOriginalData(orgRs.get(i).toString()) ); //$NON-NLS-1$ //$NON-NLS-2$
+					}
 					
 					if(i < (tmpRs.size()-1)) strWhere += " AND "; //$NON-NLS-1$
 				}
@@ -745,7 +752,7 @@ public class TableDirectEditorComposite extends Composite {
 	 * @return
 	 */
 	private String makeDelete(int rowSeq, Map<Integer, Object> tmpRs) {
-		String deleteStmt = "DELETE FROM " + tableDao.getSysName(); //$NON-NLS-1$
+		String deleteStmt = "DELETE FROM " + tableDao.getFullName(); //$NON-NLS-1$
 		deleteStmt += " WHERE  (" + getWhereMake(rowSeq, tmpRs) + ") "; //$NON-NLS-1$ //$NON-NLS-2$
 		
 		if(userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT || userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT) {
@@ -762,14 +769,14 @@ public class TableDirectEditorComposite extends Composite {
 	 * @return
 	 */
 	private String makeUpdate(int rowSeq, Map<Integer, Object> tmpRs) {
-		String updateStmt = "UPDATE " + tableDao.getSysName() +   //$NON-NLS-1$ //$NON-NLS-2$
+		String updateStmt = "UPDATE " + tableDao.getFullName() +   //$NON-NLS-1$ //$NON-NLS-2$
 				" SET "; //$NON-NLS-1$
 		
 		// 수정된 컬럼의 값을 넣는다.
 		// 0 번째 컬럼은 데이터 수정 유무이므로 .
 		for(int i=1; i<tmpRs.size(); i++) {
 			if(TbUtils.isModifyData( tmpRs.get(i).toString() )) {
-				updateStmt += mapColumns.get(i-1) + " = " + SQLUtil.makeQuote(TbUtils.getOriginalData(tmpRs.get(i).toString())) + ", "; //$NON-NLS-1$ //$NON-NLS-2$
+				updateStmt += SQLUtil.makeIdentifierName(userDB, mapColumns.get(i-1)) + " = " + SQLUtil.makeQuote(TbUtils.getOriginalData(tmpRs.get(i).toString())) + ", "; //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 		updateStmt = StringUtils.chompLast(updateStmt, ", "); //$NON-NLS-1$
@@ -790,13 +797,13 @@ public class TableDirectEditorComposite extends Composite {
 	 * @return
 	 */
 	private String makeInsert(Map<Integer, Object> tmpRs) {
-		String insertStmt = "INSERT INTO " + tableDao.getSysName() + "("; //$NON-NLS-1$ //$NON-NLS-2$
+		String insertStmt = "INSERT INTO " + tableDao.getFullName() + "("; //$NON-NLS-1$ //$NON-NLS-2$
 		
 		// 수정된 컬럼 리스트를 나열한다.
 		boolean isModifyColumn = false;
 		for(int i=1; i<tmpRs.size(); i++) {
 			if(TbUtils.isModifyData( tmpRs.get(i).toString() )) {
-				insertStmt += mapColumns.get(i-1) + ", "; //$NON-NLS-1$
+				insertStmt += SQLUtil.makeIdentifierName(userDB, mapColumns.get(i-1)) + ", "; //$NON-NLS-1$
 				isModifyColumn = true;
 			}
 		}

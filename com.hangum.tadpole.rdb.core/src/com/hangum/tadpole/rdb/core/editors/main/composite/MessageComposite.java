@@ -23,6 +23,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.commons.dialogs.message.dao.TadpoleMessageDAO;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
+import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.core.Messages;
 import com.hangum.tadpole.rdb.core.editors.main.utils.RequestQuery;
@@ -107,14 +109,13 @@ public class MessageComposite extends Composite {
 
 		Throwable throwable = tadpoleMessageDAO.getThrowable();
 		if (throwable == null) {
-			strNewMessage = Messages.get().MessageComposite_2;
+			strNewMessage = Messages.get().SystemMessage;
 			strNewMessage += tadpoleMessageDAO.getStrMessage();
-			
 			strSearchError = tadpoleMessageDAO.getStrMessage();
 			
 			textMessage.setBackground(SWTResourceManager.getColor(248, 248, 255));
 		} else {
-			strNewMessage = Messages.get().MessageComposite_3;
+			strNewMessage = Messages.get().ErrorMessage;
 			
 			Throwable cause = throwable.getCause();
 			if(throwable instanceof SQLException) {
@@ -125,25 +126,34 @@ public class MessageComposite extends Composite {
 				strSearchError += sqlExceptionToSearchMsg((SQLException)cause, tadpoleMessageDAO);
 			} else {
 				strNewMessage += tadpoleMessageDAO.getStrMessage();
-				
 				strSearchError += tadpoleMessageDAO.getStrMessage();
+			}
+			
+			// sqlite 는 상태,에러코드가 없다.--;;
+			if(userDBDAO.getDBDefine() == DBDefine.SQLite_DEFAULT) {
+				strSearchError = throwable.getMessage();
 			}
 			
 			textMessage.setBackground(SWTResourceManager.getColor(255, 228, 225));
 		}
 
-//		// first show last error message
-//		final String strOldText = textMessage.getText();
-//		if ("".equals(strOldText)) { //$NON-NLS-1$
-		textMessage.setText(strNewMessage);
+		if(StringUtils.contains(strNewMessage, "No more data to read from socket") || StringUtils.contains(strNewMessage, "[*]Permission denied")) {
+			textMessage.setText(strNewMessage + CommonMessages.get().Check_DBAccessSystem);
+		} else {
+			textMessage.setText(strNewMessage);
+		}
 		
 		try {
-			String strDeleteWhiteSpace = StringUtils.replace(strSearchError, "\"", "'");
-			lblGoogleSearch.setText("<a href=\"http://www.google.com/search?q=" + strDeleteWhiteSpace + "\" target='_blank'>" + strDeleteWhiteSpace + "</a>");
+			if(StringUtils.isEmpty(StringUtils.deleteWhitespace(strSearchError))) {
+				lblGoogleSearch.setText("");
+			} else {
+				String strDeleteWhiteSpace = StringUtils.replace(strSearchError, "\"", "'");
+				lblGoogleSearch.setText("<a href=\"http://www.google.com/search?q=" + strDeleteWhiteSpace + "\" target='_blank'>" + strDeleteWhiteSpace + "</a>");
+			}
 			lblGoogleSearch.getParent().layout();
+				
 		} catch(Exception e) {
-			logger.error("===" + strSearchError + "====");
-			logger.error("parse", e);
+			logger.error("find search string " + e.getMessage());
 		}
 //		} else {
 //			textMessage.setText(strNewMessage + PublicTadpoleDefine.LINE_SEPARATOR + PublicTadpoleDefine.LINE_SEPARATOR + strOldText);

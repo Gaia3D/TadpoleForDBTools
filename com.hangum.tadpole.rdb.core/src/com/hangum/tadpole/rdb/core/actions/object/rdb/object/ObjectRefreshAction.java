@@ -42,22 +42,32 @@ public class ObjectRefreshAction extends AbstractObjectAction {
 	public void run(IStructuredSelection selection, UserDBDAO userDB, OBJECT_TYPE actionType) {
 		if(actionType == PublicTadpoleDefine.OBJECT_TYPE.TABLES) {
 			refreshTable();
+		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.INDEXES) {
+			refreshIndexes();
+		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.CONSTRAINTS) {
+			refreshConstraints();
+		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.TRIGGERS) {
+			refreshTrigger();	
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.VIEWS) {
 			refreshView();
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.SYNONYM) {
 			refreshSynonym();
-		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.INDEXES) {
-			refreshIndexes();
+		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.SEQUENCE) {
+			refreshSequence();
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.PROCEDURES) {
 			refreshProcedure();
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.PACKAGES) {
 			refreshPackage();
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.FUNCTIONS) {
-			refreshFunction();
-		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.TRIGGERS) {
-			refreshTrigger();
+			refreshFunction();		
 		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.JAVASCRIPT) {
 			refreshJS();
+		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.LINK) {
+			refreshDBLink();
+		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.JOBS) {
+			refreshJobs();
+		} else if(actionType == PublicTadpoleDefine.OBJECT_TYPE.JAVA) {
+			refreshJava();
 		}
 	}
 

@@ -10,7 +10,6 @@
  ******************************************************************************/
 package com.hangum.tadpole.engine.sql.util.sqlscripts.scripts;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +24,8 @@ import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO;
 import com.hangum.tadpole.engine.query.dao.rdb.InOutParameterDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleDBLinkDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleSequenceDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.ibatis.sqlmap.client.SqlMapClient;
 
@@ -48,70 +49,88 @@ public class OracleDDLScript extends AbstractRDBDDLScript {
 	@Override
 	public String getTableScript(TableDAO tableDAO) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
-		List<HashMap> srcList = client.queryForList("getTableScript", tableDAO.getName());
-		
-		
 		StringBuilder result = new StringBuilder("");
-//		result.append("/* DROP TABLE " + tableDAO.getName() + " CASCADE CONSTRAINT; */ \n\n");
-		result.append("CREATE TABLE " + tableDAO.getName() + "( \n");
-		for (int i=0; i<srcList.size(); i++){
-			HashMap<String, Object> source =  srcList.get(i);
-			
-			
-			result.append("\t");
-			if(i>0)result.append(",");
-			result.append(source.get("COLUMN_NAME")).append(" ");
-			result.append(source.get("DATA_TYPE"));
-								
-			if (source.get("DATA_PRECISION") != null && ((BigDecimal)source.get("DATA_PRECISION")).intValue() > 0 ){
-				result.append("("+source.get("DATA_PRECISION"));
-				if (source.get("DATA_SCALE") != null && ((BigDecimal)source.get("DATA_SCALE")).intValue() > 0 ){
-					result.append(","+source.get("DATA_SCALE"));
-				}
-						
-				result.append(")");
-			}else if (!StringUtils.contains((String)source.get("DATA_TYPE"), "DATE") && !StringUtils.contains((String)source.get("DATA_TYPE"), "NUMBER")  && ((BigDecimal)source.get("DATA_LENGTH")).intValue() > 0  ){
-				result.append("("+source.get("DATA_LENGTH")+")");
-			}else{
-				result.append(" ");
-			}
-			
-			if (source.get("DATA_DEFAULT") != null ){
-			
-				if (StringUtils.contains((String)source.get("DATA_TYPE"), "CHAR")  ){
-					result.append(" DEFAULT '"+source.get("DATA_DEFAULT")+"'");
-				}else{
-					result.append(" DEFAULT "+source.get("DATA_DEFAULT") );
-				}
-			}
-				
-			if("NO".equals(source.get("NULLABLE"))){
-				result.append(" NOT NULL ");
-			}
-			
-			result.append("\n");
-			
-		}
-
-		// primary key 
-		List<HashMap> srcPkList = client.queryForList("getTableScript.pk", tableDAO.getName());				
-		for (int i=0; i<srcPkList.size(); i++){
-			HashMap<String, Object> source =  srcPkList.get(i);
-			if(i==0){
-				result.append("\t,CONSTRAINT ").append(source.get("CONSTRAINT_NAME")).append(" PRIMARY KEY ( ").append(source.get("COLUMN_NAME"));
-			}else{
-				result.append(", "+source.get("COLUMN_NAME"));
-			}
-			
-			if(i == srcPkList.size()-1){
-				result.append(") \n");
-			}
-		}
-				
-		result.append("); \n\n");
 		
+		HashMap<String, String>paramMap = new HashMap<String, String>();
+		paramMap.put("schema_name", StringUtils.isBlank(tableDAO.getSchema_name()) ? userDB.getSchema() : tableDAO.getSchema_name()); //$NON-NLS-1$
+		paramMap.put("object_type", "TABLE"); //$NON-NLS-1$
+		paramMap.put("object_name", tableDAO.getName()); //$NON-NLS-1$
+		paramMap.put("table_name", tableDAO.getName()); //$NON-NLS-1$
+		
+		String strDDLScript = (String)client.queryForObject("getDDLScript", paramMap);
+		
+		//TODO : DDL 스크립트 포맷팅 처리 후 적용.
+		//result.append(SQLFormater.format(strDDLScript));
+		result.append(strDDLScript + ";\n\n");
+
+//		HashMap<String, String>paramMap = new HashMap<String, String>();
+//		paramMap.put("schema_name", StringUtils.isBlank(tableDAO.getSchema_name()) ? userDB.getSchema() : tableDAO.getSchema_name()); //$NON-NLS-1$
+//		paramMap.put("table_name", tableDAO.getName()); //$NON-NLS-1$
+//
+//		
+//		List<HashMap> srcList = client.queryForList("getTableScript", paramMap);
+//				
+////		result.append("/* DROP TABLE " + tableDAO.getName() + " CASCADE CONSTRAINT; */ \n\n");
+//		result.append("CREATE TABLE " + tableDAO.getName() + "( \n");
+//		for (int i=0; i<srcList.size(); i++){
+//			HashMap<String, Object> source =  srcList.get(i);
+//			
+//			
+//			result.append("\t");
+//			if(i>0)result.append(",");
+//			result.append(source.get("COLUMN_NAME")).append(" ");
+//			result.append(source.get("DATA_TYPE"));
+//								
+//			if (source.get("DATA_PRECISION") != null && ((BigDecimal)source.get("DATA_PRECISION")).intValue() > 0 ){
+//				result.append("("+source.get("DATA_PRECISION"));
+//				if (source.get("DATA_SCALE") != null && ((BigDecimal)source.get("DATA_SCALE")).intValue() > 0 ){
+//					result.append(","+source.get("DATA_SCALE"));
+//				}
+//						
+//				result.append(")");
+//			}else if (!StringUtils.contains((String)source.get("DATA_TYPE"), "DATE") && !StringUtils.contains((String)source.get("DATA_TYPE"), "NUMBER")  && ((BigDecimal)source.get("DATA_LENGTH")).intValue() > 0  ){
+//				result.append("("+source.get("DATA_LENGTH")+")");
+//			}else{
+//				result.append(" ");
+//			}
+//			
+//			if (source.get("DATA_DEFAULT") != null ){
+//			
+//				if (StringUtils.contains((String)source.get("DATA_TYPE"), "CHAR")  ){
+//					result.append(" DEFAULT '"+source.get("DATA_DEFAULT")+"'");
+//				}else{
+//					result.append(" DEFAULT "+source.get("DATA_DEFAULT") );
+//				}
+//			}
+//				
+//			if("NO".equals(source.get("NULLABLE"))){
+//				result.append(" NOT NULL ");
+//			}
+//			
+//			result.append("\n");
+//			
+//		}
+//
+//		// primary key 
+//		List<HashMap> srcPkList = client.queryForList("getTableScript.pk", paramMap);				
+//		for (int i=0; i<srcPkList.size(); i++){
+//			HashMap<String, Object> source =  srcPkList.get(i);
+//			if(i==0){
+//				result.append("\t,CONSTRAINT ").append(source.get("CONSTRAINT_NAME")).append(" PRIMARY KEY ( ").append(source.get("COLUMN_NAME"));
+//			}else{
+//				result.append(", "+source.get("COLUMN_NAME"));
+//			}
+//			
+//			if(i == srcPkList.size()-1){
+//				result.append(") \n");
+//			}
+//		}
+//				
+//		result.append("); \n\n");
+
+
 		// table, column comments
-		List<String> srcCommentList = client.queryForList("getTableScript.comments", tableDAO.getName());				
+		List<String> srcCommentList = client.queryForList("getTableScript.comments", paramMap);				
 		for (int i=0; i<srcCommentList.size(); i++){
 			result.append( srcCommentList.get(i)+"\n");
 		}
@@ -139,19 +158,35 @@ public class OracleDDLScript extends AbstractRDBDDLScript {
 	 * @see com.hangum.tadpole.rdb.core.editors.objects.table.scripts.RDBDDLScript#getViewScript(java.lang.String)
 	 */
 	@Override
-	public String getViewScript(String strName) throws Exception {
+	public String getViewScript(TableDAO tableDAO) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		StringBuilder result = new StringBuilder("");
 //		result.append("/* DROP VIEW " + strName + "; */ \n\n");
-
-		List<String> srcViewHeadList = client.queryForList("getViewScript.head", strName);				
-		for (int i=0; i<srcViewHeadList.size(); i++){
-			result.append( srcViewHeadList.get(i)+"\n");
-		}
-		List<String> srcViewBodyList = client.queryForList("getViewScript.body", strName);				
-		for (int i=0; i<srcViewBodyList.size(); i++){
-			result.append( srcViewBodyList.get(i)+"\n");
-		}
+		
+//		HashMap<String, String>paramMap = new HashMap<String, String>();
+//		paramMap.put("schema_name", tableDAO.getSchema_name() == null ? userDB.getSchema() : tableDAO.getSchema_name()); //$NON-NLS-1$
+//		paramMap.put("view_name", tableDAO.getName()); //$NON-NLS-1$
+//
+//		List<String> srcViewHeadList = client.queryForList("getViewScript.head", paramMap);				
+//		for (int i=0; i<srcViewHeadList.size(); i++){
+//			result.append( srcViewHeadList.get(i)+"\n");
+//		}
+//		List<String> srcViewBodyList = client.queryForList("getViewScript.body", paramMap);				
+//		for (int i=0; i<srcViewBodyList.size(); i++){
+//			result.append( srcViewBodyList.get(i)+"\n");
+//		}
+		
+		HashMap<String, String>paramMap = new HashMap<String, String>();
+		paramMap.put("schema_name", StringUtils.isBlank(tableDAO.getSchema_name()) ? userDB.getSchema() : tableDAO.getSchema_name()); //$NON-NLS-1$
+		paramMap.put("object_type", "VIEW"); //$NON-NLS-1$
+		paramMap.put("object_name", tableDAO.getName()); //$NON-NLS-1$
+		paramMap.put("view_name", tableDAO.getName()); //$NON-NLS-1$
+		
+		String strDDLScript = (String)client.queryForObject("getDDLScript", paramMap);
+		
+		//TODO : DDL 스크립트 포맷팅 처리 후 적용.
+		//result.append(SQLFormater.format(strDDLScript));
+		result.append(strDDLScript);
 		
 		return result.toString();
 	}
@@ -163,8 +198,13 @@ public class OracleDDLScript extends AbstractRDBDDLScript {
 	public String getIndexScript(InformationSchemaDAO indexDAO) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		
+		HashMap<String, String>paramMap = new HashMap<String, String>();
+		paramMap.put("schema_name", indexDAO.getSchema_name() == null ? userDB.getSchema() : indexDAO.getSchema_name()); //$NON-NLS-1$
+		paramMap.put("object_name", indexDAO.getINDEX_NAME()); //$NON-NLS-1$
+
+		
 		StringBuilder result = new StringBuilder("");	
-		List<Map<String, String>> srcScriptList = (List<Map<String, String>>) client.queryForList("getIndexScript", indexDAO.getINDEX_NAME());
+		List<Map<String, String>> srcScriptList = (List<Map<String, String>>) client.queryForList("getIndexScript", paramMap);
 		
 //		result.append("/* DROP INDEX " + indexDAO.getINDEX_NAME() + "; */ \n\n");
 		result.append("CREATE ");
@@ -229,12 +269,16 @@ public class OracleDDLScript extends AbstractRDBDDLScript {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		
 		if(logger.isDebugEnabled()) logger.debug("\n Function DDL Generation...");
+
+		HashMap<String, String>paramMap = new HashMap<String, String>();
+		paramMap.put("schema_name", functionDAO.getSchema_name() == null ? userDB.getSchema() : functionDAO.getSchema_name()); //$NON-NLS-1$
+		paramMap.put("object_name", functionDAO.getName()); //$NON-NLS-1$
 		
 		StringBuilder result = new StringBuilder("");
 //		result.append("/* DROP FUNCTION " + functionDAO.getName() + "; */ \n\n");
 		result.append("CREATE OR REPLACE ");
 
-		List<String> srcScriptList = client.queryForList("getFunctionScript", functionDAO.getName());				
+		List<String> srcScriptList = client.queryForList("getFunctionScript", paramMap);				
 		for (int i=0; i<srcScriptList.size(); i++){
 			result.append( srcScriptList.get(i));
 		}
@@ -249,35 +293,45 @@ public class OracleDDLScript extends AbstractRDBDDLScript {
 	public String getProcedureScript(ProcedureFunctionDAO procedureDAO) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		if(logger.isDebugEnabled()) logger.debug("\n Procedure DDL Generation...");
-		
+
+		HashMap<String, String>paramMap = new HashMap<String, String>();
+		paramMap.put("schema_name", procedureDAO.getSchema_name() == null ? userDB.getSchema() : procedureDAO.getSchema_name()); //$NON-NLS-1$
+		paramMap.put("object_name", procedureDAO.getName()); //$NON-NLS-1$
+
 		StringBuilder result = new StringBuilder("");
-		String objType = (String)client.queryForObject("getSourceObjectType", procedureDAO.getName());				
+		String objType = (String)client.queryForObject("getSourceObjectType", paramMap);				
 					
 		List<String> srcScriptList = null;
 		if (StringUtils.contains(objType, "PROCEDURE")){
 //			result.append("/* DROP PROCEDURE " + procedureDAO.getName() + "; */ \n\n");
 			result.append("CREATE OR REPLACE ");
-			srcScriptList = client.queryForList("getProcedureScript", procedureDAO.getName());				
+			srcScriptList = client.queryForList("getProcedureScript", paramMap);				
 			for (int i=0; i<srcScriptList.size(); i++){
 				result.append( srcScriptList.get(i));
 			}
 		}else if (StringUtils.contains(objType, "PACKAGE")){
-			result.append("/* STATEMENT PACKAGE BODY " + procedureDAO.getName() + "; */ \n\n");
-			result.append("/* STATEMENT PACKAGE " + procedureDAO.getName() + "; */ \n\n");
+			result.append("/* STATEMENT PACKAGE " + procedureDAO.getName() + "; */ \n");
 			
 			result.append("CREATE OR REPLACE ");
-			srcScriptList = client.queryForList("getPackageScript.head", procedureDAO.getName());				
+			srcScriptList = client.queryForList("getPackageScript.head", paramMap);				
 			for (int i=0; i<srcScriptList.size(); i++){
 				result.append( srcScriptList.get(i));
 			}
-			result.append("/ \n\n ");
-			result.append("CREATE OR REPLACE ");
-			srcScriptList = client.queryForList("getPackageScript.body", procedureDAO.getName());				
-			for (int i=0; i<srcScriptList.size(); i++){
-				result.append( srcScriptList.get(i));
+			result.append("\n/\n ");
+
+			srcScriptList = client.queryForList("getPackageScript.body", paramMap);
+			if (srcScriptList.size() > 0){
+				// body가 있는 경우에만 작성한다.
+				result.append("/* STATEMENT PACKAGE BODY " + procedureDAO.getName() + "; */ \n");
+				result.append("CREATE OR REPLACE ");
+				for (int i=0; i<srcScriptList.size(); i++){
+					result.append( srcScriptList.get(i));
+				}
+				result.append("\n/\n");
+			}else{
+				result.append("/*PACKAGE BODY NOT DEFINE... */\n\n ");
 			}
 			
-			result.append("/ \n\n ");
 		}
 		
 		return result.toString();
@@ -292,12 +346,16 @@ public class OracleDDLScript extends AbstractRDBDDLScript {
 		String objectName = triggerDAO.getTrigger();
 
 		if(logger.isDebugEnabled()) logger.debug("\n Trigger DDL Generation...");
-		
+
+		HashMap<String, String>paramMap = new HashMap<String, String>();
+		paramMap.put("schema_name", triggerDAO.getSchema_name() == null ? userDB.getSchema() : triggerDAO.getSchema_name()); //$NON-NLS-1$
+		paramMap.put("object_name", triggerDAO.getTrigger()); //$NON-NLS-1$
+
 		StringBuilder result = new StringBuilder("");
 //		result.append("/* DROP TRIGGER " + objectName + "; */ \n\n");
 		result.append("CREATE OR REPLACE ");
 
-		List<String> srcScriptList = client.queryForList("getTriggerScript", objectName);				
+		List<String> srcScriptList = client.queryForList("getTriggerScript", paramMap);				
 		for (int i=0; i<srcScriptList.size(); i++){
 			result.append( srcScriptList.get(i));
 		}
@@ -309,12 +367,15 @@ public class OracleDDLScript extends AbstractRDBDDLScript {
 	public List<InOutParameterDAO> getProcedureInParamter(ProcedureFunctionDAO procedureDAO) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		HashMap<String, String> map = new HashMap<String, String>();
+		map.put("schema_name", procedureDAO.getSchema_name() == null ? userDB.getSchema() : procedureDAO.getSchema_name()); //$NON-NLS-1$
 		map.put("package_name", procedureDAO.getPackagename());
 		map.put("object_name", procedureDAO.getName());	
+		map.put("overload", procedureDAO.getOverload()+"");	
 
 		if(logger.isDebugEnabled()) {
-			logger.debug("\n getProcedureInParamter=" + map.get("package_name"));
-			logger.debug("\n getProcedureInParamter=" + map.get("object_name"));
+			logger.debug("\n getProcedureInParamter.package=" + map.get("package_name"));
+			logger.debug("\n getProcedureInParamter.object=" + map.get("object_name"));
+			logger.debug("\n getProcedureInParamter.overload=" + map.get("overload"));
 			logger.debug("\n procedureDAO=" + procedureDAO);
 		}
 		
@@ -325,10 +386,47 @@ public class OracleDDLScript extends AbstractRDBDDLScript {
 	public List<InOutParameterDAO> getProcedureOutParamter(ProcedureFunctionDAO procedureDAO) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		HashMap<String, String> map = new HashMap<String, String>();
+		map.put("schema_name", procedureDAO.getSchema_name() == null ? userDB.getSchema() : procedureDAO.getSchema_name()); //$NON-NLS-1$
 		map.put("package_name", procedureDAO.getPackagename());
 		map.put("object_name", procedureDAO.getName());	
+		map.put("overload", procedureDAO.getOverload()+"");	
 		
 		return client.queryForList("getProcedureOutParamter", map );
 	}
+
+	
+	@Override
+	public String getSequenceScript(OracleSequenceDAO sequenceDao) throws Exception {
+		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
+		StringBuilder result = new StringBuilder("");
+
+		HashMap<String, String>paramMap = new HashMap<String, String>();
+		paramMap.put("schema_name", StringUtils.isBlank(sequenceDao.getSchema_name()) ? userDB.getSchema() : sequenceDao.getSchema_name()); //$NON-NLS-1$
+		paramMap.put("object_name", sequenceDao.getSequence_name()); //$NON-NLS-1$
+		
+		String strDDLScript = (String)client.queryForObject("getSequenceScript", paramMap);
+		
+		//TODO : DDL 스크립트 포맷팅 처리 후 적용.
+		//result.append(SQLFormater.format(strDDLScript));
+		result.append(strDDLScript);
+		
+		return result.toString();
+	}
+
+	@Override
+	public String getDBLinkScript(OracleDBLinkDAO dblinkDAO) throws Exception {
+		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
+		StringBuilder result = new StringBuilder("");
+
+		HashMap<String, String>paramMap = new HashMap<String, String>();
+		paramMap.put("schema_name", StringUtils.isBlank(dblinkDAO.getSchema_name()) ? userDB.getSchema() : dblinkDAO.getSchema_name()); //$NON-NLS-1$
+		paramMap.put("object_name", dblinkDAO.getDb_link()); //$NON-NLS-1$
+		
+		String strDDLScript = (String)client.queryForObject("getDatabaseLinkScript", paramMap);
+		result.append(strDDLScript);
+		
+		return result.toString();
+	}
+
 
 }

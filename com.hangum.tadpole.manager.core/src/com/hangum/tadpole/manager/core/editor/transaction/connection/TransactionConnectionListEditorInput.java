@@ -23,6 +23,9 @@ import com.hangum.tadpole.manager.core.Messages;
  *
  */
 public class TransactionConnectionListEditorInput implements IEditorInput {
+	
+	public TransactionConnectionListEditorInput() {
+	}
 
 	@Override
 	public Object getAdapter(Class adapter) {
@@ -57,7 +60,7 @@ public class TransactionConnectionListEditorInput implements IEditorInput {
 
 	@Override
 	public String getToolTipText() {
-		return Messages.get().TransactionConnectionListEditorInput_1;
+		return Messages.get().TransactionConnectionListEditorInput_0;
 	}
 
 }

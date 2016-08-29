@@ -16,6 +16,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.draw2d.ConnectionAnchor;
 import org.eclipse.draw2d.IFigure;
+import org.eclipse.draw2d.Label;
 import org.eclipse.emf.common.notify.Adapter;
 import org.eclipse.emf.common.notify.Notification;
 import org.eclipse.emf.common.notify.Notifier;
@@ -57,6 +58,16 @@ public class TableEditPart extends AbstractGraphicalEditPart implements NodeEdit
 //		installEditPolicy(EditPolicy.GRAPHICAL_NODE_ROLE, new RelationNodeEditPolicy());
 		installEditPolicy(EditPolicy.COMPONENT_ROLE, new TableComponentEditPolicy());
 	}
+	
+	/*
+	 * SELECT 스트립트를 에디터에 보여주면 좋겠다. 
+	 */
+//	@Override
+//	public void performRequest(Request req) {
+//	    if(req.getType() == RequestConstants.REQ_OPEN) {
+//	    	Table tableModel = (Table)getModel();
+//	    }
+//	}
 	
 	@Override
 	protected void refreshVisuals() {

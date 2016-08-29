@@ -34,9 +34,9 @@ import com.hangum.tadpole.rdb.core.viewers.object.ExplorerViewer;
  */
 public abstract class AbstractObjectAction extends Action implements ISelectionListener, IWorkbenchAction {
 
-	private IWorkbenchWindow window;				  
-	UserDBDAO userDB = null;
-	IStructuredSelection selection;
+	protected IWorkbenchWindow window;				  
+	protected UserDBDAO userDB = null;
+	protected IStructuredSelection selection;
 
 	private PublicTadpoleDefine.OBJECT_TYPE actionType;
 	
@@ -120,11 +120,51 @@ public abstract class AbstractObjectAction extends Action implements ISelectionL
 	}
 	
 	/**
+	 * Sequence 최신정보로 갱신
+	 */
+	protected void refreshSequence() {
+		ExplorerViewer ev = getExplorerView();
+		if(ev != null) ev.refreshSequence(true, "");		
+	}
+	
+	/**
+	 * Database Link 최신정보로 갱신
+	 */
+	protected void refreshDBLink() {
+		ExplorerViewer ev = getExplorerView();
+		if(ev != null) ev.refreshDBLink(true, "");		
+	}
+	
+	/**
+	 * Job 최신정보로 갱신
+	 */
+	protected void refreshJobs() {
+		ExplorerViewer ev = getExplorerView();
+		if(ev != null) ev.refreshJobs(true, "");		
+	}
+	
+	/**
+	 * Java 최신정보로 갱신
+	 */
+	protected void refreshJava() {
+		ExplorerViewer ev = getExplorerView();
+		if(ev != null) ev.refreshJava(true, "");		
+	}
+	
+	/**
 	 * Indexes 최신정보로 갱신
 	 */
 	protected void refreshIndexes() {
 		ExplorerViewer ev = getExplorerView();
 		if(ev != null) ev.refreshIndexes(true, "");		
+	}
+	
+	/**
+	 * Indexes 최신정보로 갱신
+	 */
+	protected void refreshConstraints() {
+		ExplorerViewer ev = getExplorerView();
+		if(ev != null) ev.refreshConstraints(true, "");		
 	}
 	
 	/**
@@ -169,6 +209,8 @@ public abstract class AbstractObjectAction extends Action implements ISelectionL
 	protected void refreshTrigger() {
 		ExplorerViewer ev = getExplorerView();
 		if(ev != null) ev.refreshTrigger(true, "");
+		//TODO:무조건 리프레쉬 하는것이 아니라 전체트리거 탭이 선택되어 있을때만 리프레쉬 해야하나?
+		if(ev != null) ev.refreshAllTrigger(true, "");
 	}
 	
 	/**

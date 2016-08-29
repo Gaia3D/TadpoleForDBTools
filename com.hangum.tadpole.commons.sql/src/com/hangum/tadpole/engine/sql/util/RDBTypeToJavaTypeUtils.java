@@ -14,8 +14,7 @@ import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
-import oracle.jdbc.OracleTypes;
-
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import com.hangum.tadpole.engine.define.DBDefine;
@@ -57,7 +56,7 @@ public class RDBTypeToJavaTypeUtils {
 		mapTypes.put("TIMESTAMP", java.sql.Types.TIMESTAMP);
 		mapTypes.put("DATETIME", java.sql.Types.TIMESTAMP);
 		mapTypes.put("TINYBLOB", java.sql.Types.BINARY);
-		mapTypes.put("BLOB", java.sql.Types.LONGVARBINARY);
+		mapTypes.put("BLOB", java.sql.Types.BLOB);//LONGVARBINARY);
 		mapTypes.put("MEDIUMBLOB", java.sql.Types.LONGVARBINARY);
 		mapTypes.put("LONGBLOB", java.sql.Types.LONGVARBINARY);
 		mapTypes.put("TINYTEXT", java.sql.Types.VARCHAR);
@@ -68,7 +67,7 @@ public class RDBTypeToJavaTypeUtils {
 		mapTypes.put("BINARY", java.sql.Types.BINARY);
 		mapTypes.put("VARBINARY", java.sql.Types.VARBINARY);
 		mapTypes.put("NUMBER", java.sql.Types.DECIMAL);
-		mapTypes.put("SYS_REFCURSOR", OracleTypes.CURSOR);
+//		mapTypes.put("SYS_REFCURSOR", OracleTypes.CURSOR);
 
 		// pgsql JSON type
 		mapTypes.put("JSON", 1111);
@@ -132,7 +131,13 @@ public class RDBTypeToJavaTypeUtils {
 	public static boolean isNumberType(String rdbType) {
 		if(rdbType == null) return false;
 		
+		// 데이터 타입하고 데이터 사이즈가 함께 있을경우.. decimal(8) 
+		if(StringUtils.contains(rdbType, "(")){
+			rdbType = StringUtils.substringBefore(rdbType, "(");
+		}
+		
 		Integer intType = mapTypes.get(rdbType.toUpperCase());
+		
 		if(intType == null) return false;
 		
 		return isNumberType(intType);
@@ -164,9 +169,9 @@ public class RDBTypeToJavaTypeUtils {
   * @return
   */
 	public static String[] supportParameterTypes(UserDBDAO userDB) {
-		if (DBDefine.ORACLE_DEFAULT == DBDefine.getDBDefine(userDB)) {
+		if (DBDefine.ORACLE_DEFAULT == userDB.getDBDefine()) {
 			return oracleParams;
-		}else if (DBDefine.MSSQL_8_LE_DEFAULT == DBDefine.getDBDefine(userDB) || DBDefine.MSSQL_DEFAULT == DBDefine.getDBDefine(userDB)) {
+		}else if (DBDefine.MSSQL_8_LE_DEFAULT == userDB.getDBDefine() || DBDefine.MSSQL_DEFAULT == userDB.getDBDefine()) {
 			return mssqlParams;
 		}else {
 			return etcParams;

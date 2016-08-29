@@ -44,9 +44,11 @@ import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.commons.admin.core.Messages;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserLoginHistoryDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
+import com.hangum.tadpole.engine.utils.TimeZoneUtil;
 
 /**
  * User login history dialog
@@ -104,8 +106,7 @@ public class UserLoginHistoryDialog extends Dialog {
 		compositeHead.setLayout(new GridLayout(5, false));
 		
 		Label lblEmail = new Label(compositeHead, SWT.NONE);
-		lblEmail.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblEmail.setText(Messages.get().UserLoginHistoryDialog_1);
+		lblEmail.setText(CommonMessages.get().Email);
 		
 		textEmail = new Text(compositeHead, SWT.BORDER);
 		textEmail.addKeyListener(new KeyAdapter() {
@@ -123,7 +124,7 @@ public class UserLoginHistoryDialog extends Dialog {
 				search();
 			}
 		});
-		btnSearch.setText(Messages.get().UserLoginHistoryDialog_2);
+		btnSearch.setText(CommonMessages.get().Search);
 		
 		Label lblDate = new Label(compositeHead, SWT.NONE);
 		lblDate.setText("로그인 시간");
@@ -148,7 +149,7 @@ public class UserLoginHistoryDialog extends Dialog {
 		TableViewerColumn tableViewerColumn = new TableViewerColumn(tvHistory, SWT.NONE);
 		TableColumn tblclmnIp = tableViewerColumn.getColumn();
 		tblclmnIp.setWidth(100);
-		tblclmnIp.setText(Messages.get().UserLoginHistoryDialog_3);
+		tblclmnIp.setText(Messages.get().IP);
 		
 		TableViewerColumn tableViewerColumn_1 = new TableViewerColumn(tvHistory, SWT.NONE);
 		TableColumn tblclmnConnectionTime = tableViewerColumn_1.getColumn();
@@ -191,7 +192,7 @@ public class UserLoginHistoryDialog extends Dialog {
 			listLoginHistory.clear();
 			tvHistory.setInput(listLoginHistory);
 			
-			MessageDialog.openError(getShell(), Messages.get().UserLoginHistoryDialog_7, Messages.get().UserLoginHistoryDialog_8);
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().UserLoginHistoryDialog_8);
 			return;
 		}
 		
@@ -215,7 +216,7 @@ public class UserLoginHistoryDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, Messages.get().UserLoginHistoryDialog_10, false);
+		createButton(parent, IDialogConstants.OK_ID, CommonMessages.get().Close, false);
 	}
 
 	/**
@@ -248,8 +249,8 @@ class LoginHistoryLabelProvider  extends LabelProvider implements ITableLabelPro
 		
 		switch(columnIndex) {
 		case 0 : return dao.getLogin_ip();
-		case 1 : return dao.getConnet_time() == null?dao.getSqliteConnet_time():dao.getConnet_time().toString();
-		case 2 : return dao.getDisconnect_time() == null?"":dao.getDisconnect_time().toString(); //$NON-NLS-1$
+		case 1 : return dao.getConnet_time() == null?dao.getSqliteConnet_time():TimeZoneUtil.dateToStr(dao.getConnet_time());
+		case 2 : return dao.getDisconnect_time() == null?"":TimeZoneUtil.dateToStr(dao.getDisconnect_time()); //$NON-NLS-1$
 		}
 		
 		return "*** not column setting ***"; //$NON-NLS-1$

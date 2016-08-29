@@ -84,7 +84,7 @@ public class FindOneDetailComposite extends Composite {
 		this.dbResultObject = dbResultObject;
 		this.isTypeShowing = isTypeShowing;
 		
-		treeViewerMongo = new TreeViewer(this, SWT.BORDER | SWT.VIRTUAL | SWT.FULL_SELECTION);		
+		treeViewerMongo = new TreeViewer(this, SWT.BORDER /* | SWT.VIRTUAL */ | SWT.FULL_SELECTION);		
 		Tree tree = treeViewerMongo.getTree();
 		tree.setHeaderVisible(true);
 		tree.setLinesVisible(true);
@@ -98,7 +98,7 @@ public class FindOneDetailComposite extends Composite {
 				showViewSource();
 			}
 		});
-		btnViewSource.setText(Messages.get().FindOneDetailComposite_0); //$NON-NLS-1$
+		btnViewSource.setText(Messages.get().ViewSource); //$NON-NLS-1$
 		
 		createTreeColumn();
 		

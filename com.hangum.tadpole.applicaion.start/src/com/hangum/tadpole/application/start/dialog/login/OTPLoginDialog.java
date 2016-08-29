@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.application.start.Messages;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
 
 /**
@@ -71,7 +72,7 @@ public class OTPLoginDialog extends Dialog {
 		
 		Label lblOtpCode = new Label(container, SWT.NONE);
 		lblOtpCode.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblOtpCode.setText("OTP Code"); //$NON-NLS-1$
+		lblOtpCode.setText(Messages.get().OTP); //$NON-NLS-1$
 		
 		textOTPCode = new Text(container, SWT.BORDER);
 		textOTPCode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -88,7 +89,7 @@ public class OTPLoginDialog extends Dialog {
 		String strOTPCode = StringUtils.trim(textOTPCode.getText());
 		if(!NumberUtils.isNumber(strOTPCode)) {
 			textOTPCode.setFocus();
-			MessageDialog.openError(getShell(), "Error", Messages.get().OTPLoginDialog_3); //$NON-NLS-1$
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().OTPLoginDialog_3); //$NON-NLS-1$
 			return;
 		}
 		
@@ -103,7 +104,7 @@ public class OTPLoginDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, "OK", true); //$NON-NLS-1$
+		createButton(parent, IDialogConstants.OK_ID, CommonMessages.get().Close, true); //$NON-NLS-1$
 	}
 
 	/**

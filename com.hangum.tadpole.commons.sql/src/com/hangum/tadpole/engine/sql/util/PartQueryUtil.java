@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.hangum.tadpole.engine.sql.template.AltibaseDMLTemplate;
 import com.hangum.tadpole.engine.sql.template.CubridDMLTemplate;
 import com.hangum.tadpole.engine.sql.template.HIVEDMLTemplate;
 import com.hangum.tadpole.engine.sql.template.MSSQLDMLTemplate;
@@ -21,6 +22,7 @@ import com.hangum.tadpole.engine.sql.template.MySQLDMLTemplate;
 import com.hangum.tadpole.engine.sql.template.OracleDMLTemplate;
 import com.hangum.tadpole.engine.sql.template.PostgreDMLTemplate;
 import com.hangum.tadpole.engine.sql.template.SQLiteDMLTemplate;
+import com.hangum.tadpole.engine.sql.template.TAJODMLTemplate;
 
 /**
  * 각 DBMS에 맞는 쿼리문을 생성합니다.
@@ -39,9 +41,9 @@ public class PartQueryUtil {
 	public static String makeSelect(UserDBDAO userDB, String strQuery, int intStartPos, int intRowCnt) throws Exception {
 		String requestQuery = "";
 		
-		if(DBDefine.MYSQL_DEFAULT == userDB.getDBDefine() | DBDefine.MARIADB_DEFAULT == userDB.getDBDefine() ) {
+		if(DBDefine.MYSQL_DEFAULT == userDB.getDBDefine() || DBDefine.MARIADB_DEFAULT == userDB.getDBDefine() ) {
 			requestQuery = String.format(MySQLDMLTemplate.TMP_GET_PARTDATA, strQuery, intStartPos, intRowCnt);
-		} else if(DBDefine.ORACLE_DEFAULT == userDB.getDBDefine()) {
+		} else if(DBDefine.ORACLE_DEFAULT == userDB.getDBDefine() || DBDefine.TIBERO_DEFAULT == userDB.getDBDefine()) {
 			requestQuery = String.format(OracleDMLTemplate.TMP_GET_PARTDATA, strQuery, intStartPos, intStartPos+intRowCnt);
 		} else if(DBDefine.SQLite_DEFAULT == userDB.getDBDefine()) {
 			requestQuery = String.format(SQLiteDMLTemplate.TMP_GET_PARTDATA, strQuery, intStartPos, intRowCnt);
@@ -49,6 +51,8 @@ public class PartQueryUtil {
 			requestQuery = String.format(CubridDMLTemplate.TMP_GET_PARTDATA, strQuery, intStartPos, intRowCnt);
 		} else if(DBDefine.POSTGRE_DEFAULT == userDB.getDBDefine()) {
 			requestQuery = String.format(PostgreDMLTemplate.TMP_GET_PARTDATA, strQuery,  intStartPos, intRowCnt);
+		} else if(DBDefine.ALTIBASE_DEFAULT == userDB.getDBDefine()) {
+			requestQuery = String.format(AltibaseDMLTemplate.TMP_GET_PARTDATA, strQuery,  intStartPos, intRowCnt);
 //		} else if(DBDefine.MSSQL_DEFAULT == userDB.getDBDefine() | DBDefine.MSSQL_8_LE_DEFAULT == userDB.getDBDefine()) {
 //			requestQuery = String.format(MSSQLDMLTemplate.TMP_GET_PARTDATA, strQuery, intRowCnt, intStartPos+intRowCnt);
 //			
@@ -77,8 +81,8 @@ public class PartQueryUtil {
 		) {
 			resultQuery = MySQLDMLTemplate.TMP_EXPLAIN_EXTENDED + query;
 			
-		} else if(DBDefine.ORACLE_DEFAULT == userDB.getDBDefine()) {
-			resultQuery =  OracleDMLTemplate.TMP_EXPLAIN_EXTENDED + "( " + query + ")";
+		} else if(DBDefine.ORACLE_DEFAULT == userDB.getDBDefine() || DBDefine.TIBERO_DEFAULT == userDB.getDBDefine()) {
+			resultQuery =  OracleDMLTemplate.TMP_EXPLAIN_EXTENDED + query;
 		} else if(DBDefine.MSSQL_8_LE_DEFAULT == userDB.getDBDefine() || DBDefine.MSSQL_DEFAULT == userDB.getDBDefine()) {
 	      resultQuery =  MSSQLDMLTemplate.TMP_EXPLAIN_EXTENDED + query;
 		} else if(DBDefine.SQLite_DEFAULT == userDB.getDBDefine()) {
@@ -88,8 +92,11 @@ public class PartQueryUtil {
 			resultQuery = query;
 		} else if(DBDefine.HIVE_DEFAULT == userDB.getDBDefine()) {
 			resultQuery = HIVEDMLTemplate.TMP_EXPLAIN_EXTENDED + query;
+		} else if(DBDefine.TAJO_DEFAULT == userDB.getDBDefine()) {
+			resultQuery = TAJODMLTemplate.TMP_EXPLAIN_EXTENDED + query;
 		} else if(DBDefine.POSTGRE_DEFAULT == userDB.getDBDefine()) {
-			resultQuery = PostgreDMLTemplate.TMP_EXPLAIN_EXTENDED + query;			
+			resultQuery = PostgreDMLTemplate.TMP_EXPLAIN_EXTENDED + query;
+			
 		} else {
 			throw new Exception("Not Support DBMS Query Plan.");
 		}

@@ -19,7 +19,7 @@ import com.hangum.tadpole.commons.util.Utils;
  * @author hangum
  *
  */
-public class PreferenceDefine {
+public class PreferenceDefine extends AdminPreferenceDefine {
 	
 	/**시스템이 초기화 되었는지 정의 */
 	public static final String IS_TADPOLE_INITIALIZE = "IS_TADPOLE_INITIALIZE";
@@ -34,17 +34,27 @@ public class PreferenceDefine {
 	
 	/** default home page */
 	public static final String DEFAULT_HOME_PAGE 		= "DEFAULT_HOME_PAGE";
-	public static final String DEFAULT_HOME_PAGE_VALUE 	= "http://hangum.github.io/TadpoleForDBTools/";//https://sites.google.com/site/tadpolefordb/home";//"https://www.github.com/hangum/TadpoleForDBTools/wiki";
+	public static final String DEFAULT_HOME_PAGE_VALUE 	= "http://hangum.github.io/TadpoleForDBTools/index2.html";//https://sites.google.com/site/tadpolefordb/home";//"https://www.github.com/hangum/TadpoleForDBTools/wiki";
 //	public static final String DEFAULT_HOME_PAGE_EN_VALUE 	= "https://sites.google.com/site/tadpolefordbtoolsen";
 	
 	/** default home page use */
 	public static final String DEFAULT_HOME_PAGE_USE 		= "DEFAULT_HOME_PAGE_USE";
 	public static final String DEFAULT_HOME_PAGE_USE_VALUE 	= "false";
 	
+	/** RDB query profillint */ 
+	public static final String RDB_QUERY_PROFILLING = "RDB_QUERY_PROFILLING";
+	/** RDB query profillint 값 */
+	public static final String RDB_QUERY_PROFILLING_VALUE = "false";
+	
 	/** RDB Result type */ 
 	public static final String RDB_RESULT_TYPE = "RDB_RESULT_TYPE";
 	/** RDB Result type 값 */
 	public static final String RDB_RESULT_TYPE_VALUE = "Table";
+	
+	/** RDB Result 값중에 NULL값이 있을 경우 처리 */ 
+	public static final String RDB_RESULT_NULL = "RDB_RESULT_NULL";
+	/** RDB Result type 값 */
+	public static final String RDB_RESULT_NULL_VALUE = "{null}";
 	
 	/** select 제한  갯수 */ 
 	public static final String SELECT_LIMIT_COUNT = "SELECT_LIMIT_COUNT";
@@ -89,7 +99,7 @@ public class PreferenceDefine {
 		public static final String SQL_FORMATTER_WORD_BREAK_PREFERENCE_VALUE = "true";
 		
 		public static final String SQL_FORMATTER_WORD_WIDTH_PREFERENCE 	= "SQL_FORMATTER_WORD_WIDTH_PREFERENCE";
-		public static final String SQL_FORMATTER_WORD_WIDTH_PREFERENCE_VALUE = "120";
+		public static final String SQL_FORMATTER_WORD_WIDTH_PREFERENCE_VALUE = "200";
 		
 	/** SESSION TIME OUT */
 	public static final String SESSION_DFEAULT_PREFERENCE = "SESSION_DFEAULT_PREFERENCE";
@@ -103,19 +113,6 @@ public class PreferenceDefine {
 	public static final int SESSION_DEFAULT_MAX_PREFERENEC_VALUE = 999999;
 	
 	
-	// set smtp information
-		public static final String SMTP_HOST_NAME 		= "SMTP_HOST_NAME";
-		public static final String SMTP_HOST_NAME_VALUE = "smtp.googlemail.com";
-		
-		public static final String SMTP_PORT 			= "SMTP_PORT";
-		public static final String SMTP_PORT_VALUE 		= "465";
-		
-		public static final String SMTP_EMAIL 			= "SMTP_EMAIL";
-		public static final String SMTP_EMAIL_VALUE 	= "";//tadpole.sender@gmail.com";
-		
-		public static final String SMTP_PASSWD 			= "SMTP_PASSWD";
-		public static final String SMTP_PASSWD_VALUE 	= "";//tadpoleadmin";
-		
 	/** ORACLE PLAN TABLE */
 	public static final String ORACLE_PLAN_TABLE = "ORACLE_PLAN_TABLE";
 	/** ORACLE PLAN TABLE VALUE */
@@ -157,7 +154,7 @@ public class PreferenceDefine {
 	
 	/** RDB의 결과 화면에서 컬럼에서 보여지는 캐릭터 숫자. */
 	public static final String RDB_CHARACTER_SHOW_IN_THE_COLUMN = "RDB_CHARACTER_SHOW_IN_THE_COLUMN";
-	public static final String RDB_CHARACTER_SHOW_IN_THE_COLUMN_VALUE = "-1";
+	public static final String RDB_CHARACTER_SHOW_IN_THE_COLUMN_VALUE = "100";
 	
 	/** define Amazon key */ 
 	public static final String AMAZON_ACCESS_NAME = "AMAZON_ACCESS_NAME";
@@ -178,19 +175,26 @@ public class PreferenceDefine {
 		
 	/** editor info */
 	public static final String EDITOR_CHANGE_EVENT = "_EDITOR_CHANGE_EVENT_";
+	
+	public static final String EDITOR_AUTOSAVE 			= "EDITOR_AUTOSAVE";
+	public static final String EDITOR_AUTOSAVE_VALUE	= "false";
+	
 	public static final String EDITOR_THEME 		= "EDITOR_THEME";
-	public static final String EDITOR_THEME_VALUE	= "Chrome";
+	public static final String EDITOR_THEME_VALUE	= "Crimson Editor";
 	
 	public static final String EDITOR_FONT_SIZE 		= "EDITOR_FONT_SIZE";
 	public static final String EDITOR_FONT_SIZE_VALUE 	= "12";
 	
 	public static final String EDITOR_IS_WARP 		= "EDITOR_IS_WARP";
-	public static final String EDITOR_IS_WARP_VALUE = "true";
+	public static final String EDITOR_IS_WARP_VALUE = "false";
 	
 	public static final String EDITOR_WRAP_LIMIT 		= "EDITOR_WRAP_LIMIT";
-	public static final String EDITOR_WRAP_LIMIT_VALUE 	= "120";
+	public static final String EDITOR_WRAP_LIMIT_VALUE 	= "300";
 	
 	public static final String EDITOR_SHOW_GUTTER = "EDITOR_SHOW_GUTTER";
 	public static final String EDITOR_SHOW_GUTTER_VALUE = "true";
+	
+	public static final String EDITOR_MYBatisDollart = "EDITOR_MYBatisDollart";
+	public static final String EDITOR_MYBatisDollart_VALUE = "false";
 		
 }

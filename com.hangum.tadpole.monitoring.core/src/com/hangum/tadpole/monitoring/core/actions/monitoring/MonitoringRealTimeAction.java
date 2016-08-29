@@ -24,6 +24,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.monitoring.core.Activator;
 import com.hangum.tadpole.monitoring.core.editors.monitoring.realtime.MonitoringMainEditor;
 import com.hangum.tadpole.monitoring.core.editors.monitoring.realtime.MonitoringMainInput;
@@ -64,7 +65,7 @@ public class MonitoringRealTimeAction extends Action implements ISelectionListen
 			logger.error("Monitoring realtime editor open", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", "Monitoring realtime editor", errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, "Monitoring realtime editor", errStatus); //$NON-NLS-1$
 		}
 	}
 

@@ -13,27 +13,23 @@ package com.hangum.tadpole.engine.query.dao.mysql;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
 /**
  * table 정보 
  * 
  * @author hangum
  *
  */
-public class TableDAO {
-	/** 
-	 * 시스템에서 쿼리에 사용할 이름을 정의 .
-	 * 보여줄때는 {@link TableDAO#name}을 사용하고, 쿼리를 사용할때는 . 
-	 * 
-	 * 자세한 사항은 https://github.com/hangum/TadpoleForDBTools/issues/412 를 참고합니다.
-	 */
-	String sysName = "";
+public class TableDAO extends StructObjectDAO {
 	
 	String name;
 	String comment="";
 	
 	/* postgresql, MSSQL Server schema support */
 	String table_name = "";
-	String schema_name = "";
+	
+	String table_type = "";
 	
 	/** hive */
 	String tab_name = "";
@@ -73,20 +69,15 @@ public class TableDAO {
 	 */
 	public void setTable_name(String table_name) {
 		this.table_name = table_name;
+		setName(table_name);
 	}
 
-	/**
-	 * @return the schema_name
-	 */
-	public String getSchema_name() {
-		return schema_name;
+	public String getTable_type() {
+		return table_type;
 	}
 
-	/**
-	 * @param schema_name the schema_name to set
-	 */
-	public void setSchema_name(String schema_name) {
-		this.schema_name = schema_name;
+	public void setTable_type(String table_type) {
+		this.table_type = table_type;
 	}
 
 	public String getComment() {
@@ -122,19 +113,6 @@ public class TableDAO {
 		this.size = size;
 	}
 
-	/**
-	 * @return the sysName
-	 */
-	public final String getSysName() {
-		return sysName;
-	}
-
-	/**
-	 * @param sysName the sysName to set
-	 */
-	public final void setSysName(String sysName) {
-		this.sysName = sysName;
-	}
 	
 	@Override
 	public boolean equals(Object obj) {
@@ -159,6 +137,13 @@ public class TableDAO {
 	public void setListColumn(List<TableColumnDAO> listColumn) {
 		this.listColumn = listColumn;
 	}
-
 	
+	@Override
+	public String getFullName() {
+		if(StringUtils.isEmpty(this.getSchema_name())) {
+			return this.getSysName();
+		}else{
+			return String.format("%s.%s", this.getSchema_name(), this.getSysName());
+		}
+	}
 }

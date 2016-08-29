@@ -22,6 +22,9 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
+import com.hangum.tadpole.mongodb.core.Messages;
+
 /**
  * javascript eval input dialog
  * 
@@ -102,8 +105,8 @@ public class EvalInputDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, "OK", true);
-		createButton(parent, IDialogConstants.CANCEL_ID, "Cancel", false);
+		createButton(parent, IDialogConstants.OK_ID,  CommonMessages.get().Confirm, true);
+		createButton(parent, IDialogConstants.CANCEL_ID,   CommonMessages.get().Cancel, false);
 	}
 
 	/**

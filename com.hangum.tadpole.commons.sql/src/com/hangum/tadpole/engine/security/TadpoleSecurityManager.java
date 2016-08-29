@@ -14,7 +14,10 @@ import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.util.Utils;
+import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.hangum.tadpole.preference.define.GetAdminPreference;
 import com.hangum.tadpole.session.manager.SessionManager;
 
 /**
@@ -59,7 +62,9 @@ public class TadpoleSecurityManager {
 	 * @return
 	 */
 	public boolean isLock(final UserDBDAO userDB) {
-		if(PublicTadpoleDefine.YES_NO.YES.name().equals(userDB.getIs_lock())) {
+		if(userDB == null) return false;
+		
+		if(PublicTadpoleDefine.YES_NO.YES.name().equals(userDB.getIs_lock()) || PublicTadpoleDefine.YES_NO.NO.name().equals(GetAdminPreference.getSaveDBPassword())) {
 			if(!SessionManager.isUnlockDB(userDB)) {
 				return false;
 			}
@@ -88,11 +93,18 @@ public class TadpoleSecurityManager {
 	 * @return
 	 */
 	private boolean openPasswdDialog(final UserDBDAO userDB) {
+		// SQLite은 패스워드가 없으므로..
+		if(userDB.getDBDefine() == DBDefine.SQLite_DEFAULT) {
+			SessionManager.setUnlokDB(userDB);
+			return true;
+		}
+		
 		DBLockDialog dialog = new DBLockDialog(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), userDB);
 		if(Dialog.OK == dialog.open()) {
 			SessionManager.setUnlokDB(userDB);
 			return true;
 		} else {
+			userDB.setPasswd(Utils.getUniqueDigit(7));
 			return false;
 		}
 	}

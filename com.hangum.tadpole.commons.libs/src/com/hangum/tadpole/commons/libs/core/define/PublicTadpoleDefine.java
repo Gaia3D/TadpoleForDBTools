@@ -14,8 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.eclipse.rap.rwt.RWT;
 
 /**
  * 전역 변수 정의 
@@ -26,6 +26,27 @@ import org.eclipse.rap.rwt.RWT;
 public class PublicTadpoleDefine {
 	/** url system verion information */
 	public static final String URL_SYSTEM_VERION = String.format("?%s%s=%s", SystemDefine.MAJOR_VERSION, SystemDefine.SUB_VERSION, SystemDefine.RELEASE_DATE);
+	
+	/** sert user info */
+	public static String CERT_USER_INFO = "";
+	
+	/** defiee default time zone*/
+	public static final String DEFAULT_TIME_ZONE = "Asia/Seoul";
+	
+	/** defualt log file name*/
+	public static final String DEFAULT_LOG_FILE 		= "./logs/tadpole.log";
+	public static final String DEFAULT_VELOCITY_LOG_FILE = "./logs/tadpoleVelocity.log";
+	
+	/** license 파일 */
+	public static final String LICENSE_FILE = "TadpoleHub.lic";
+	
+	/** cookie path */
+	public static String _cookiePath = "/";
+	
+	public static final int systemAdminId = -1;
+	
+	/** Default resource name */
+	public static final String DEFAUL_RESOURCE_NAME = "_TDB_DEF_NAME_";
 
 	/** 시스템 사용 그룹 정의 */
 	public static enum SYSTEM_USE_GROUP {PERSONAL, GROUP}  
@@ -34,48 +55,56 @@ public class PublicTadpoleDefine {
 	public static final String SERVICE_KEY_NAME = "serviceID";
 	
 	/** default system encrypt password */
-	public static final String SYSTEM_DEFAULT_USER = "tadpoleperson@tadpoledb.com";
-	public static final String SYSTEM_DEFAULT_PASSWORD = "heechan.me.son";
+	public static final String SYSTEM_DEFAULT_USER = "hangum@tadpolehub.com";
+	public static final String SYSTEM_DEFAULT_PASSWORD = "startService.tdb.son";
 	
 	/** COOKIE USER ID */
+	public static final String TDB_COOKIE_UPDATE_CHECK = "TDB_COOKIE_UPDATE_CHECK";
 	public static final String TDB_COOKIE_USER_ID = "TDB_USER_ID";
+	public static final String TDB_COOKIE_USER_PWD = "TDB_USER_PWD";
 	public static final String TDB_COOKIE_USER_SAVE_CKECK = "TDB_USER_SAVE_CHECK";
 	public static final String TDB_COOKIE_USER_LANGUAGE = "TDB_USER_LANGUAGE";
+	public static final String TDB_COOKIE_USER_IP = "TDB_USER_IP";
 
 	/**
 	 * PLAN Statement ID
 	 */
-	public static String STATEMENT_ID = "||TDB_STATEMENT_ID||"; //$NON-NLS-1$
+	public static final String STATEMENT_ID = "||TDB_STMT_ID||"; //$NON-NLS-1$
 
 	/** 0번째 테이블 컬럼을 선택한다 */
-	public static String DEFINE_TABLE_COLUMN_BASE_ZERO = "TDB_BASE_ZERO";
+	public static final String DEFINE_TABLE_COLUMN_BASE_ZERO = "TDB_BASE_ZERO";
+	public static final String DEFINE_TABLE_COLUMN_BASE_ZERO_TYPE = "TDB_BASE_TYPE";
 	
 	/**
 	 * 특별 컬럼을 정의 합니다. 
 	 */
-	public static String SPECIAL_USER_DEFINE_HIDE_COLUMN = "TDB_HIDE";
+	public static final String SPECIAL_USER_DEFINE_HIDE_COLUMN = "TDB_HIDE";
 	
 	/**
 	 * 분리자
 	 */
-	public static String DELIMITER = "||TDB-DELIMITER||"; //$NON-NLS-1$
-	public static String DELIMITER_DBL = "||TDB-DELIMITER-DBL||"; //$NON-NLS-1$
+	public static final String DELIMITER = "||DEL||"; //$NON-NLS-1$
+	public static final String DELIMITER_DBL = "||DEL-DBL||"; //$NON-NLS-1$
 	
 	/** 라인분리자 */
-	public static String LINE_SEPARATOR = "\n";//System.getProperty("line.separator"); //$NON-NLS-1$
-	public static String DOUBLE_LINE_SEPARATOR = LINE_SEPARATOR + LINE_SEPARATOR;
+	public static final String LINE_SEPARATOR = "\n";//System.getProperty("line.separator"); //$NON-NLS-1$
+	public static final String DOUBLE_LINE_SEPARATOR = LINE_SEPARATOR + LINE_SEPARATOR;
 	
 	/** DIR SEPARATOR */
-	public static char DIR_SEPARATOR = IOUtils.DIR_SEPARATOR;
+	public static final char DIR_SEPARATOR = IOUtils.DIR_SEPARATOR;
 	
-	/** temmp dir */
-	public static String TEMP_DIR = System.getProperty("java.io.tmpdir");
+	/** temp dir 
+		임시 디렉토리 생성에 오류 있음. 확인 필요.
+		java.io.IOException: Directory '/tmpTempTable1458208430419' could not be created 오류 발생.
+		환경 설정에 문제인지(prefix 혹은 디렉토리 미지정).. 아니면 코드상의 오류(DIRECTORY-SEPERATOR 가 빠진 문제)인지 확인 필요
+	*/
+	public static final String TEMP_DIR = FileUtils.getTempDirectoryPath() + PublicTadpoleDefine.DIR_SEPARATOR;
 
 	/**  쿼리 구분자 */
 	public static final String SQL_DELIMITER = ";"; //$NON-NLS-1$
 	
 	/** tadpole url */
-	public static String TADPOLE_URL = "http://127.0.0.1:%s/tadpole";//db?startup=tadpole"; //$NON-NLS-1$
+	public static final String TADPOLE_URL = "http://127.0.0.1:%s";
 	
 	/**
 	 * tadpole url
@@ -90,8 +119,8 @@ public class PublicTadpoleDefine {
 	/** 외부 계정으로 올챙이가 접속 할때의 외부 계정 리스트. 현재는 external_account 의 type에 사용. */
 	public enum EXTERNAL_ACCOUNT {AMAZONRDS};
 	
-	/** NULL VALUE */
-	public static final String DEFINE_NULL_VALUE = "{null}";
+//	/** NULL VALUE */
+//	public static final String DEFINE_NULL_VALUE = "{null}";
 	
 	/** user login type */
 	public static enum INPUT_TYPE {NORMAL, GOOGLE_OAUTH, LDAP};
@@ -128,8 +157,8 @@ public class PublicTadpoleDefine {
 	public static Properties getSQLClientInfo() {
 		Properties prop = new Properties();
 		prop.setProperty("ApplicationName", String.format("%s %s %s", SystemDefine.NAME, SystemDefine.MAJOR_VERSION, SystemDefine.RELEASE_DATE));
-		prop.setProperty("ClientUser", 		RWT.getRequest().getRemoteHost());
-		prop.setProperty("ClientHostname", 	RWT.getRequest().getLocalAddr());
+//		prop.setProperty("ClientUser", 		RWT.getRequest().getRemoteHost());
+//		prop.setProperty("ClientHostname", 	RWT.getRequest().getLocalAddr());
 		
 		return prop;
 	}
@@ -205,10 +234,13 @@ public class PublicTadpoleDefine {
 	public static enum EDITOR_OPEN_TYPE {NONE, STRING, FILE};
 	
 	/** save resource type */
-	public static enum RESOURCE_TYPE {ERD, SQL};
+	public static enum RESOURCE_TYPE {ERD, SQL, AUTO_SQL};
 	
 	/** define SQL, ERD shared type */
 	public static enum SHARED_TYPE {PUBLIC, PRIVATE};
+	
+	/** executed sql type */
+	public static enum SQL_STATEMENT_TYPE {NONE, PREPARED_STATEMENT};
 	
 	/** executed sql history type */
 	public static enum EXECUTE_SQL_TYPE {EDITOR, SESSION, API};
@@ -224,7 +256,10 @@ public class PublicTadpoleDefine {
 		TABLES, 
 		VIEWS, 
 		SYNONYM,
+		SEQUENCE,
+		LINK,
 		INDEXES, 
+		CONSTRAINTS,
 		PROCEDURES,
 		PROCEDURE_PARAMETER,
 		FUNCTIONS, 
@@ -232,7 +267,10 @@ public class PublicTadpoleDefine {
 		COLLECTIONS,
 		JAVASCRIPT,
 		PACKAGES,
-		SCHEDULE
+		SCHEDULE,
+		COLUMNS,
+		JOBS,
+		JAVA
 	};
 
 	/** sql type - http://www.orafaq.com/faq/what_are_the_difference_between_ddl_dml_and_dcl_commands */
@@ -243,11 +281,12 @@ public class PublicTadpoleDefine {
 	
 	/** query ddl type */
 	public static enum QUERY_DDL_STATUS {CREATE, ALTER, DROP, UNKNOWN};
-	public static enum QUERY_DDL_TYPE 	{TABLE, VIEW, INDEX, PROCEDURE, FUNCTION, TRIGGER, PACKAGE, SYNONYM, UNKNOWN};
+	public static enum QUERY_DDL_TYPE 	{TABLE, VIEW, SEQUENCE, INDEX, PROCEDURE, FUNCTION, TRIGGER, PACKAGE, SYNONYM, LINK, JOBS, JAVA, UNKNOWN};
 	
 	public static String[] DB_PRIMARY_KEY = {
 											"PRI", 
 											"PK", 
+											"PRIMARY", 
 											"PRIMARY KEY",	// pgsql
 											};
 	

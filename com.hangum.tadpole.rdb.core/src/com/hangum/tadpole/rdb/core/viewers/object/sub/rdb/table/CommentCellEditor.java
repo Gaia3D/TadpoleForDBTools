@@ -52,14 +52,42 @@ public class CommentCellEditor extends TextCellEditor {
 		super.keyReleaseOccured(keyEvent);
 		
 		if (keyEvent.keyCode == SWT.ARROW_UP) { 
-			if (0 < viewer.getTable().getSelectionIndex()){
+			if (-1 < viewer.getTable().getSelectionIndex()){
 				Object element = viewer.getElementAt(viewer.getTable().getSelectionIndex() - 1);
-				viewer.editElement(element, column);
+				if (element != null){ 
+					viewer.editElement(element, column);
+				} else {
+					element = viewer.getElementAt(viewer.getTable().getItemCount() - 1);
+					viewer.editElement(element, column);
+				}
 			}
 		}else if (keyEvent.keyCode == SWT.ARROW_DOWN) { 
 			if (viewer.getTable().getItemCount() > viewer.getTable().getSelectionIndex()){
 				Object element = viewer.getElementAt(viewer.getTable().getSelectionIndex() + 1);
-				viewer.editElement(element, column);
+				if (element != null){ 
+					viewer.editElement(element, column);
+				} else {
+					element = viewer.getElementAt(0);
+					viewer.editElement(element, column);
+				}
+			}
+		}else if (keyEvent.keyCode == SWT.ARROW_LEFT) {
+			if (column > 0) {
+				Object element = viewer.getElementAt(viewer.getTable().getSelectionIndex());
+				viewer.editElement(element, column - 1);
+				// 이동하려는 컬럼이 수정불가능한 cell일 경우 이동하지 않는다.
+				// TODO : viewer에서 column 인덱스를 이용해 수정가능한 컬럼인지 확인하는 방법이 있으면....
+				// EditingSupport의 canEdit()정보를 이용할 수 없나??
+				if(!viewer.isCellEditorActive()) viewer.editElement(element, column);
+			}
+		} else if (keyEvent.keyCode == SWT.ARROW_RIGHT) {
+			if (column < viewer.getTable().getColumnCount() - 1){
+				Object element = viewer.getElementAt(viewer.getTable().getSelectionIndex());
+				viewer.editElement(element, column + 1);
+				// 이동하려는 컬럼이 수정불가능한 cell일 경우 이동하지 않는다.
+				// TODO : viewer에서 column 인덱스를 이용해 수정가능한 컬럼인지 확인하는 방법이 있으면....
+				// EditingSupport의 canEdit()정보를 이용할 수 없나??
+				if(!viewer.isCellEditorActive()) viewer.editElement(element, column);
 			}
 		}
 	}

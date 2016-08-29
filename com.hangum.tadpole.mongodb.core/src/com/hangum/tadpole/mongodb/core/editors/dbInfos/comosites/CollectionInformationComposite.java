@@ -48,6 +48,7 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.commons.util.NumberFormatUtils;
 import com.hangum.tadpole.engine.query.dao.mongodb.CollectionFieldDAO;
@@ -123,7 +124,7 @@ public class CollectionInformationComposite extends Composite {
 				initData(userDB);
 			}
 		});
-		tltmRefresh.setToolTipText(Messages.get().CollectionInformationComposite_tltmRefresh_text);
+		tltmRefresh.setToolTipText(CommonMessages.get().Refresh);
 
 		Composite compositeHead = new Composite(this, SWT.NONE);
 		compositeHead.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -136,7 +137,7 @@ public class CollectionInformationComposite extends Composite {
 		
 		Label lblName = new Label(compositeHead, SWT.NONE);
 		lblName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblName.setText(Messages.get().CollectionInformationComposite_0);
+		lblName.setText(CommonMessages.get().Filter);
 		
 		textFilter = new Text(compositeHead, SWT.SEARCH | SWT.ICON_SEARCH | SWT.ICON_CANCEL);
 		textFilter.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -157,7 +158,7 @@ public class CollectionInformationComposite extends Composite {
 		gl_compositeBody.marginWidth = 2;
 		compositeBody.setLayout(gl_compositeBody);
 		
-		treeViewerCollections = new TreeViewer(compositeBody, SWT.BORDER | SWT.VIRTUAL | SWT.FULL_SELECTION);
+		treeViewerCollections = new TreeViewer(compositeBody, SWT.BORDER /* | SWT.VIRTUAL */ | SWT.FULL_SELECTION);
 		treeViewerCollections.addSelectionChangedListener(new ISelectionChangedListener() {
 			public void selectionChanged(SelectionChangedEvent event) {
 				try {
@@ -194,7 +195,7 @@ public class CollectionInformationComposite extends Composite {
 						logger.error("Load the table data", e); //$NON-NLS-1$
 						
 						Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-						ExceptionDetailsErrorDialog.openError(null, "Error", "An error has occurred.", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
+						ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, "An error has occurred.", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 				}
 				
@@ -337,7 +338,7 @@ public class CollectionInformationComposite extends Composite {
 			logger.error("mongodb collection infomtion init", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", "MongoDB Information", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, "MongoDB Information", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
 

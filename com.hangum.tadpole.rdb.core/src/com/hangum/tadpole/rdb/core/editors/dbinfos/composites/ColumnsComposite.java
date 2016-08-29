@@ -39,6 +39,7 @@ import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.CSVFileUtils;
 import com.hangum.tadpole.commons.util.Utils;
 import com.hangum.tadpole.commons.util.download.DownloadServiceHandler;
@@ -58,7 +59,7 @@ import com.ibatis.sqlmap.client.SqlMapClient;
  * @author nilriri
  * 
  */
-public class ColumnsComposite extends Composite {
+public class ColumnsComposite extends DBInfosComposite {
 	/**
 	 * Logger for this class
 	 */
@@ -70,9 +71,11 @@ public class ColumnsComposite extends Composite {
 	private DefaultTableColumnFilter columnFilter;
 	private Text textFilter;
 	
-	/** download servcie handler. */
+	/** download service handler. */
 	private Composite compositeTail;
 	private DownloadServiceHandler downloadServiceHandler;
+	
+	private List<RDBInfomationforColumnDAO> listTableInform = new ArrayList<RDBInfomationforColumnDAO>();
 
 	/**
 	 * Create the composite.
@@ -92,7 +95,7 @@ public class ColumnsComposite extends Composite {
 
 		Label lblNewLabel = new Label(compositeHead, SWT.NONE);
 		lblNewLabel.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblNewLabel.setText(Messages.get().ColumnsComposite_0);
+		lblNewLabel.setText(CommonMessages.get().Filter);
 
 		textFilter = new Text(compositeHead, SWT.SEARCH | SWT.ICON_SEARCH | SWT.ICON_CANCEL);
 		textFilter.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -110,12 +113,12 @@ public class ColumnsComposite extends Composite {
 		btnRefresh.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				initUI();
+				initUI(true);
 			}
 		});
-		btnRefresh.setText(Messages.get().ColumnsComposite_1);
+		btnRefresh.setText(CommonMessages.get().Refresh);
 
-		tvColumnInform = new TableViewer(this, SWT.BORDER | SWT.FULL_SELECTION);
+		tvColumnInform = new TableViewer(this, /* SWT.VIRTUAL | */ SWT.BORDER | SWT.FULL_SELECTION);
 		Table table = tvColumnInform.getTable();
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
@@ -141,7 +144,6 @@ public class ColumnsComposite extends Composite {
 		columnFilter = new DefaultTableColumnFilter();
 		tvColumnInform.addFilter(columnFilter);
 
-		initUI();
 		registerServiceHandler();
 	}
 	
@@ -156,7 +158,7 @@ public class ColumnsComposite extends Composite {
 	 */
 	private void download() {
 		if(tvColumnInform.getTable().getItemCount() == 0) return;
-		if(!MessageDialog.openConfirm(null, Messages.get().TablesComposite_2, Messages.get().TablesComposite_3)) return;
+		if(!MessageDialog.openConfirm(null, CommonMessages.get().Confirm, Messages.get().TablesComposite_3)) return;
 			
 		List<String[]> listCsvData = new ArrayList<String[]>();
 		
@@ -182,11 +184,11 @@ public class ColumnsComposite extends Composite {
 		
 		try {
 			String strCVSContent = CSVFileUtils.makeData(listCsvData);
-			downloadExtFile("ColumnInformation.csv", strCVSContent); //$NON-NLS-1$
+			downloadExtFile(userDB.getDisplay_name() + "_ColumnInformation.csv", strCVSContent); //$NON-NLS-1$
 			
-			MessageDialog.openInformation(null, Messages.get().TablesComposite_2, Messages.get().TablesComposite_5);
+			MessageDialog.openInformation(null, CommonMessages.get().Information, Messages.get().TablesComposite_5);
 		} catch (Exception e) {
-			logger.error("Save CSV Data", e); //$NON-NLS-1$
+			logger.error("An error occurred while writing into a CSV file.", e); //$NON-NLS-1$
 		}		
 	}
 
@@ -220,7 +222,7 @@ public class ColumnsComposite extends Composite {
 	private void createTableColumn() {
 
 		TableViewColumnDefine [] tableColumnDef = new TableViewColumnDefine [] {};
-		if (DBDefine.getDBDefine(userDB) == DBDefine.MYSQL_DEFAULT || DBDefine.getDBDefine(userDB) == DBDefine.MARIADB_DEFAULT) {
+		if (userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT || userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT) {
 
 			tableColumnDef = new TableViewColumnDefine [] { //
 			new TableViewColumnDefine ("TABLE_NAME", "Table Name", 100, SWT.LEFT, true) // //$NON-NLS-1$ //$NON-NLS-2$
@@ -239,7 +241,7 @@ public class ColumnsComposite extends Composite {
 					, new TableViewColumnDefine ("LAST_ANALYZED", "Last Analyzed", 100, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
 			};
 
-		} else if (DBDefine.getDBDefine(userDB) == DBDefine.CUBRID_DEFAULT) {
+		} else if (userDB.getDBDefine() == DBDefine.CUBRID_DEFAULT) {
 
 			tableColumnDef = new TableViewColumnDefine [] { //
 			new TableViewColumnDefine ("TABLE_NAME", "Table Name", 100, SWT.LEFT, true) // //$NON-NLS-1$ //$NON-NLS-2$
@@ -258,7 +260,7 @@ public class ColumnsComposite extends Composite {
 					, new TableViewColumnDefine ("LAST_ANALYZED", "Last Analyzed", 100, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
 			};
 
-		} else if (DBDefine.getDBDefine(userDB) == DBDefine.ORACLE_DEFAULT || DBDefine.getDBDefine(userDB) == DBDefine.POSTGRE_DEFAULT) {
+		} else if (userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT || userDB.getDBDefine() == DBDefine.TIBERO_DEFAULT || userDB.getDBDefine() == DBDefine.POSTGRE_DEFAULT) {
 
 			tableColumnDef = new TableViewColumnDefine [] { //
 			new TableViewColumnDefine ("TABLE_NAME", "Table Name", 100, SWT.LEFT, true) // //$NON-NLS-1$ //$NON-NLS-2$
@@ -276,7 +278,18 @@ public class ColumnsComposite extends Composite {
 					, new TableViewColumnDefine ("DENSITY", "Density", 100, SWT.RIGHT) // //$NON-NLS-1$ //$NON-NLS-2$
 					, new TableViewColumnDefine ("LAST_ANALYZED", "Last Analyzed", 120, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
 			};
+		} else if (DBDefine.getDBDefine(userDB) == DBDefine.ALTIBASE_DEFAULT) {
 
+			tableColumnDef = new TableViewColumnDefine [] { //
+					  new TableViewColumnDefine ("TABLE_NAME", "Table Name", 180, SWT.LEFT, true) // //$NON-NLS-1$ //$NON-NLS-2$
+					, new TableViewColumnDefine ("TABLE_COMMENT", "Table Comment", 150, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
+					, new TableViewColumnDefine ("COLUMN_NAME", "Column Name", 150, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
+					, new TableViewColumnDefine ("COLUMN_COMMENT", "Column Comment", 150, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
+					, new TableViewColumnDefine ("NULLABLE", "Nullable", 60, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
+					, new TableViewColumnDefine ("PK", "Key", 100, SWT.LEFT)
+					, new TableViewColumnDefine ("DATA_TYPE", "Data Type", 100, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
+					, new TableViewColumnDefine ("DATA_DEFAULT", "Default", 100, SWT.LEFT) // //$NON-NLS-1$ //$NON-NLS-2$
+			};
 		} else {
 			tableColumnDef = new TableViewColumnDefine [] { //
 			new TableViewColumnDefine ("TABLE_NAME", "Table Name", 100, SWT.LEFT, true) // //$NON-NLS-1$ //$NON-NLS-2$
@@ -308,18 +321,24 @@ public class ColumnsComposite extends Composite {
 	/**
 	 * 
 	 */
-	private void initUI() {
+	public void initUI(boolean isRefresh) {
+		if(isRefresh) {
+			listTableInform.clear();
+		} else {
+			if(listTableInform.size() != 0) return;
+		}
+		
 		try {
 			SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);
-			List<RDBInfomationforColumnDAO> listTableInform = null;
-			if (DBDefine.getDBDefine(userDB) == DBDefine.SQLite_DEFAULT) {
+			
+			if (userDB.getDBDefine() == DBDefine.SQLite_DEFAULT) {
 
 				List<HashMap<String, String>> sqliteTableList = sqlClient.queryForList("tableInformation", userDB.getDb()); //$NON-NLS-1$ //$NON-NLS-2$
+				
 				listTableInform = new ArrayList<RDBInfomationforColumnDAO>();
 				for (HashMap<String, String> table : sqliteTableList) {
 
 					List<HashMap<String, String>> sqliteColumnList = sqlClient.queryForList("columnInformation", table.get("name")); //$NON-NLS-1$ //$NON-NLS-2$
-
 
 					for (HashMap<String, String> sqliteMap : sqliteColumnList) {//
 						RDBInfomationforColumnDAO dao = new RDBInfomationforColumnDAO(table.get("name"), ""// //$NON-NLS-1$ //$NON-NLS-2$
@@ -333,6 +352,14 @@ public class ColumnsComposite extends Composite {
 					}
 				}
 
+			} else if (userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT | userDB.getDBDefine() == DBDefine.TIBERO_DEFAULT){
+				HashMap<String, String>paramMap = new HashMap<String, String>();
+				paramMap.put("schema_name", userDB.getSchema()); //$NON-NLS-1$
+				listTableInform = sqlClient.queryForList("columnInformation", paramMap); //$NON-NLS-1$ //$NON-NLS-2$
+			} else if (userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT | userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT){
+				HashMap<String, String>paramMap = new HashMap<String, String>();
+				paramMap.put("schema_name", userDB.getSchema()); //$NON-NLS-1$
+				listTableInform = sqlClient.queryForList("columnInformation", paramMap); //$NON-NLS-1$ //$NON-NLS-2$
 			} else {
 				listTableInform = sqlClient.queryForList("columnInformation", userDB.getDb()); //$NON-NLS-1$ //$NON-NLS-2$
 			}
@@ -345,12 +372,8 @@ public class ColumnsComposite extends Composite {
 			logger.error("initialize column summary", e); //$NON-NLS-1$
 
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().MainEditor_19, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().MainEditor_19, errStatus); //$NON-NLS-1$
 		}
-	}
-
-	@Override
-	protected void checkSubclass() {
 	}
 
 }

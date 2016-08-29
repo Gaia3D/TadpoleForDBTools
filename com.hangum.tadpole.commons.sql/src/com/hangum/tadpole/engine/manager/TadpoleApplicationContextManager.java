@@ -10,13 +10,26 @@
  ******************************************************************************/
 package com.hangum.tadpole.engine.manager;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.rap.rwt.RWT;
 import org.eclipse.rap.rwt.service.ApplicationContext;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.widgets.Display;
 
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.engine.Messages;
 import com.hangum.tadpole.engine.query.dao.system.TadpoleSystemDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
+import com.hangum.tadpole.engine.query.dao.system.UserInfoDataDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystemQuery;
+import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserInfoData;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
 
 /**
@@ -26,6 +39,48 @@ import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
  *
  */
 public class TadpoleApplicationContextManager {
+	private static final Logger logger = Logger.getLogger(TadpoleApplicationContextManager.class);
+	
+	/**
+	 * is system initialize
+	 * 
+	 * @return
+	 */
+	public static boolean isSystemInitialize() {
+		ApplicationContext context = RWT.getApplicationContext();
+		if(context.getAttribute("isSystemInitialize") == null) {
+			context.setAttribute("isSystemInitialize", true);
+			return false;
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * admin system env
+	 * 
+	 * @return
+	 */
+	public static Map<String, UserInfoDataDAO> getAdminSystemEnv() {
+		ApplicationContext context = RWT.getApplicationContext();
+		Map<String, UserInfoDataDAO> mapUserInfoData = (Map<String, UserInfoDataDAO>)context.getAttribute("adminSystemEnv");
+
+		try {
+	    	if(mapUserInfoData == null) {
+	    		List<UserInfoDataDAO> listUserInfo = TadpoleSystem_UserInfoData.getUserInfoData(PublicTadpoleDefine.systemAdminId);
+	    		mapUserInfoData = new HashMap<String, UserInfoDataDAO>();
+	    		for (UserInfoDataDAO userInfoDataDAO : listUserInfo) {						
+	    			mapUserInfoData.put(userInfoDataDAO.getName(), userInfoDataDAO);
+	    		}
+	    		
+	    		context.setAttribute("adminSystemEnv", mapUserInfoData);
+	    	}
+		} catch(Exception e) {
+			logger.error("admin system env", e);
+		}
+    	
+    	return mapUserInfoData;
+	}
 	
 	/**
 	 * Is personal operation type
@@ -87,4 +142,59 @@ public class TadpoleApplicationContextManager {
 		context.removeAttribute("getSystemAdmin");
 	}
 	
+	/**
+	 * get erd title font
+	 * @return
+	 */
+	public static Font getERDTitleFont() {
+		ApplicationContext context = RWT.getApplicationContext();
+		Object obj = context.getAttribute("getERDTitleFont");
+		if(obj == null) {
+			Font defaultFont = JFaceResources.getFont(JFaceResources.DEFAULT_FONT);
+			FontData[] fd = defaultFont.getFontData();
+			int fontSize = fd[0].getHeight()+1;
+			fd[0].setHeight(fontSize);
+			
+			Font titleFont = new Font(Display.getCurrent(), fd[0]);
+			context.setAttribute("getERDTitleFont", titleFont);
+			return titleFont;
+		}
+		
+		return (Font)obj;		
+	}
+	
+	/**
+	 * gulim font
+	 * @return
+	 */
+	public static Font getGulimFont() {
+		ApplicationContext context = RWT.getApplicationContext();
+		Object obj = context.getAttribute("getGulimFont");
+		if(obj == null) {
+			Font defaultFont = JFaceResources.getFont(JFaceResources.DEFAULT_FONT);
+			int intDefaultHeight = defaultFont.getFontData()[0].getHeight()+1;
+			Font font = new Font(Display.getCurrent(), new FontData(Messages.get().Gullim, intDefaultHeight, SWT.NONE));
+			context.setAttribute("getGulimFont", font);
+			return font;
+		}
+		
+		return (Font)obj;
+	}
+	
+	/**
+	 * set real ip script
+	 * @param script
+	 */
+	public static void setRealIpScript(String script) {
+		ApplicationContext context = RWT.getApplicationContext();
+		context.setAttribute("realIPScript", script);
+	}
+	
+	/** get real ip script */
+	public static String getRealIPScript() {
+		ApplicationContext context = RWT.getApplicationContext();
+		Object obj = context.getAttribute("realIPScript");
+		if(obj == null) return "";
+		return obj.toString();
+	}
 }

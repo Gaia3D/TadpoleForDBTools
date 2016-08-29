@@ -27,8 +27,14 @@
 	database connection test 
  -->
 <select id="connectionCheck" resultClass="java.lang.String" parameterClass="java.lang.String">
-SELECT sysdate	FROM dual  
+	SELECT 1 FROM dual
 </select>
+
+<!--  change schema -->
+<select id="selectSchema" parameterClass="java.lang.String">
+	ALTER SESSION SET CURRENT_SCHEMA = #schema#
+</select>
+
 
 <!-- 
 	db의 모든 table 이름만.
@@ -40,40 +46,90 @@ SELECT sysdate	FROM dual
   SELECT 
       T.table_name AS "NAME"
     FROM user_tables T 
-      LEFT JOIN USER_TAB_COMMENTS S
-            ON S.TABLE_NAME = T.TABLE_NAME
 ORDER BY T.table_name
 </select>
 
 <!-- 
-	db의 모든 table 이름, 코멘트.
+	스키마 목록을 조회한다.
+	ExplorerViewer에 조회된 스키마 목록을 표시하여 다른 스키마의 오브젝트에 접근할 수 있도록 한다.
+ -->
+<select id="getSchemas" resultClass="java.util.HashMap">
+	SELECT * FROM (
+  	SELECT 
+  		USERNAME AS schema 
+	FROM ALL_USERS
+	UNION 
+  	SELECT 
+  		'PUBLIC' AS schema 
+	FROM DUAL )
+	ORDER BY (CASE WHEN schema = USER THEN 0 ELSE ASCII(schema) END)
+</select>
+
+<!--
+	데이터베이스 객체정보 조회. 
+	별칭(시노님)은 시노님이 가르키는 실제 오브젝트 정보를 조회한다.
+ -->
+ 
+<select id="allObjects" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
+    Select 
+          O.owner as object_owner
+        , O.object_name as object_name
+        , O.object_type as object_type
+     from sys.all_objects O
+    where 1=1
+<isNotEmpty property="schema_name">
+	  and o.owner in (#schema_name#, upper(#schema_name#))
+</isNotEmpty>    
+      and o.object_type not in ('SYNONYM')
+	  and object_name in (#object_name#, upper(#object_name#))
 	
+	UNION 	  
+	
+	select o.owner as object_owner, o.object_name as object_name, o.object_type as object_type
+	  from sys.all_objects o
+	       inner join sys.all_synonyms s
+	          on     s.synonym_name in (#object_name#, upper(#object_name#))
+	             and o.owner = s.table_owner
+	             and o.object_name = s.table_name
+	 where     1 = 1
+<isNotEmpty property="schema_name">
+	  and o.owner in (#schema_name#, upper(#schema_name#))
+</isNotEmpty>    
+      and o.object_type in ('TABLE', 'VIEW')
+</select>
+
+<!-- 
+	db의 모든 table 이름, 코멘트.
 	컬럼 설명
-	TNAME 		: 테이블 명
+	NAME 		: 테이블 명
  -->
 <select id="tableList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.TableDAO" parameterClass="java.lang.String">
-  SELECT 
-      T.table_name AS "NAME"
+  SELECT
+        T.TABLE_NAME AS "NAME"
       , S.COMMENTS AS "COMMENT"
-    FROM user_tables T 
-      LEFT JOIN USER_TAB_COMMENTS S
-            ON S.TABLE_NAME = T.TABLE_NAME
-ORDER BY T.table_name
+      , T.OWNER AS "SCHEMA_NAME"
+      , (CASE WHEN T.PARTITIONED = 'YES' THEN 'PARTITIONED' ELSE NVL(T.IOT_TYPE,' ') END) AS "TABLE_TYPE"
+    FROM ALL_TABLES T 
+      LEFT JOIN ALL_TAB_COMMENTS S ON T.OWNER = S.OWNER AND S.TABLE_NAME = T.TABLE_NAME
+    WHERE 1=1
+      AND T.OWNER = (NVL(#schema_name#, USER))
+      AND NVL(T.IOT_TYPE,'NONE') != 'IOT_OVERFLOW'
+	ORDER BY T.TABLE_NAME
 </select>
 
 <!-- 
 	db의 table 이름
  -->
 <select id="table" resultClass="com.hangum.tadpole.engine.query.dao.mysql.TableDAO" parameterClass="java.util.HashMap">
-  	SELECT 
-      T.table_name AS "NAME"
-      , S.COMMENTS AS "COMMENT"
-    FROM user_tables T 
-      LEFT JOIN USER_TAB_COMMENTS S
-            ON S.TABLE_NAME = T.TABLE_NAME
-    WHERE
-    	T.table_name = #name#
-	ORDER BY T.table_name
+  SELECT NVL (T.TABLE_NAME, S.TABLE_NAME) AS "NAME", S.COMMENTS AS "COMMENT", NVL (T.OWNER, S.OWNER) AS "SCHEMA_NAME"
+    FROM ALL_TABLES T
+         FULL OUTER JOIN ALL_TAB_COMMENTS S
+            ON     T.OWNER = S.OWNER
+               AND S.TABLE_NAME = T.TABLE_NAME
+   WHERE     1 = 1
+         AND (#schema#) IN (T.OWNER, S.OWNER)
+         AND (#name#) IN (T.TABLE_NAME, S.TABLE_NAME)
+  ORDER BY T.TABLE_NAME
 </select>
 
 <!-- 
@@ -99,16 +155,18 @@ ORDER BY T.table_name
                            WHEN MIN(P.CONSTRAINT_TYPE) = 'R' THEN 'FK' 
                            WHEN MIN(P.CONSTRAINT_TYPE) = 'U' THEN 'UNI' 
                            ELSE '' END
-             FROM USER_CONS_COLUMNS D 
-              JOIN USER_CONSTRAINTS P ON D.TABLE_NAME = P.TABLE_NAME 
+             FROM ALL_CONS_COLUMNS D 
+              JOIN ALL_CONSTRAINTS P ON D.OWNER = P.OWNER AND D.TABLE_NAME = P.TABLE_NAME 
               AND D.CONSTRAINT_NAME = P.CONSTRAINT_NAME
              AND  P.CONSTRAINT_TYPE IN ('P', 'R', 'U')
            WHERE C.TABLE_NAME = D.TABLE_NAME AND C.COLUMN_NAME = D.COLUMN_NAME 
         ) AS "KEY",
        C.DATA_DEFAULT AS "DEFAULT", '' AS EXTRA, S.COMMENTS AS "COMMENT"
-   FROM USER_TAB_COLUMNS C
-        LEFT JOIN USER_COL_COMMENTS S ON S.TABLE_NAME = C.TABLE_NAME AND S.COLUMN_NAME = C.COLUMN_NAME 
-    WHERE C.TABLE_NAME = #table# 
+   FROM ALL_TAB_COLUMNS C
+        LEFT JOIN ALL_COL_COMMENTS S ON C.OWNER = S.OWNER AND S.TABLE_NAME = C.TABLE_NAME AND S.COLUMN_NAME = C.COLUMN_NAME 
+    WHERE 1=1
+      AND C.OWNER = (NVL(#schema#, USER))
+      AND C.TABLE_NAME = (#table#) 
     ORDER BY C.COLUMN_ID
 </select>
 
@@ -123,37 +181,48 @@ ORDER BY T.table_name
 	referenced_table_name	:	타켓 테이블 이름
 	referenced_column_name	: 	타켓 테이블 컬럼
  -->
-<select id="referencedTableList"  resultClass="com.hangum.tadpole.engine.query.dao.mysql.ReferencedTableDAO" parameterClass="java.lang.String">
+<select id="referencedTableList"  resultClass="com.hangum.tadpole.engine.query.dao.mysql.ReferencedTableDAO" parameterClass="java.util.HashMap">
  SELECT t.constraint_name ,
         t.table_name,
        max(decode(rno,1,t.column_name)) ||','|| max(decode(rno,2,t.column_name)) AS column_name ,
                                                 max(r.table_name) AS referenced_table_name ,
                                                 max(r.columns) AS referenced_column_name
 FROM
-  ( SELECT C.table_name ,
+  ( SELECT c.owner, C.table_name ,
            C.CONSTRAINT_NAME ,
            S.column_name ,
            C.R_CONSTRAINT_NAME ,
-           COUNT(*)OVER(PARTITION BY C.CONSTRAINT_NAME) CNT ,
-                                                        ROW_NUMBER()OVER(PARTITION BY C.CONSTRAINT_NAME
+           COUNT(*)OVER(PARTITION BY C.CONSTRAINT_NAME) CNT 
+           ,         ROW_NUMBER()OVER(PARTITION BY C.CONSTRAINT_NAME
                                                                          ORDER BY S.COLUMN_NAME) RNO
-   FROM user_constraints C
-   LEFT JOIN USER_CONS_COLUMNS S ON C.CONSTRAINT_NAME = S.CONSTRAINT_NAME
-   AND C.TABLE_NAME = S.TABLE_NAME
-   WHERE C.CONSTRAINT_TYPE = 'R' ) t
+   FROM all_constraints C
+       LEFT JOIN all_CONS_COLUMNS S ON c.owner = s.owner and C.CONSTRAINT_NAME = S.CONSTRAINT_NAME AND C.TABLE_NAME = S.TABLE_NAME
+   WHERE C.CONSTRAINT_TYPE = 'R'
+     and c.owner = (#schema#) 
+     AND C.table_name in ( $table$ ) 
+   ) t
 LEFT JOIN
-  (SELECT x.table_name,
+  (SELECT x.owner,
+          x.table_name,
           x.constraint_name ,
           max(decode(x.rno,1,COLUMN_NAME))||',' || max(decode(x.rno,2,COLUMN_NAME)) columns
    FROM
-     (SELECT s.table_name ,
-             s.constraint_name ,
-             s.COLUMN_NAME , ROW_NUMBER()OVER(PARTITION BY s.CONSTRAINT_NAME
-                                              ORDER BY S.COLUMN_NAME) RNO
-      FROM USER_CONS_COLUMNS S)x
-   GROUP BY x.table_name,
-            x.constraint_name ) R ON t.r_CONSTRAINT_NAME = R.CONSTRAINT_NAME
-WHERE t.table_name in ( $table$ )            
+     (SELECT s.table_name 
+             ,s.constraint_name 
+             ,s.COLUMN_NAME  
+             ,ROW_NUMBER()OVER(PARTITION BY s.CONSTRAINT_NAME ORDER BY S.COLUMN_NAME) RNO
+             ,s.owner
+      FROM all_CONS_COLUMNS S
+      WHERE 1=1
+        AND s.owner = (#schema#)
+        AND s.table_name in ( $table$ )  
+      )x
+   GROUP BY x.owner,
+            x.table_name,
+            x.constraint_name ) R ON t.owner = r.owner and t.r_CONSTRAINT_NAME = R.CONSTRAINT_NAME
+WHERE 1=1
+and t.owner = (#schema#)
+and t.table_name in ( $table$ )            
 GROUP BY t.table_name,
          t.constraint_name
 </select>
@@ -170,37 +239,42 @@ GROUP BY t.table_name,
 	referenced_table_name	:	타켓 테이블 이름
 	referenced_column_name	: 	타켓 테이블 컬럼
  -->
-<select id="referencedTableListALL"  resultClass="com.hangum.tadpole.engine.query.dao.mysql.ReferencedTableDAO" >
+<select id="referencedTableListALL"  resultClass="com.hangum.tadpole.engine.query.dao.mysql.ReferencedTableDAO" parameterClass="java.lang.String">
  SELECT t.table_name,
        t.constraint_name ,
        max(decode(rno,1,t.column_name)) ||','|| max(decode(rno,2,t.column_name)) AS column_name ,
                                                 max(r.table_name) AS referenced_table_name ,
                                                 max(r.columns) AS referenced_column_name
 FROM
-  ( SELECT C.table_name ,
+  ( SELECT c.owner, C.table_name ,
            C.CONSTRAINT_NAME ,
            S.column_name ,
            C.R_CONSTRAINT_NAME ,
            COUNT(*)OVER(PARTITION BY C.CONSTRAINT_NAME) CNT ,
                                                         ROW_NUMBER()OVER(PARTITION BY C.CONSTRAINT_NAME
                                                                          ORDER BY S.COLUMN_NAME) RNO
-   FROM user_constraints C
-   LEFT JOIN USER_CONS_COLUMNS S ON C.CONSTRAINT_NAME = S.CONSTRAINT_NAME
+   FROM all_constraints C
+   LEFT JOIN all_CONS_COLUMNS S ON c.owner = s.owner and C.CONSTRAINT_NAME = S.CONSTRAINT_NAME
    AND C.TABLE_NAME = S.TABLE_NAME
-   WHERE C.CONSTRAINT_TYPE = 'R' ) t
+   WHERE C.CONSTRAINT_TYPE = 'R'
+     AND c.owner = (#schema#) ) t
 LEFT JOIN
-  (SELECT x.table_name,
+  (SELECT x.owner, 
+          x.table_name,
           x.constraint_name ,
           max(decode(x.rno,1,COLUMN_NAME))||',' || max(decode(x.rno,2,COLUMN_NAME)) columns
    FROM
-     (SELECT s.table_name ,
+     (SELECT s.owner,
+             s.table_name ,
              s.constraint_name ,
              s.COLUMN_NAME , ROW_NUMBER()OVER(PARTITION BY s.CONSTRAINT_NAME
                                               ORDER BY S.COLUMN_NAME) RNO
-      FROM USER_CONS_COLUMNS S)x
-   GROUP BY x.table_name,
-            x.constraint_name ) R ON t.r_CONSTRAINT_NAME = R.CONSTRAINT_NAME
-GROUP BY t.table_name,
+      FROM all_CONS_COLUMNS S
+      where s.owner = (#schema#))x
+   GROUP BY x.owner, x.table_name,
+            x.constraint_name ) R ON t.owner = r.owner and t.r_CONSTRAINT_NAME = R.CONSTRAINT_NAME
+GROUP BY t.owner, 
+         t.table_name,
          t.constraint_name
 </select>
 	
@@ -210,11 +284,18 @@ GROUP BY t.table_name,
 	컬럼 설명
 	oebjt_name		: view 이름
  -->
-<select id="viewList" resultClass="java.lang.String" parameterClass="java.lang.String">
-SELECT o.object_name AS "View Name"
-    FROM user_objects o
-   WHERE o.object_type = 'VIEW'
-ORDER BY 1	
+<select id="viewList" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+SELECT
+      o.object_name AS NAME 
+    , o.owner       AS SCHEMA_NAME
+    , o.object_name AS "View Name"
+    , c.comments    AS COMMENTS
+  FROM ALL_objects o
+       left join all_tab_comments c on o.owner = c.owner and o.object_name = c.table_name and o.object_type = c.table_type
+  WHERE 1 = 1
+    AND o.owner = NVL((#schema#), user)
+    AND o.object_type = 'VIEW'
+  ORDER BY O.OWNER, O.OBJECT_NAME
 </select>
 
 <!-- 
@@ -223,19 +304,19 @@ ORDER BY 1
 	컬럼 설명
 	oebjt_name		: view 이름
  -->
-<select id="synonymList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleSynonymDAO">
+<select id="synonymList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleSynonymDAO" parameterClass="java.lang.String">
 	SELECT s.synonym_name
 	      ,s.table_owner
 	      ,s.table_name
 	      ,s.db_link
 	      ,c.comments
 	      ,o.object_type
-	  FROM user_synonyms s
-	       LEFT JOIN all_tab_comments c
-	          ON s.table_owner = c.owner AND s.table_name = c.table_name
-	       INNER JOIN all_objects o
-	          ON o.owner = s.table_owner AND o.object_name = s.table_name
+	      ,s.owner as schema_name
+	  FROM all_synonyms s
+	       INNER JOIN all_objects o     ON o.owner = s.table_owner AND o.object_name = s.table_name
+	       LEFT JOIN all_tab_comments c ON o.owner = c.owner AND o.object_name = c.table_name AND o.object_type = c.table_type
 	  WHERE 1=1
+	    AND s.owner = (#schema#)
 	    AND o.object_type IN ('TABLE', 'VIEW', 'PACKAGE', 'PROCEDURE', 'FUNCTION')
 </select>
 	
@@ -274,7 +355,7 @@ ORDER BY 1
        S.COMMENTS AS "COMMENTS"
    FROM ALL_TAB_COLUMNS C
         LEFT JOIN ALL_COL_COMMENTS S ON S.OWNER = C.OWNER AND S.TABLE_NAME = C.TABLE_NAME AND S.COLUMN_NAME = C.COLUMN_NAME 
-    WHERE C.OWNER = #owner#
+    WHERE C.OWNER = (#owner#)
        AND C.TABLE_NAME = #table# 
    	UNION ALL
 	SELECT SEQUENCE
@@ -289,38 +370,43 @@ ORDER BY 1
 	        ,PACKAGE_NAME
 	    FROM ALL_ARGUMENTS
 	   WHERE OBJECT_ID = (SELECT OBJECT_ID
-	                        FROM SYS.USER_OBJECTS
+	                        FROM SYS.all_OBJECTS
 	                       WHERE 1=1
-	                       AND OWNER = #owner#
+	                       AND OWNER = (#owner#)
 	                       AND OBJECT_NAME = #table# 
 	                       AND OBJECT_TYPE IN ('PROCEDURE', 'FUNCTION'))
   UNION ALL
-  SELECT ROWNUM
-        ,s.owner
-        ,s.object_name
-        ,s.procedure_name
-        , (SELECT CASE
-                     WHEN INSTR (UPPER (REPLACE (text, CHR (9), ' ')), ' FUNCTION ') &gt; 0
-                     THEN
-                        'FUNCTION'
-                     WHEN INSTR (UPPER (REPLACE (text, CHR (9), ' ')), ' PROCEDURE ') &gt; 0
-                     THEN
-                        'PROCEDURE'
-                     ELSE
-                        'unknow'
-                  END
-             FROM user_source
-            WHERE 1 = 1 AND name = s.object_name AND UPPER (REPLACE (text, CHR (9), ' ')) LIKE '% ' || s.procedure_name || '%' AND ROWNUM &lt;= 1)
+    SELECT ROWNUM
+        ,p.owner
+        ,p.object_name
+        ,p.procedure_name
+        ,CASE WHEN a.argument_name IS NULL AND a.in_out IS NOT NULL THEN 'FUNCTION' ELSE 'PROCEDURE' END AS object_type
         ,NULL
         ,NULL
         ,NULL
         ,NULL
         ,NULL
-    FROM all_procedures s
-   WHERE 1 = 1 
-   AND s.owner = UPPER (#owner#) 
-   AND s.object_name = UPPER (#table#)
+    FROM all_procedures p
+         LEFT JOIN all_arguments a
+            ON     p.owner = a.owner
+               AND p.object_name = a.package_name
+               AND p.procedure_name = a.object_name
+               AND a.in_out = 'OUT'
+   WHERE     p.owner = (#owner#)
+         AND p.object_name = (#table#)
+         AND p.procedure_name > ' '
    ORDER BY 1
+</select>
+
+<!-- 
+	시퀀스 목록을 조회한다.
+ -->
+<select id="sequenceList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleSequenceDAO" parameterClass="java.lang.String">
+	select 
+		SEQUENCE_NAME, MIN_VALUE, MAX_VALUE, INCREMENT_BY, CYCLE_FLAG, ORDER_FLAG, CACHE_SIZE, LAST_NUMBER,
+		SEQUENCE_OWNER as schema_name
+	from ALL_SEQUENCES
+	where SEQUENCE_OWNER = #schema_name#
 </select>
 
 <!-- 
@@ -341,7 +427,7 @@ ORDER BY 1
     status				:
     #table_schema# AS table_schema
  -->
- <select id="indexList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.InformationSchemaDAO" parameterClass="java.lang.String">
+ <select id="indexList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.InformationSchemaDAO" parameterClass="java.util.Map">
   SELECT i.table_name
         ,i.index_name
         ,i.uniqueness
@@ -360,17 +446,17 @@ ORDER BY 1
         ,CASE
             WHEN c.constraint_type = 'P' THEN 'PK'
             WHEN i.uniqueness = 'UNIQUE' THEN 'UQ'
-            ELSE ''
-         END
-            AS index_type
+            ELSE '' END AS index_type
         ,c.status
         ,#table_schema# AS table_schema
-    FROM    user_indexes i
-         LEFT JOIN
-            user_constraints c
-         ON     i.table_name = c.table_name
+    FROM all_indexes i
+         LEFT JOIN all_constraints c
+             ON i.owner = c.owner
+            AND i.table_name = c.table_name
             AND i.index_name = c.constraint_name
             AND c.status = 'ENABLED'
+    WHERE i.owner = (#table_schema#)
+      AND i.table_name = #table_name#
 ORDER BY i.table_name, i.index_name
 </select>
 
@@ -385,12 +471,41 @@ ORDER BY i.table_name, i.index_name
          i.uniqueness,
          i.table_owner,
          i.table_owner AS table_schema
-    FROM user_ind_columns m
-         LEFT JOIN user_indexes i
-            ON m.table_name = i.table_name AND m.index_name = i.index_name
+    FROM all_ind_columns m
+         LEFT JOIN all_indexes i
+            ON m.table_owner = i.table_owner and m.table_name = i.table_name AND m.index_name = i.index_name
    WHERE 1=1
-     AND m.index_name = UPPER(#index_name#)
+     AND i.table_owner = (#table_schema#)
+     AND m.index_name = (#index_name#)
 ORDER BY m.column_position        
+</select>
+
+<!--
+ tableConstraintsList 테이블에 정의된 제약조건 목록을 조회한다.
+ 
+ -->
+<select id="tableConstraintsList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.TableConstraintsDAO" parameterClass="java.util.Map">
+  SELECT i.table_name
+        ,i.constraint_name
+        ,i.index_name
+        ,(case i.constraint_type when 'P' then 'Pk' when 'R' then 'Fk' when 'C' then 'Ck' else i.constraint_type end) as constraint_type 
+        ,i.status
+        ,I.OWNER as TABLE_SCHEMA
+        ,I.OWNER as INDEX_SCHEMA
+        ,I.SEARCH_CONDITION as comments
+        ,i.R_OWNER
+        ,I.R_CONSTRAINT_NAME
+        ,i.owner as schema_name        
+    FROM all_constraints i
+         LEFT JOIN all_indexes c
+            ON     i.owner = c.owner 
+               and i.table_name = c.table_name
+               AND c.index_name = i.constraint_name
+               AND c.status = 'ENABLED'
+   WHERE 1=1
+     AND i.owner = (#table_schema#)
+     AND i.table_name = #table_name#
+ORDER BY i.table_name, i.index_name
 </select>
 
 <!-- 
@@ -418,8 +533,11 @@ SELECT
         , #db_name#   AS db
         , s.created
         , s.status
-FROM    user_objects s
-WHERE   s.object_type = 'PROCEDURE'
+        , s.owner as schema_name
+FROM    all_objects s
+WHERE 1=1
+  AND s.owner = (#schema#)
+  AND s.object_type = 'PROCEDURE'
 ORDER BY s.object_type DESC, s.object_name 
 </select>
 
@@ -429,13 +547,18 @@ ORDER BY s.object_type DESC, s.object_name
 
 <select id="packageList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO" parameterClass="java.lang.String">
 	SELECT  
-          s.object_name AS name
+          s.object_name AS packagename
+        , s.object_name AS name
         , s.object_type AS TYPE
         , #db_name#   AS db
         , s.created
         , (CASE WHEN 'VALID' = NVL (b.status, 'VALID') AND 'VALID' = s.status THEN 'VALID' ELSE 'INVALID' END) AS status
-    FROM user_objects s LEFT JOIN user_objects b ON s.object_name = b.object_name AND b.object_type = 'PACKAGE BODY'
-	WHERE   s.object_type = 'PACKAGE'
+        , s.owner as schema_name
+    FROM all_objects s 
+    	LEFT JOIN all_objects b ON s.owner = b.owner and s.object_name = b.object_name AND b.object_type = 'PACKAGE BODY'
+	WHERE 1=1
+	  AND s.owner = (#schema_name#)
+	  AND s.object_type = 'PACKAGE'
 	ORDER BY s.object_type DESC, s.object_name 
 </select>
 
@@ -453,25 +576,24 @@ ORDER BY s.object_type DESC, s.object_name
 	ORDER BY OBJECT_NAME, OVERLOAD, SEQUENCE
 
  -->
-<select id="packageBodyList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO" parameterClass="java.lang.String">
-select 
+<select id="packageBodyList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO" parameterClass="java.util.Map">
+select distinct 
 	s.object_name as packagename
 	,s.procedure_name as name
-	,(
-		select case 
-		when instr(upper(replace(text,chr(9),' ')), ' FUNCTION ') > 0 then 'FUNCTION'
-		         when  instr(upper(replace(text,chr(9),' ')), ' PROCEDURE ') > 0 then 'PROCEDURE'
-		         else 'unknow' end
-		  from user_source
-		where 1=1
-		and  name = s.object_name
-		and  upper(replace(text,chr(9),' ')) like '% '|| s.procedure_name ||'%'
-		and rownum &lt;= 1
-	) as type
- from user_procedures s
+    ,(CASE WHEN a.argument_name IS NULL AND a.in_out IS NOT NULL THEN 'FUNCTION' ELSE 'PROCEDURE' END) as type
+    , nvl(s.overload, 0) as overload 
+    , s.owner as schema_name
+ from all_procedures s
+         LEFT JOIN all_arguments a
+            ON     s.owner = a.owner
+               AND s.object_name = a.package_name
+               AND s.procedure_name = a.object_name
+               AND a.in_out = 'OUT'
  where 1=1
-  and s.object_name = upper(#package#)
- order by 3, 2
+  and s.owner = (#schema_name#)
+  and s.object_name = (#package_name#)
+  and s.procedure_name > ' '
+ order by 2, 3 
 </select>
 
 <!-- 
@@ -499,9 +621,12 @@ SELECT
         , #db_name#   AS db
         , s.created
         , s.status
-FROM    user_objects s
-WHERE   s.object_type = 'FUNCTION'
-ORDER BY s.object_name 
+        , s.owner as schema_name
+  FROM all_objects s
+ WHERE 1=1
+   AND s.owner = (#schema#)
+   AND s.object_type = 'FUNCTION'
+ ORDER BY s.object_name 
 </select>
 
 <!-- 
@@ -522,7 +647,7 @@ ORDER BY s.object_name
 	database				:
 	collation				:
  -->
-<select id="triggerList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO" parameterClass="java.lang.String">
+<select id="triggerAllList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO" parameterClass="java.lang.String">
   SELECT s.object_name AS name
         ,t.table_name AS table_name
         ,t.triggering_event AS event
@@ -531,26 +656,57 @@ ORDER BY s.object_name
         ,#db_name# AS db
         ,s.created
         , (CASE WHEN t.status = 'ENABLED' AND s.status = 'VALID' THEN 'VALID' ELSE 'INVALID' END) AS status
-    FROM user_objects s INNER JOIN user_triggers t ON S.OBJECT_NAME = t.trigger_name
-   WHERE s.object_type = 'TRIGGER'
+        , s.owner as schema_name
+    FROM all_objects s 
+    	INNER JOIN all_triggers t ON s.owner = t.owner and S.OBJECT_NAME = t.trigger_name
+   WHERE 1=1
+     AND s.owner = #db_name#
+     AND s.object_type = 'TRIGGER'
+ORDER BY t.table_name, s.object_name
+</select>
+
+<!-- 
+	각 스키마에 속한 특정 테이블의 트리거 목록을 조회한다.
+ -->
+<select id="triggerList" resultClass="com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO" parameterClass="java.util.Map">
+  SELECT s.object_name AS name
+        ,t.table_name AS table_name
+        ,t.triggering_event AS event
+        ,t.when_clause AS timing
+        ,s.object_type AS TYPE
+        ,#table_schema# AS db
+        ,s.created
+        , (CASE WHEN t.status = 'ENABLED' AND s.status = 'VALID' THEN 'VALID' ELSE 'INVALID' END) AS status
+        , s.owner as schema_name
+    FROM all_objects s 
+    	INNER JOIN all_triggers t ON s.owner = t.owner and S.OBJECT_NAME = t.trigger_name
+   WHERE 1=1
+     AND s.owner = (#table_schema#)
+     AND s.object_type = 'TRIGGER'
+<isNotEmpty property="table_name">
+     AND t.table_name = #table_name#
+
+</isNotEmpty>
 ORDER BY t.table_name, s.object_name
 </select>
 
 <!-- 
 	enable 상태의 트리거 목록을 리턴한다.
  -->
-<select id="triggerListInTable" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+<select id="triggerListInTable" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
 <![CDATA[
   SELECT t.table_name AS "table_name"
         ,s.object_name AS "trigger_name"
         ,'ALTER TRIGGER ' || t.table_owner || '.' || s.object_name || ' DISABLE' AS "disable_statement"
         ,'ALTER TRIGGER ' || t.table_owner || '.' || s.object_name || ' ENABLE' AS "enable_statement"
-    FROM user_objects s INNER JOIN user_triggers t ON s.object_name = t.trigger_name
+    FROM all_objects s 
+    	INNER JOIN all_triggers t ON s.owner = t.owner and s.object_name = t.trigger_name
    WHERE     1 = 1
          AND t.status = 'ENABLED'
          AND s.status = 'VALID'
          AND s.object_type = 'TRIGGER'
-         AND t.table_name = UPPER(#table_name#)
+         AND s.owner = (#schema_name#)
+         AND t.table_name = (#table_name#)
 ORDER BY t.table_name, s.object_name
  ]]>
 </select>
@@ -558,20 +714,20 @@ ORDER BY t.table_name, s.object_name
 <!-- 
 	table명을 받아서 pk 컬럼 목록을 리턴한다.
  -->
-<select id="primarykeyListInTable" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+<select id="primarykeyListInTable" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
   SELECT 
   		c.column_name AS "column_name"
   	  , c.column_id AS "column_order"
-    FROM user_tab_columns c
-         INNER JOIN user_constraints b ON c.table_name = b.table_name
-         INNER JOIN user_cons_columns a
-            ON     a.table_name = c.table_name
+    FROM all_tab_columns c
+         INNER JOIN all_constraints b ON c.owner = b.owner and c.table_name = b.table_name
+         INNER JOIN all_cons_columns a ON c.owner = a.owner and a.table_name = c.table_name
                AND a.column_name = c.column_name
                AND a.constraint_name = b.constraint_name
    WHERE     1 = 1
-         AND c.table_name = UPPER (#table_name#)
-         AND b.constraint_type = 'P'
-         AND b.status = 'ENABLED'
+     AND c.owner = (#schema_name#)
+     AND c.table_name = (#table_name#)
+     AND b.constraint_type = 'P'
+     AND b.status = 'ENABLED'
 ORDER BY a.position
 </select>
 
@@ -584,16 +740,16 @@ ORDER BY a.position
 	create			: 생성일시
 	text			: function text
  -->
-<select id="functionSource" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="functionSource" resultClass="java.lang.String" parameterClass="java.util.HashMap">
 	SELECT O.OBJECT_NAME ,
 		O.OBJECT_ID ,
 		O.CREATED ,
 		S.TEXT
-	FROM user_OBJECTS O
-		LEFT JOIN USER_SOURCE S
-		ON O.OBJECT_NAME = S.NAME
-	WHERE 1 =1
-		O.OBJECT_NAME = #object_name#
+	FROM all_OBJECTS O
+		LEFT JOIN all_SOURCE S ON o.owner = s.owner and O.OBJECT_NAME = S.NAME
+	WHERE 1 = 1
+	 AND o.owner = (#schema_name#)
+     AND O.OBJECT_NAME = #object_name#
 	ORDER BY O.OBJECT_NAME, S.LINE
 </select>
 
@@ -609,15 +765,13 @@ ORDER BY a.position
        , b.search_condition 
        , b.status 
        , r.table_name AS ref_table 
-    FROM USER_CONS_COLUMNS a 
-         INNER JOIN USER_CONSTRAINTS b 
-            ON a.table_name = b.table_name 
-           AND a.constraint_name = b.constraint_name 
-         LEFT JOIN USER_CONSTRAINTS r 
-            ON b.r_CONSTRAINT_NAME = R.CONSTRAINT_NAME 
+    FROM ALL_CONS_COLUMNS a 
+         INNER JOIN ALL_CONSTRAINTS b ON a.owner = b.owner and a.table_name = b.table_name AND a.constraint_name = b.constraint_name 
+         LEFT JOIN all_CONSTRAINTS r ON b.owner = r.owner and b.r_CONSTRAINT_NAME = R.CONSTRAINT_NAME 
    WHERE 1=1 
-   AND a.table_name = UPPER ( #table# ) 
-   AND a.column_name = UPPER ( #column# ) 
+     AND a.owner = (#schema#)
+     AND a.table_name = ( #table# ) 
+     AND a.column_name = ( #column# ) 
 ORDER BY 1, 2 
 </select>
 
@@ -704,15 +858,40 @@ ORDER BY s.module, s.username
 <!-- 
 	table information
  -->
-<select id="tableInformation" resultClass="java.util.HashMap" parameterClass="java.lang.String">
-	select table_name, num_rows, table_lock
-	from user_tables
+<select id="tableInformation" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
+	SELECT TABLE_NAME
+      ,TABLESPACE_NAME
+      ,PCT_FREE
+      ,INI_TRANS
+      ,LOGGING
+      ,NUM_ROWS
+      ,BLOCKS
+      ,AVG_ROW_LEN
+      ,DEGREE
+      ,SAMPLE_SIZE
+      ,LAST_ANALYZED
+      ,PARTITIONED
+      ,BUFFER_POOL
+      ,ROW_MOVEMENT
+      ,DURATION
+      ,COMPRESSION
+      ,DROPPED
+      ,'' as READ_ONLY
+      ,TEMPORARY
+      ,MAX_EXTENTS
+      ,IOT_TYPE
+      ,INITIAL_EXTENT
+      ,NEXT_EXTENT
+      ,MIN_EXTENTS
+  FROM all_TABLES T
+  where 1 = 1
+       and t.owner = upper(#schema_name#) 
 </select>
 
 <!-- 
 	column information
  -->
-<select id="columnInformation" resultClass="com.hangum.tadpole.engine.query.dao.rdb.RDBInfomationforColumnDAO" parameterClass="java.lang.String">
+<select id="columnInformation" resultClass="com.hangum.tadpole.engine.query.dao.rdb.RDBInfomationforColumnDAO" parameterClass="java.util.HashMap">
 select cols.table_name as table_name
            , tbls.comments as table_comment
             ,cols.column_name as column_name
@@ -732,17 +911,36 @@ select cols.table_name as table_name
             ,cols.num_nulls as num_nulls
             ,round (cols.density, 5) as density
             ,cols.last_analyzed as last_analyzed
-        from sys.user_tab_cols cols
-            left join sys.user_col_comments coms on coms.table_name = cols.table_name and coms.column_name = cols.column_name 
-            left join sys.user_tab_comments tbls on tbls.table_name = cols.table_name
-       where 1 = 1 and cols.hidden_column = 'NO'
+        from sys.all_tab_cols cols
+            left join sys.all_col_comments coms on cols.owner = coms.owner and coms.table_name = cols.table_name and coms.column_name = cols.column_name 
+            left join sys.all_tab_comments tbls on cols.owner = tbls.owner and tbls.table_name = cols.table_name
+       where 1 = 1
+         and cols.owner = upper(#schema_name#) 
+         and cols.hidden_column = 'NO'
     order by cols.table_name, cols.column_id
+</select>
+
+<select id="getDDLScript" resultClass="java.lang.String" parameterClass="java.util.HashMap">
+	select SYS.DBMS_METADATA.GET_DDL(#object_type#,#object_name#,#schema_name#) from dual
+</select>
+
+<select id="getSequenceScript" resultClass="java.lang.String" parameterClass="java.util.HashMap">
+select 
+    'CREATE SEQUENCE ' || sequence_owner || '.' || sequence_name || ' start with ' || min_value || ' increment by ' || increment_by
+   || case when length(to_char(max_value)) >= 20 then ' nomaxvalue ' else ' maxvalue ' || max_value end 
+   || case when cycle_flag = 'Y' then ' cycle ' else ' nocycle ' end 
+   || case when cache_size > 1 then  ' cache ' || cache_size else ' nocache ' end
+   || case when order_flag = 'Y' then ' order ' else ' noorder ' end 
+from ALL_SEQUENCES 
+where 1=1
+  and SEQUENCE_OWNER = #schema_name#
+  and SEQUENCE_NAME = #object_name#
 </select>
 
 <!-- 
 	Table DDL Script
  -->
-<select id="getTableScript" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+<select id="getTableScript" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
 
 
 SELECT C.TABLE_NAME
@@ -763,9 +961,10 @@ SELECT C.TABLE_NAME
       , C.CHAR_USED
       , USER OWNER
       , C.DATA_DEFAULT
-FROM SYS.USER_TAB_COLUMNS C
+FROM SYS.all_TAB_COLUMNS C
 WHERE 1=1
-AND C.TABLE_NAME = UPPER(#table_name#)
+and c.owner = (#schema_name#)
+AND C.TABLE_NAME = (#table_name#)
 ORDER BY C.TABLE_NAME, C.COLUMN_ID
 
 
@@ -775,14 +974,14 @@ ORDER BY C.TABLE_NAME, C.COLUMN_ID
 	Table DDL Script => Primary key list
  -->
  
-<select id="getTableScript.pk" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+<select id="getTableScript.pk" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
   SELECT C.CONSTRAINT_NAME, CC.COLUMN_NAME
     FROM SYS.DBA_CONS_COLUMNS CC, SYS.DBA_CONSTRAINTS C
    WHERE     C.OWNER = CC.OWNER
          AND C.CONSTRAINT_NAME = CC.CONSTRAINT_NAME
          AND C.TABLE_NAME = CC.TABLE_NAME
-         AND C.OWNER = USER
-         AND C.TABLE_NAME = UPPER(#table_name#)
+         AND C.OWNER = (#schema_name#)
+         AND C.TABLE_NAME = (#table_name#)
          AND C.CONSTRAINT_TYPE = 'P'
 ORDER BY CC.POSITION
 
@@ -792,7 +991,7 @@ ORDER BY CC.POSITION
 	Table DDL Script => Table, Column Comment Script
  -->
  
-<select id="getTableScript.comments" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="getTableScript.comments" resultClass="java.lang.String" parameterClass="java.util.HashMap">
 
 SELECT    'COMMENT ON TABLE '
        || C.OWNER
@@ -803,9 +1002,9 @@ SELECT    'COMMENT ON TABLE '
        || ''';'
           AS COMMENT_TEXT
   FROM SYS.DBA_TAB_COMMENTS C
- WHERE     C.OWNER = USER
+ WHERE     C.OWNER = (#schema_name#)
        AND C.COMMENTS IS NOT NULL
-       AND C.TABLE_NAME = UPPER(#table_name#)
+       AND C.TABLE_NAME = (#table_name#)
 UNION ALL
 SELECT    'COMMENT ON COLUMN '
        || C.OWNER
@@ -817,9 +1016,9 @@ SELECT    'COMMENT ON COLUMN '
        || C.COMMENTS
        || ''';'
   FROM SYS.DBA_COL_COMMENTS C
- WHERE     C.OWNER = USER
+ WHERE     C.OWNER = (#schema_name#)
        AND C.COMMENTS IS NOT NULL
-       AND C.TABLE_NAME = UPPER(#table_name#)
+       AND C.TABLE_NAME = (#table_name#)
   
 </select>
 
@@ -827,35 +1026,36 @@ SELECT    'COMMENT ON COLUMN '
 	Table DDL Script => View Header
  -->
  
-<select id="getViewScript.head" resultClass="java.lang.String" parameterClass="java.lang.String">
-
-
+<select id="getViewScript.head" resultClass="java.lang.String" parameterClass="java.util.HashMap">
+<![CDATA[
   SELECT CASE
             WHEN COLUMN_ID = 1
             THEN
                'CREATE OR REPLACE VIEW ' || TABLE_NAME || ' ( ' || COLUMN_NAME
-            WHEN COLUMN_ID &gt;= 1 AND COLUMN_ID &lt; COUNT (COLUMN_ID) OVER ()
+            WHEN COLUMN_ID >= 1 AND COLUMN_ID < COUNT (COLUMN_ID) OVER ()
             THEN
                ', ' || COLUMN_NAME
             ELSE
                ', ' || COLUMN_NAME || ' ) AS '
          END AS SOURCE_TEXT
-    FROM SYS.USER_TAB_COLUMNS C
+    FROM SYS.all_TAB_COLUMNS C
    WHERE 1 = 1 
-   AND TABLE_NAME = UPPER(#view_name#)
+   AND OWNER = (#schema_name#)
+   AND TABLE_NAME = (#view_name#)
 ORDER BY TABLE_NAME, COLUMN_ID
-
+]]>
 </select>
 
 <!-- 
 	Table DDL Script => View body 
  -->
  
-<select id="getViewScript.body" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="getViewScript.body" resultClass="java.lang.String" parameterClass="java.util.HashMap">
   SELECT V.TEXT AS SOURCE_TEXT
-    FROM SYS.USER_VIEWS V
+    FROM SYS.ALL_VIEWS V
    WHERE 1 = 1 
-     AND V.VIEW_NAME = UPPER(#view_name#)
+     AND V.OWNER = (#schema_name#)
+     AND V.VIEW_NAME = (#view_name#)
 ORDER BY VIEW_NAME
 
 </select>
@@ -864,13 +1064,14 @@ ORDER BY VIEW_NAME
 	Procedure Script 
  -->
  
-<select id="getProcedureScript" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="getProcedureScript" resultClass="java.lang.String" parameterClass="java.util.HashMap">
 SELECT
     b.text AS source_text
-  FROM user_objects a 
-      INNER JOIN user_source b ON a.object_name = b.name
+  FROM all_objects a 
+      INNER JOIN all_source b ON a.owner = b.owner and a.object_name = b.name
 WHERE 1 = 1
-  AND a.object_name = UPPER(#object_name#)
+  AND a.owner = (#schema_name#)
+  AND a.object_name = (#object_name#)
   AND a.object_type = 'PROCEDURE'
 ORDER BY b.line
 </select>
@@ -879,12 +1080,14 @@ ORDER BY b.line
 	Trigger Script 
  -->
  
-<select id="getTriggerScript" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="getTriggerScript" resultClass="java.lang.String" parameterClass="java.util.HashMap">
 
   SELECT B.TEXT AS SOURCE_TEXT
-    FROM user_objects A INNER JOIN USER_SOURCE B ON A.object_name = B.NAME AND a.object_type = b.type
+    FROM all_objects A 
+    	INNER JOIN all_SOURCE B ON a.owner = b.owner and A.object_name = B.NAME AND a.object_type = b.type
    WHERE     1 = 1
-         AND A.object_name = UPPER (#object_name#)
+         AND a.owner = (#schema_name#)
+         AND A.object_name = (#object_name#)
          AND B.TYPE = 'TRIGGER'
 ORDER BY B.LINE
 
@@ -894,12 +1097,14 @@ ORDER BY B.LINE
 	Trigger Script 
  -->
  
-<select id="getFunctionScript" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="getFunctionScript" resultClass="java.lang.String" parameterClass="java.util.HashMap">
 
   SELECT B.TEXT AS SOURCE_TEXT
-    FROM user_objects A INNER JOIN USER_SOURCE B ON A.object_name = B.NAME AND a.object_type = b.type
+    FROM all_objects A 
+    	INNER JOIN all_SOURCE B ON a.owner = b.owner and A.object_name = B.NAME AND a.object_type = b.type
    WHERE     1 = 1
-         AND A.object_name = UPPER (#object_name#)
+         AND a.owner = (#schema_name#)
+         AND A.object_name = (#object_name#)
          AND B.TYPE = 'FUNCTION'
 ORDER BY B.LINE
 
@@ -910,11 +1115,12 @@ ORDER BY B.LINE
 	DDL Script object type 
  -->
 <!-- 현재는 프로시져탭에서 프로시져와 패키지를 함께 다루고 있으므로 오브젝트 타입을 먼저 체크하기 위한 SQL --> 
-<select id="getSourceObjectType" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="getSourceObjectType" resultClass="java.lang.String" parameterClass="java.util.HashMap">
   SELECT B.object_type as TYPE 
-    FROM user_objects B
+    FROM all_objects B
    WHERE 1 = 1 
-      AND B.object_name = UPPER (#object_name#)
+      AND b.owner = (#schema_name#)
+      AND B.object_name = (#object_name#)
       AND ROWNUM &lt;= 1
 </select>
 
@@ -922,12 +1128,14 @@ ORDER BY B.LINE
 	Package Header Script 
  -->
  
-<select id="getPackageScript.head" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="getPackageScript.head" resultClass="java.lang.String" parameterClass="java.util.HashMap">
 
   SELECT B.TEXT AS SOURCE_TEXT
-    FROM user_objects A INNER JOIN USER_SOURCE B ON A.object_name = B.NAME AND a.object_type = b.type
+    FROM all_objects A 
+    	INNER JOIN all_SOURCE B ON a.owner = b.owner and A.object_name = B.NAME AND a.object_type = b.type
    WHERE     1 = 1
-         AND A.object_name = UPPER (#object_name#)
+         AND b.owner = (#schema_name#)
+         AND A.object_name = (#object_name#)
          AND B.TYPE = 'PACKAGE'
 ORDER BY B.LINE
 
@@ -937,12 +1145,14 @@ ORDER BY B.LINE
 	Package Body Script 
  -->
  
-<select id="getPackageScript.body" resultClass="java.lang.String" parameterClass="java.lang.String">
+<select id="getPackageScript.body" resultClass="java.lang.String" parameterClass="java.util.HashMap">
 
   SELECT B.TEXT AS SOURCE_TEXT
-    FROM user_objects A INNER JOIN USER_SOURCE B ON A.object_name = B.NAME AND a.object_type = b.type
+    FROM all_objects A 
+    	INNER JOIN all_SOURCE B ON a.owner = b.owner and A.object_name = B.NAME AND a.object_type = b.type
    WHERE     1 = 1
-         AND A.object_name = UPPER (#object_name#)
+         AND b.owner = (#schema_name#)
+         AND A.object_name = (#object_name#)
          AND B.TYPE = 'PACKAGE BODY'
 ORDER BY B.LINE
 
@@ -953,7 +1163,7 @@ ORDER BY B.LINE
 	Index Script 
  -->
  
-<select id="getIndexScript" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+<select id="getIndexScript" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
 
 SELECT 
     IC.COLUMN_POSITION
@@ -976,17 +1186,17 @@ SELECT
   , IC.DESCEND
   , IC.COLUMN_NAME
   , IE.COLUMN_EXPRESSION
-FROM USER_INDEXES I
-INNER JOIN USER_IND_COLUMNS IC 
-      ON I.INDEX_NAME     = IC.INDEX_NAME
-   AND I.TABLE_NAME = IC.TABLE_NAME
+FROM all_INDEXES I
+INNER JOIN all_IND_COLUMNS IC ON i.owner = ic.owner and I.INDEX_NAME     = IC.INDEX_NAME   AND I.TABLE_NAME = IC.TABLE_NAME
 LEFT JOIN USER_IND_EXPRESSIONS IE
       ON 1 = 1
+   and ie.owner = ic.owner
    AND IE.INDEX_NAME      = IC.INDEX_NAME
    AND IE.TABLE_NAME      = IC.TABLE_NAME
    AND IE.COLUMN_POSITION = IC.COLUMN_POSITION
 WHERE 1  = 1
-   AND IC.INDEX_NAME      = UPPER( #object_name# )
+   and ic.owner = (#schema_name#)
+   AND IC.INDEX_NAME      = ( #object_name# )
 ORDER BY IC.COLUMN_POSITION
 
 </select>
@@ -1003,12 +1213,16 @@ ORDER BY IC.COLUMN_POSITION
         ,ua.in_out AS type
         ,ua.data_length AS length
         ,ua.default_value as value
-    FROM user_arguments ua
+    FROM all_arguments ua
    WHERE 1=1
-   AND ua.object_name = UPPER (#object_name#)
+   AND ua.owner = (#schema_name#)
+   AND ua.object_name = (#object_name#)
    AND ua.in_out in ('IN','IN/OUT')
    AND ua.argument_name > ' '
-   and nvl(ua.package_name,'null') = case when #package_name# is null then 'null' else UPPER (#package_name#) end
+   AND NVL(ua.package_name,'null') = case when #package_name# is null then 'null' else (#package_name#) end
+	<isGreaterThan prepend="AND" property="overload" compareValue="0">
+    	overload = #overload#
+	</isGreaterThan>
 ORDER BY ua.object_name, ua.overload, ua.sequence
   
 </select>    
@@ -1025,14 +1239,441 @@ ORDER BY ua.object_name, ua.overload, ua.sequence
         ,ua.in_out AS type
         ,ua.data_length AS length
         ,null as value
-    FROM user_arguments ua
+    FROM all_arguments ua
    WHERE 1=1
-   AND ua.object_name = UPPER (#object_name#)
+   AND ua.owner = (#schema_name#)
+   AND ua.object_name = (#object_name#)
    AND ua.in_out in ('OUT', 'IN/OUT')
    AND ua.argument_name > ' '
-   and nvl(ua.package_name,'null') = case when #package_name# is null then 'null' else UPPER (#package_name#) end
+   AND NVL(ua.package_name,'null') = case when #package_name# is null then 'null' else (#package_name#) end
+	<isGreaterThan prepend="AND" property="overload" compareValue="0">
+    	overload = #overload#
+	</isGreaterThan>
 ORDER BY ua.object_name, ua.overload, ua.sequence
   
 </select>    
+
+<!-- 
+	통계정보 및 테이블의 사이즈를 조회한다.
+ -->
+<select id="getTableSizeInfo" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
+
+Select 
+	  sum(s.bytes) as bytes
+	, sum(s.extents) as extents
+from  sys.dba_segments s
+Where s.segment_type in ('LOBINDEX', 'INDEX', 'INDEX PARTITION', 'INDEX SUBPARTITION')
+and s.segment_name in (select x.index_name from sys.all_indexes x where s.owner = x.owner and x.table_name = (#table#) )
+and s.owner = (#schema_name#)
+
+
+</select>
+
+<select id="getStatisticsInfo" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
+Select *
+from sys.all_tables
+where 1=1
+  and owner = (#schema_name#)
+  and table_name = (#table#)
+</select>
+
+<select id="getViewStatisticsInfo" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
+Select *
+from sys.all_views
+where 1=1
+  and owner = (#schema_name#)
+  and view_name = (#table#)
+</select>
+
+<!-- 
+	인덱스에 대한 컬럼 정보 및 통계정보를 조회한다.
+ -->
+<select id="getIndexStatisticsInfo" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
+SELECT INDEX_NAME "Index Name"
+      ,INDEX_TYPE "Index Type"
+      ,UNIQUENESS "Uniqueness"
+      ,STATUS "Status"
+      ,TABLE_OWNER || '.' || TABLE_NAME "Table"
+      ,TABLE_TYPE "Table Type"
+      ,TABLESPACE_NAME "Tablespace"
+      ,BUFFER_POOL "Buffer Pool"
+      ,INITCAP (partitioned) "Partitioned"
+      ,DECODE (temporary, 'N', 'No', 'Yes') "Temporary"
+      ,INI_TRANS "Initial Transactions"
+      ,MAX_TRANS "Max Transactions"
+      ,INITIAL_EXTENT "Initial Extent Size"
+      ,NEXT_EXTENT "Next Extent Size"
+      ,MIN_EXTENTS "Minimum Extents"
+      ,MAX_EXTENTS "Maximum Extents"
+      ,PCT_INCREASE "Percent Increase"
+      ,PCT_FREE "Percent Free"
+      ,FREELISTS "Freelists"
+      ,FREELIST_GROUPS "Freelist Groups"
+      ,DEGREE "Degree"
+      ,INSTANCES "Instances"
+      ,LAST_ANALYZED "Last Analyzed"
+      ,BLEVEL "BLevel"
+      ,LEAF_BLOCKS "Leaf Blocks"
+      ,DISTINCT_KEYS "Distinct Keys"
+      ,AVG_LEAF_BLOCKS_PER_KEY "Avg Leaf Blocks Per Key"
+      ,AVG_DATA_BLOCKS_PER_KEY "Avg Data Blocks Per Key"
+      ,CLUSTERING_FACTOR "Clustering Factor"
+      ,NUM_ROWS "Num Rows"
+      ,SAMPLE_SIZE "Sample Size"
+      ,GENERATED "Generated"
+      ,DECODE (JOIN_INDEX, 'NO', 'No', 'Yes') "Join Index"
+      ,Visibility "Visibility"
+  FROM SYS.all_INDEXES
+ WHERE 1=1
+   and owner = (#schema_name#)
+   and INDEX_NAME = (#index_name#)
+</select>
+
+<!-- 
+	데이터베이스 링크 정보를 조회한다.
+ -->
+<select id="dbLinkList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleDBLinkDAO" parameterClass="java.lang.String">
+<![CDATA[
+	SELECT
+	     DB_LINK
+	    ,USERNAME
+	    ,HOST
+	    ,CREATED
+	    ,OWNER AS SCHEMA_NAME
+	FROM ALL_DB_LINKS
+	WHERE OWNER = #schema_name#
+	ORDER BY OWNER, DB_LINK
+]]>
+</select>
+
+<!-- 
+	데이터베이스 링크의 DDL 스크립트를 생성한다.
+ -->
+<select id="getDatabaseLinkScript" resultClass="java.lang.String" parameterClass="java.util.HashMap">
+	<![CDATA[
+		SELECT 'CREATE' || case when OWNER = 'PUBLIC' then ' PUBLIC' else '' end || ' DATABASE LINK "'|| db_link ||'" CONNECT TO ' || nvl(username,user) || ' IDENTIFIED BY "<password>" USING ''' || host || ''';' 
+		FROM all_db_links 
+		WHERE OWNER = #schema_name# 
+		  AND DB_LINK = #object_name#
+		  AND ROWNUM <= 1
+	]]>
+</select>
+
+<!-- 
+	데이터베이스 JOB 목록을 조회한다.
+ -->
+<select id="getDBAJobList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleJobDAO" parameterClass="java.lang.String">
+  SELECT job
+        ,what
+        ,log_user
+        ,priv_user
+        ,last_date
+        ,this_date
+        ,this_sec
+        ,next_date 
+        ,next_sec
+        ,total_time
+        ,broken
+        ,interval
+        ,failures
+        ,nls_env
+        ,instance
+        ,schema_user as schema_name        
+    FROM dba_jobs
+   WHERE 1 = 1
+and priv_user = #schema_name#
+ORDER BY job
+</select>
+
+<select id="getJobList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleJobDAO" parameterClass="java.lang.String">
+  SELECT job
+        ,what
+        ,log_user
+        ,priv_user
+        ,last_date
+        ,this_date
+        ,this_sec
+        ,next_date 
+        ,next_sec
+        ,total_time
+        ,broken
+        ,interval
+        ,failures
+        ,nls_env
+        ,instance
+        ,schema_user as schema_name
+    FROM all_jobs
+   WHERE 1 = 1
+and priv_user = #schema_name#
+ORDER BY job
+</select>
+
+<select id="getJavaList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleJavaDAO" parameterClass="java.lang.String">
+    select 
+      nvl(j.longname, s.object_name) as object_name
+      , nvl(j.short, ' ') as short_name
+      , s.last_ddl_time as created 
+      , s.object_type
+      , s.last_ddl_time
+      , s.status
+      , s.owner as schema_name
+    from all_objects s
+      left join javasnm j on s.object_name = j.short
+    where 1=1
+      and s.owner = #schema_name#
+      and s.object_type IN ('JAVA SOURCE', 'JAVA CLASS')
+    order by 1
+</select>
+
+<select id="getJavaSource" resultClass="java.lang.String" parameterClass="java.util.HashMap">
+SELECT text 
+FROM all_source s
+	left join javasnm l on s.name = l.short
+WHERE 1=1
+AND s.owner = #schema_name#
+AND NVL(l.longname, s.name) = #object_name#
+AND s.type = 'JAVA SOURCE'
+ORDER BY s.line
+</select>
+
+<select id="getTablespaceList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleTablespaceDAO">
+<![CDATA[
+  SELECT TS.TABLESPACE_NAME
+        ,TS.STATUS
+        ,TS.CONTENTS
+        ,TS.EXTENT_MANAGEMENT
+        ,TS.BIGFILE
+        ,SIZE_INFO.MB_SIZE
+        ,SIZE_INFO.MB_FREE
+        ,SIZE_INFO.MB_USED
+        ,SIZE_INFO.PCT_FREE
+        ,SIZE_INFO.PCT_USED
+        ,SIZE_INFO.MAX AS MB_MAX
+    FROM (SELECT A.TABLESPACE_NAME
+                ,ROUND (A.BYTES_ALLOC / 1024 / 1024) MB_SIZE
+                ,ROUND (NVL (B.BYTES_FREE, 0) / 1024 / 1024) MB_FREE
+                ,ROUND ( (A.BYTES_ALLOC - NVL (B.BYTES_FREE, 0)) / 1024 / 1024) MB_USED
+                ,ROUND ( (NVL (B.BYTES_FREE, 0) / A.BYTES_ALLOC) * 100) PCT_FREE
+                ,100 - ROUND ( (NVL (B.BYTES_FREE, 0) / A.BYTES_ALLOC) * 100) PCT_USED
+                ,ROUND (MAXBYTES / 1048576) MAX
+            FROM (  SELECT F.TABLESPACE_NAME, SUM (F.BYTES) BYTES_ALLOC, SUM (CASE F.AUTOEXTENSIBLE WHEN 'YES' THEN F.MAXBYTES WHEN 'NO' THEN F.BYTES ELSE 0 END) MAXBYTES
+                      FROM DBA_DATA_FILES F
+                  GROUP BY TABLESPACE_NAME) A
+                 LEFT JOIN (  SELECT F.TABLESPACE_NAME, SUM (F.BYTES) BYTES_FREE
+                                FROM DBA_FREE_SPACE F
+                            GROUP BY TABLESPACE_NAME) B
+                    ON A.TABLESPACE_NAME = B.TABLESPACE_NAME
+          UNION ALL
+            SELECT H.TABLESPACE_NAME
+                  ,ROUND (SUM (H.BYTES_FREE + H.BYTES_USED) / 1048576) MB_SIZE
+                  ,ROUND (SUM ( (H.BYTES_FREE + H.BYTES_USED) - NVL (P.BYTES_USED, 0)) / 1048576) MB_FREE
+                  ,ROUND (SUM (NVL (P.BYTES_USED, 0)) / 1048576) MB_USED
+                  ,ROUND ( (SUM ( (H.BYTES_FREE + H.BYTES_USED) - NVL (P.BYTES_USED, 0)) / SUM (H.BYTES_USED + H.BYTES_FREE)) * 100) PCT_FREE
+                  ,100 - ROUND ( (SUM ( (H.BYTES_FREE + H.BYTES_USED) - NVL (P.BYTES_USED, 0)) / SUM (H.BYTES_USED + H.BYTES_FREE)) * 100) PCT_USED
+                  ,ROUND (SUM (F.MAXBYTES) / 1048576) MAX
+              FROM SYS.V_$$TEMP_SPACE_HEADER H
+                   INNER JOIN DBA_TEMP_FILES F
+                      ON     F.FILE_ID = H.FILE_ID
+                         AND F.TABLESPACE_NAME = H.TABLESPACE_NAME
+                   LEFT JOIN SYS.V_$$TEMP_EXTENT_POOL P
+                      ON     P.FILE_ID = H.FILE_ID
+                         AND P.TABLESPACE_NAME = H.TABLESPACE_NAME
+          GROUP BY H.TABLESPACE_NAME) SIZE_INFO
+        ,SYS.DBA_TABLESPACES TS
+   WHERE TS.TABLESPACE_NAME = SIZE_INFO.TABLESPACE_NAME
+ORDER BY TABLESPACE_NAME
+]]>
+</select>
+
+<!--  DBA 시스템 테이블 접근 권한이 없는 일반유저. -->
+<select id="getUserTablespaceList" resultClass="com.hangum.tadpole.engine.query.dao.rdb.OracleTablespaceDAO">
+<![CDATA[
+  SELECT TS.TABLESPACE_NAME
+        ,TS.STATUS
+        ,TS.CONTENTS
+        ,TS.EXTENT_MANAGEMENT
+        ,TS.BIGFILE
+        ,0 MB_SIZE
+        ,SIZE_INFO.MB_FREE
+        ,0 MB_USED
+        ,0 PCT_FREE
+        ,0 PCT_USED
+        ,ROUND(TS.MAX_SIZE / 1048576,0)  AS MB_MAX
+    FROM (  SELECT F.TABLESPACE_NAME, ROUND(SUM (F.BYTES) / 1048576) MB_FREE
+                                FROM USER_FREE_SPACE F
+                            GROUP BY TABLESPACE_NAME) SIZE_INFO
+        ,SYS.USER_TABLESPACES TS
+   WHERE TS.TABLESPACE_NAME = SIZE_INFO.TABLESPACE_NAME
+ORDER BY TABLESPACE_NAME
+]]>
+</select>
+
+<!-- 테이블스페이스의 데이터 파일목록 -->
+<select id="getTablespaceDataFileList" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+<![CDATA[
+  SELECT d.file_name 
+        ,d.file_id 
+        ,ROUND ( (MAX (d.bytes) - NVL (SUM (f.bytes), 0)) / MAX (d.bytes) * 100, 0) AS Usage
+        ,ROUND (MAX (d.bytes) / POWER (1024, 2), 2) AS Total_Size
+        ,ROUND ( (MAX (d.bytes) - NVL (SUM (f.bytes), 0)) / POWER (1024, 2), 2) AS Used
+        ,ROUND (NVL (SUM (f.bytes), 0) / POWER (1024, 2), 2) AS Free
+        ,ROUND (SQRT (MAX (f.blocks) / SUM (f.blocks)) * (100 / SQRT (SQRT (COUNT (f.blocks)))), 2) AS Frag_Index
+    FROM dba_data_files d
+         LEFT JOIN dba_free_space f
+            ON     f.tablespace_name = d.tablespace_name
+               AND f.file_id = d.file_id
+   WHERE     1 = 1
+         AND d.tablespace_name = #tablespace_name#
+GROUP BY d.file_id, d.file_name
+]]>
+</select>
+
+<!-- 테이블스페이스의 데이터 파일을 포함한 상세내역. -->
+<select id="getTablespaceDataFileInfomation" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+<![CDATA[
+SELECT FILE_NAME as "Datafile Name"
+      ,FILE_ID as "Datafile ID"
+      ,TABLESPACE_NAME as "Tablespace Name"
+      ,BYTES as "Datafile Size"
+      ,BLOCKS as "Blocks"
+      ,STATUS as "Status"
+      ,RELATIVE_FNO as "Relative File"
+      ,AUTOEXTENSIBLE as "Autoextensible"
+      ,MAXBYTES as "Max autoextensible bytes"
+      ,MAXBLOCKS as "Max autoextensible blocks"
+      ,INCREMENT_BY as "Default increment"
+      ,USER_BYTES as "Useful portion bytes"
+      ,USER_BLOCKS as "Useful portion blocks"
+      ,ONLINE_STATUS as "Online status of the file"
+  FROM dba_data_files d  
+ WHERE d.file_id = TO_NUMBER (#file_id#)
+ ]]>
+</select>
+
+<!-- 테이블스페이스 DDL 스크립트 생성. -->
+<select id="getTablespaceScript" resultClass="java.util.HashMap" parameterClass="java.lang.String">
+<![CDATA[
+SELECT    'CREATE ' || DECODE (TS.BIGFILE, 'YES', 'BIGFILE ') || 'TABLESPACE "' || TS.TABLESPACE_NAME || '" '|| 'DATAFILE ' as DDLSCRIPT
+FROM DBA_TABLESPACES TS
+WHERE TS.TABLESPACE_NAME = #tablespace_name#
+
+UNION ALL 
+
+SELECT CHR(9) || (CASE WHEN ROWNO > 1 THEN ',' ELSE '' END) || DDLSCRIPT
+FROM (
+SELECT  ROW_NUMBER()OVER(ORDER BY 0) ROWNO,
+         '''' || DF.FILE_NAME || ''''         
+         || MAX ('  SIZE ' || DF.BYTES 
+         || DECODE (DF.AUTOEXTENSIBLE
+              ,'YES', '  AUTOEXTEND ON NEXT '|| DF.INCREMENT_BY * TS.BLOCK_SIZE || ' MAXSIZE '
+         || CASE WHEN MAXBYTES < POWER (1024, 3) * 2 THEN TO_CHAR (MAXBYTES) ELSE TO_CHAR (FLOOR (MAXBYTES / POWER (1024, 2))) || 'M' END))
+         || CHR (13)|| CHR (10)|| '  '
+         || CASE WHEN MAX(TS.FORCE_LOGGING) = 'YES'  THEN ' FROCE ' ELSE '' END || TS.LOGGING|| ' '|| TS.STATUS || ' BLOCKSIZE '|| TS.BLOCK_SIZE AS DDLSCRIPT
+    FROM DBA_TABLESPACES TS INNER JOIN DBA_DATA_FILES DF ON TS.TABLESPACE_NAME = DF.TABLESPACE_NAME
+   WHERE TS.TABLESPACE_NAME = #tablespace_name#
+GROUP BY TS.TABLESPACE_NAME,TS.BIGFILE,TS.LOGGING,TS.STATUS,TS.BLOCK_SIZE,DF.FILE_NAME)
+
+UNION ALL
+
+ SELECT  ' EXTENT MANAGEMENT ' ||  EXTENT_MANAGEMENT
+        || CASE WHEN EXTENT_MANAGEMENT = 'LOCAL' THEN 
+               CASE WHEN  ALLOCATION_TYPE = 'SYSTEM' THEN ' AUTOALLOCATE ' ELSE ALLOCATION_TYPE END END || CHR(13) || CHR(10)
+        || ' SEGMENT SPACE MANAGEMENT ' ||  SEGMENT_SPACE_MANAGEMENT || CHR(13) || CHR(10)
+        || CASE WHEN RETENTION LIKE '%GUARANTEE' THEN  ' RETENTION ' ||  RETENTION || CHR(13) || CHR(10) END
+FROM DBA_TABLESPACES TS
+WHERE TS.TABLESPACE_NAME = #tablespace_name#
+ 
+UNION ALL
+ 
+SELECT  'FLASHBACK ' ||  CASE WHEN FLASHBACK_ON = 'YES' THEN 'ON' ELSE 'OFF' END 
+FROM SYS.V_$$TABLESPACE 
+WHERE NAME = #tablespace_name#
+]]>
+</select>
+
+<!-- Lock정보 조회 -->
+<select id="getLockList" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
+SELECT l.sid
+      ,s.username
+      ,s.osuser
+      ,s.machine
+      ,DECODE (l.TYPE,  'TX', 'Transaction',  'TM', 'DML',  'UL', 'PL/SQL User Lock',  l.TYPE) lock_type
+      ,DECODE (l.lmode,  0, 'None',  1, 'Null',  2, 'Row-S (SS)',  3, 'Row-X (SX)',  4, 'Share',  5, 'S/Row-X (SSX)',  6, 'Exclusive',  TO_CHAR (l.lmode)) mode_held
+      ,DECODE (l.request,  0, 'None',  1, 'Null',  2, 'Row-S (SS)',  3, 'Row-X (SX)',  4, 'Share',  5, 'S/Row-X (SSX)',  6, 'Exclusive',  TO_CHAR (l.request)) mode_requested
+      ,TO_CHAR (l.id1) lock_id1
+      ,TO_CHAR (l.id2) lock_id2
+      ,NULL owner
+      ,NULL object_type
+      ,NULL object_name
+      ,DECODE (block,  0, 'No',  1, 'Yes',  2, 'Global') block
+      ,s.lockwait
+  FROM v$$lock l INNER JOIN v$$session s ON l.sid = s.sid
+ WHERE l.TYPE = 'TX'
+<isNotEmpty property="sid">
+   AND l.sid = to_number(#sid#)
+</isNotEmpty> 
+UNION ALL
+SELECT l.sid
+      ,s.username
+      ,s.osuser
+      ,s.machine
+      ,DECODE (l.TYPE,  'TX', 'Transaction',  'TM', 'DML',  'UL', 'PL/SQL User Lock',  l.TYPE) lock_type
+      ,DECODE (l.lmode,  0, 'None',  1, 'Null',  2, 'Row-S (SS)',  3, 'Row-X (SX)',  4, 'Share',  5, 'S/Row-X (SSX)',  6, 'Exclusive',  TO_CHAR (l.lmode)) mode_held
+      ,DECODE (l.request,  0, 'None',  1, 'Null',  2, 'Row-S (SS)',  3, 'Row-X (SX)',  4, 'Share',  5, 'S/Row-X (SSX)',  6, 'Exclusive',  TO_CHAR (l.request)) mode_requested
+      ,TO_CHAR (l.id1) lock_id1
+      ,TO_CHAR (l.id2) lock_id2
+      ,o.owner
+      ,o.object_type
+      ,o.object_name
+      ,DECODE (l.block,  0, 'No',  1, 'Yes',  2, 'Global') block
+      ,s.lockwait
+  FROM v$$lock l
+       INNER JOIN v$$session s ON l.sid = s.sid
+       LEFT JOIN dba_objects o ON l.id1 = o.object_id
+ WHERE l.TYPE IN ('TM', 'UL')
+<isNotEmpty property="sid">
+   AND l.sid = to_number(#sid#)
+</isNotEmpty> 
+</select>
+
+<!-- Lock정보 조회 -->
+<select id="getLockBlockList" resultClass="java.util.HashMap" parameterClass="java.util.HashMap">
+SELECT s.sid
+      ,'Blocking' as block_type
+      ,s.username
+      ,s.osuser
+      ,s.machine
+      ,s.status
+      , null as sql_text
+      ,DECODE (l.TYPE,  'TX', 'Transaction',  'TM', 'DML',  'UL', 'PL/SQL User Lock',  l.TYPE) lock_type
+      ,DECODE (l.lmode,  0, 'None',  1, 'Null',  2, 'Row-S (SS)',  3, 'Row-X (SX)',  4, 'Share',  5, 'S/Row-X (SSX)',  6, 'Exclusive',  TO_CHAR (l.lmode)) mode_held
+      ,DECODE (l.request,  0, 'None',  1, 'Null',  2, 'Row-S (SS)',  3, 'Row-X (SX)',  4, 'Share',  5, 'S/Row-X (SSX)',  6, 'Exclusive',  TO_CHAR (l.request)) mode_requested
+  FROM v$$lock l, v$$session s
+ WHERE     l.block = 1
+       AND l.sid = s.sid
+       AND l.id1 = #lock_id1#
+       AND l.id2 = #lock_id2#
+
+union all
+
+SELECT s.sid
+	  ,'Blocked' as block_type
+      ,s.username
+      ,s.osuser
+      ,s.machine
+      ,s.status
+      ,sql_text
+      ,DECODE (l.TYPE,  'TX', 'Transaction',  'TM', 'DML',  'UL', 'PL/SQL User Lock',  l.TYPE) lock_type
+      ,DECODE (l.lmode,  0, 'None',  1, 'Null',  2, 'Row-S (SS)',  3, 'Row-X (SX)',  4, 'Share',  5, 'S/Row-X (SSX)',  6, 'Exclusive',  TO_CHAR (l.lmode)) mode_held
+      ,DECODE (l.request,  0, 'None',  1, 'Null',  2, 'Row-S (SS)',  3, 'Row-X (SX)',  4, 'Share',  5, 'S/Row-X (SSX)',  6, 'Exclusive',  TO_CHAR (l.request)) mode_requested
+  FROM v$$lock l, v$$session s, v$$sql q
+ WHERE     s.lockwait IS NOT NULL
+       AND s.lockwait = l.kaddr
+       AND l.sid = s.sid
+       AND l.id1 = #lock_id1#
+       AND l.id2 = #lock_id2#
+       AND s.sql_address = q.address
+       AND s.sql_hash_value = q.hash_value
+</select>
 
 </sqlMap>

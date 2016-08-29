@@ -24,18 +24,17 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.hangum.tadpole.application.start.BrowserActivator;
 import com.hangum.tadpole.application.start.Messages;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.mails.SendEmails;
 import com.hangum.tadpole.commons.libs.core.mails.dto.EmailDTO;
 import com.hangum.tadpole.commons.libs.core.mails.template.TemporaryPasswordMailBodyTemplate;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.commons.util.Utils;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
-import com.hangum.tadpole.preference.get.GetAdminPreference;
-import com.swtdesigner.ResourceManager;
+import com.hangum.tadpole.preference.define.GetAdminPreference;
 
 /**
  * find password
@@ -45,17 +44,18 @@ import com.swtdesigner.ResourceManager;
  */
 public class FindPasswordDialog extends Dialog {
 	private static final Logger logger = Logger.getLogger(FindPasswordDialog.class);
-	
+	private String strEmail;
 	private Text textEmail;
 
-	public FindPasswordDialog(Shell parentShell) {
+	public FindPasswordDialog(Shell parentShell, String strEmail) {
 		super(parentShell);
+		this.strEmail = strEmail;
 	}
 	
 	@Override
 	public void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText("Fogot password");
+		newShell.setText(Messages.get().ResetPassword);
 		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 
@@ -72,10 +72,11 @@ public class FindPasswordDialog extends Dialog {
 		gridLayout.marginWidth = 5;
 		
 		Label lblEmail = new Label(container, SWT.NONE);
-		lblEmail.setText(Messages.get().FindPasswordDialog_3);
+		lblEmail.setText(Messages.get().LoginDialog_1);
 		
 		textEmail = new Text(container, SWT.BORDER);
 		textEmail.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		textEmail.setText(strEmail);
 		
 		textEmail.setFocus();
 		
@@ -92,10 +93,10 @@ public class FindPasswordDialog extends Dialog {
 	@Override
 	protected void okPressed() {
 		String strEmail = StringUtils.trimToEmpty(textEmail.getText());
-		logger.info("Fogot password dialog" + strEmail);
+		if(logger.isInfoEnabled()) logger.info("Find password dialog" + strEmail);
 
 		if (!checkValidation()) {
-			MessageDialog.openWarning(getShell(), Messages.get().FindPasswordDialog_1, Messages.get().FindPasswordDialog_6);
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Confirm, Messages.get().FindPasswordDialog_6);
 			textEmail.setFocus();
 			return;
 		}
@@ -108,11 +109,12 @@ public class FindPasswordDialog extends Dialog {
 		try {
 			TadpoleSystem_UserQuery.updateUserPasswordWithID(userDao);
 			sendEmailAccessKey(strEmail, strTmpPassword);
-			MessageDialog.openInformation(getShell(), "Confirm", "Send you temporary password. Check your email.");
+			MessageDialog.openInformation(getShell(), CommonMessages.get().Confirm, Messages.get().SendMsg);
 		} catch (Exception e) {
 			logger.error("password initialize and send email ", e);
 			
-			MessageDialog.openError(getShell(), "Error", "Rise Exception:\n\t" + e.getMessage());
+			MessageDialog.openError(getShell(),CommonMessages.get().Error, 
+					String.format(Messages.get().SendMsgErr, e.getMessage()));
 		}
 		
 		
@@ -125,8 +127,8 @@ public class FindPasswordDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, "OK", true); //$NON-NLS-1$
-		createButton(parent, IDialogConstants.CANCEL_ID, "Cancle", false); //$NON-NLS-1$
+		createButton(parent, IDialogConstants.OK_ID, Messages.get().SendNewPassword, true);
+		createButton(parent, IDialogConstants.CANCEL_ID, CommonMessages.get().Close, false);
 	}
 	
 	/**
@@ -135,23 +137,21 @@ public class FindPasswordDialog extends Dialog {
 	 * @param email
 	 * @param strConfirmKey
 	 */
-	private void sendEmailAccessKey(String email, String strConfirmKey) {
-		try {
-			// manager 에게 메일을 보낸다.
-			EmailDTO emailDao = new EmailDTO();
-			emailDao.setSubject("Temporay password."); //$NON-NLS-1$
-			// 
-			// 그룹, 사용자, 권한.
-			// 
-			TemporaryPasswordMailBodyTemplate mailContent = new TemporaryPasswordMailBodyTemplate();
-			String strContent = mailContent.getContent(email, strConfirmKey);
-			emailDao.setContent(strContent);
-			emailDao.setTo(email);
-			
-			SendEmails sendEmail = new SendEmails(GetAdminPreference.getSessionSMTPINFO());
-			sendEmail.sendMail(emailDao);
-		} catch(Exception e) {
-			logger.error("Error send email", e); //$NON-NLS-1$
-		}
+	private void sendEmailAccessKey(String email, String strConfirmKey) throws Exception {
+
+		// manager 에게 메일을 보낸다.
+		EmailDTO emailDao = new EmailDTO();
+		emailDao.setSubject(Messages.get().TemporayPassword); //$NON-NLS-1$
+		// 
+		// 그룹, 사용자, 권한.
+		// 
+		TemporaryPasswordMailBodyTemplate mailContent = new TemporaryPasswordMailBodyTemplate();
+		String strContent = mailContent.getContent(email, strConfirmKey);
+		emailDao.setContent(strContent);
+		emailDao.setTo(email);
+		
+		SendEmails sendEmail = new SendEmails(GetAdminPreference.getSessionSMTPINFO());
+		sendEmail.sendMail(emailDao);
+
 	}
 }

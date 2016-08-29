@@ -24,10 +24,10 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
-import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
-import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.QUERY_DML_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
+import com.hangum.tadpole.engine.query.dao.mysql.TableColumnDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.core.Activator;
@@ -60,34 +60,34 @@ public class TableDataEditorAction extends AbstractObjectSelectAction {
 	
 	@Override
 	public void run(IStructuredSelection selection, UserDBDAO userDB, OBJECT_TYPE actionType) {
-		try {
-			PublicTadpoleDefine.QUERY_DML_TYPE queryType = QUERY_DML_TYPE.INSERT;
-			if(queryType == QUERY_DML_TYPE.INSERT) {
-				if(PublicTadpoleDefine.YES_NO.YES.name().equals(userDB.getDbAccessCtl().getInsert_lock())) {
-					throw new Exception(Messages.get().MainEditor_21);
-				}
-			}
-			queryType = QUERY_DML_TYPE.UPDATE;
-			if(queryType == QUERY_DML_TYPE.UPDATE) {
-				if(PublicTadpoleDefine.YES_NO.YES.name().equals(userDB.getDbAccessCtl().getUpdate_lock())) {
-					throw new Exception(Messages.get().MainEditor_21);
-				}
-			}
-			queryType = QUERY_DML_TYPE.DELETE;
-			if(queryType == QUERY_DML_TYPE.DELETE) {
-				if(PublicTadpoleDefine.YES_NO.YES.name().equals(userDB.getDbAccessCtl().getDelete_locl())) {
-					throw new Exception(Messages.get().MainEditor_21);
-				}
-			}
-		} catch(Exception e) {
-			MessageDialog.openError(getWindow().getShell(), Messages.get().ObjectDeleteAction_2, e.getMessage());
-			return;
-		}
+//		try {
+//			PublicTadpoleDefine.QUERY_DML_TYPE queryType = QUERY_DML_TYPE.INSERT;
+//			if(queryType == QUERY_DML_TYPE.INSERT) {
+//				if(PublicTadpoleDefine.YES_NO.YES.name().equals(userDB.getDbAccessCtl().getInsert_lock())) {
+//					throw new Exception(Messages.get().MainEditor_21);
+//				}
+//			}
+//			queryType = QUERY_DML_TYPE.UPDATE;
+//			if(queryType == QUERY_DML_TYPE.UPDATE) {
+//				if(PublicTadpoleDefine.YES_NO.YES.name().equals(userDB.getDbAccessCtl().getUpdate_lock())) {
+//					throw new Exception(Messages.get().MainEditor_21);
+//				}
+//			}
+//			queryType = QUERY_DML_TYPE.DELETE;
+//			if(queryType == QUERY_DML_TYPE.DELETE) {
+//				if(PublicTadpoleDefine.YES_NO.YES.name().equals(userDB.getDbAccessCtl().getDelete_locl())) {
+//					throw new Exception(Messages.get().MainEditor_21);
+//				}
+//			}
+//		} catch(Exception e) {
+//			MessageDialog.openError(getWindow().getShell(),CommonMessages.get().Error, e.getMessage());
+//			return;
+//		}
 		
 		try {
 			if(!GrantCheckerUtils.ifExecuteQuery(userDB)) return;
 		} catch (Exception e) {
-			MessageDialog.openError(getWindow().getShell(), Messages.get().ObjectDeleteAction_2, e.getMessage());
+			MessageDialog.openError(getWindow().getShell(),CommonMessages.get().Error, e.getMessage());
 			return;
 		}
 		
@@ -96,9 +96,9 @@ public class TableDataEditorAction extends AbstractObjectSelectAction {
 			// get the table columns
 			SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);
 			Map<String, String> mapParam = new HashMap<String, String>();
-			mapParam.put("db", userDB.getDb()); //$NON-NLS-1$
+			mapParam.put("schema", tableDAO.getSchema_name()); //$NON-NLS-1$
 			mapParam.put("table", tableDAO.getName()); //$NON-NLS-1$
-			List showTableColumns = sqlClient.queryForList("tableColumnList", mapParam); //$NON-NLS-1$
+			List<TableColumnDAO> showTableColumns = sqlClient.queryForList("tableColumnList", mapParam); //$NON-NLS-1$
 
 			// Open the table director editor
 			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
@@ -109,7 +109,7 @@ public class TableDataEditorAction extends AbstractObjectSelectAction {
 			logger.error("Load the table data", e); //$NON-NLS-1$
 
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().ExplorerViewer_39, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().ExplorerViewer_39, errStatus); //$NON-NLS-1$
 		}
 	}
 

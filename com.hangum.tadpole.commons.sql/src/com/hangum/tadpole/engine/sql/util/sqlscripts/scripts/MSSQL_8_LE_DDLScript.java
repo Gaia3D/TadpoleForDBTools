@@ -23,6 +23,8 @@ import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO;
 import com.hangum.tadpole.engine.query.dao.rdb.InOutParameterDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleDBLinkDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleSequenceDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.ibatis.sqlmap.client.SqlMapClient;
 
@@ -152,13 +154,13 @@ public class MSSQL_8_LE_DDLScript extends AbstractRDBDDLScript {
 	 * @see com.hangum.tadpole.rdb.core.editors.objects.table.scripts.RDBDDLScript#getViewScript(java.lang.String)
 	 */
 	@Override
-	public String getViewScript(String strName) throws Exception {
+	public String getViewScript(TableDAO tableDao) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		
 		StringBuilder result = new StringBuilder("");
 //		result.append("/* DROP VIEW " + strName + "; */ \n\n");
 
-		List<String> srcProcList = client.queryForList("getViewScript", strName);				
+		List<String> srcProcList = client.queryForList("getViewScript", tableDao.getName());				
 		for (int i=0; i<srcProcList.size(); i++){
 			result.append(srcProcList.get(i));
 		}
@@ -245,6 +247,18 @@ public class MSSQL_8_LE_DDLScript extends AbstractRDBDDLScript {
 		}
 		
 		return result.toString();
+	}
+
+	@Override
+	public String getSequenceScript(OracleSequenceDAO sequenceDAO) throws Exception {
+		// TODO Auto-generated method stub
+		return "undefined";
+	}
+
+	@Override
+	public String getDBLinkScript(OracleDBLinkDAO dblinkDAO) throws Exception {
+		// TODO Auto-generated method stub
+		return "undefined";
 	}
 
 }

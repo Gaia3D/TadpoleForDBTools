@@ -16,19 +16,24 @@ import org.apache.commons.lang.StringUtils;
 
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.engine.Messages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.InformationSchemaDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO;
 import com.hangum.tadpole.engine.query.dao.rdb.InOutParameterDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleDBLinkDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleSequenceDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.sql.util.sqlscripts.scripts.AbstractRDBDDLScript;
+import com.hangum.tadpole.engine.sql.util.sqlscripts.scripts.AltibaseDDLScript;
 import com.hangum.tadpole.engine.sql.util.sqlscripts.scripts.MSSQL_8_LE_DDLScript;
 import com.hangum.tadpole.engine.sql.util.sqlscripts.scripts.MySqlDDLScript;
 import com.hangum.tadpole.engine.sql.util.sqlscripts.scripts.OracleDDLScript;
 import com.hangum.tadpole.engine.sql.util.sqlscripts.scripts.PostgreSQLDDLScript;
 import com.hangum.tadpole.engine.sql.util.sqlscripts.scripts.SQLiteDDLScript;
+import com.hangum.tadpole.engine.sql.util.sqlscripts.scripts.TiberoDDLScript;
 
 /**
  * DDLScript Mananager
@@ -78,18 +83,22 @@ public class DDLScriptManager {
 	private void initRDBScript() throws Exception {
 		if(userDB.getDBDefine() == DBDefine.SQLite_DEFAULT) {
 			rdbScript = new SQLiteDDLScript(userDB, actionType);
-		} else if(userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT ) {
+		} else if(userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT) {
 			rdbScript = new OracleDDLScript(userDB, actionType);
+		} else if(userDB.getDBDefine() == DBDefine.TIBERO_DEFAULT) {
+			rdbScript = new TiberoDDLScript(userDB, actionType);
 		} else if(userDB.getDBDefine() == DBDefine.POSTGRE_DEFAULT ) {
 			rdbScript = new PostgreSQLDDLScript(userDB, actionType);
 		} else if(userDB.getDBDefine() == DBDefine.MSSQL_8_LE_DEFAULT ||
-				DBDefine.getDBDefine(userDB) == DBDefine.MSSQL_DEFAULT ) {
+				userDB.getDBDefine() == DBDefine.MSSQL_DEFAULT ) {
 			rdbScript = new MSSQL_8_LE_DDLScript(userDB, actionType);
 		} else if(userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT ||
-				DBDefine.getDBDefine(userDB) == DBDefine.MARIADB_DEFAULT) {
+				userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT){
 			rdbScript = new MySqlDDLScript(userDB, actionType);
+		} else if(userDB.getDBDefine() == DBDefine.ALTIBASE_DEFAULT) {
+			rdbScript = new AltibaseDDLScript(userDB, actionType);
 		} else {
-			throw new Exception("Not support Database");
+			throw new Exception(Messages.get().ProcedureExecuterManager_0);
 		}
 	}
 	
@@ -111,7 +120,7 @@ public class DDLScriptManager {
 			TableDAO tbl = (TableDAO)obj;
 			
 			setObjectName(tbl.getName());
-			retStr = rdbScript.getViewScript(tbl.getName());
+			retStr = rdbScript.getViewScript(tbl);
 		} else if(PublicTadpoleDefine.OBJECT_TYPE.INDEXES == actionType) {
 			InformationSchemaDAO index = (InformationSchemaDAO)obj;
 			setObjectName(index.getINDEX_NAME());
@@ -127,6 +136,16 @@ public class DDLScriptManager {
 			setObjectName(procedure.getName());
 			
 			retStr = rdbScript.getProcedureScript(procedure);
+		} else if(PublicTadpoleDefine.OBJECT_TYPE.SEQUENCE == actionType) {
+			OracleSequenceDAO sequenceDAO = (OracleSequenceDAO)obj;
+			setObjectName(sequenceDAO.getSequence_name());
+			
+			retStr = rdbScript.getSequenceScript(sequenceDAO);
+		} else if(PublicTadpoleDefine.OBJECT_TYPE.LINK == actionType) {
+			OracleDBLinkDAO dblinkDAO = (OracleDBLinkDAO)obj;
+			setObjectName(dblinkDAO.getDb_link());
+			
+			retStr = rdbScript.getDBLinkScript(dblinkDAO);
 		} else if(PublicTadpoleDefine.OBJECT_TYPE.PACKAGES == actionType) {
 			ProcedureFunctionDAO procedure = (ProcedureFunctionDAO)obj;
 			setObjectName(procedure.getName());
@@ -138,7 +157,7 @@ public class DDLScriptManager {
 			
 			retStr = rdbScript.getTriggerScript(trigger);
 		} else {
-			throw new Exception("Not support Database");
+			throw new Exception(Messages.get().ProcedureExecuterManager_0);
 		}
 		
 		// 마지막 ; 문자가 포함되어있을 경우.

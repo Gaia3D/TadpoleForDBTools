@@ -22,6 +22,7 @@ import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserDBResource;
 import com.hangum.tadpole.rdb.core.Activator;
@@ -43,10 +44,10 @@ public class RDBERDDeleteAction implements IViewActionDelegate {
 	public void run(IAction action) {
 		UserDBResourceDAO userDB = (UserDBResourceDAO)sel.getFirstElement();
 		if(userDB.getUser_seq() != SessionManager.getUserSeq()) {
-			MessageDialog.openError(null, Messages.get().DeleteDBAction_0, Messages.get().DeleteDBAction_2);
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, Messages.get().DeleteDBAction_2);
 			return;
 		}
-		if(MessageDialog.openConfirm(null, Messages.get().ERDDeleteAction_0, Messages.get().ERDDeleteAction_1)) run(userDB);
+		if(MessageDialog.openConfirm(null, CommonMessages.get().Confirm, Messages.get().ERDDeleteAction_1)) run(userDB);
 	}
 	
 	public void run(UserDBResourceDAO userDBErd) {
@@ -54,11 +55,11 @@ public class RDBERDDeleteAction implements IViewActionDelegate {
 			TadpoleSystem_UserDBResource.delete(userDBErd);
 			
 			ManagerViewer mv = (ManagerViewer)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(ManagerViewer.ID);
-			mv.deleteErd(userDBErd);
+			mv.deleteResource(userDBErd);
 		} catch (Exception e) {
 			logger.error(Messages.get().ERDDeleteAction_2, e);
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().ERDDeleteAction_3, errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null, CommonMessages.get().Error, Messages.get().ERDAllTableViewAction_3, errStatus); //$NON-NLS-1$
 		}
 	}
 

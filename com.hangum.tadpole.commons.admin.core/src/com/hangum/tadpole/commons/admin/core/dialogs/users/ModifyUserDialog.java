@@ -10,6 +10,10 @@
  ******************************************************************************/
 package com.hangum.tadpole.commons.admin.core.dialogs.users;
 
+import java.sql.Timestamp;
+import java.util.Calendar;
+
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -23,6 +27,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.DateTime;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
@@ -31,6 +36,9 @@ import com.hangum.tadpole.commons.admin.core.Activator;
 import com.hangum.tadpole.commons.admin.core.Messages;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
 import com.hangum.tadpole.session.manager.SessionManager;
@@ -58,6 +66,12 @@ public class ModifyUserDialog extends Dialog {
 	private Text textCreateDate;
 	
 	private Combo comboIsRegistDB;
+	
+	private Combo comboIsSharedDB;
+	private Text textIntLimtCnt;
+	private DateTime endDate;
+	private DateTime endTime;
+	
 	private Combo comboApproval;
 	private Combo comboUserConfirm;
 	private Combo comboDel;
@@ -69,7 +83,6 @@ public class ModifyUserDialog extends Dialog {
 	 */
 	public ModifyUserDialog(Shell parentShell, UserDAO userDAO) {
 		super(parentShell);
-		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 		
 		this.userDAO = userDAO;
 	}
@@ -78,6 +91,8 @@ public class ModifyUserDialog extends Dialog {
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
 		newShell.setText(Messages.get().ModifyUserDialog_0);
+		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
+		setShellStyle(SWT.MAX | SWT.RESIZE | SWT.TITLE | SWT.APPLICATION_MODAL);
 	}
 
 	/**
@@ -90,30 +105,26 @@ public class ModifyUserDialog extends Dialog {
 		container.setLayout(new GridLayout(2, false));
 		
 		Label lblEmail = new Label(container, SWT.NONE);
-		lblEmail.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblEmail.setText(Messages.get().ModifyUserDialog_1);
+		lblEmail.setText(CommonMessages.get().Email);
 		
 		textEmail = new Text(container, SWT.BORDER);
 		textEmail.setEditable(false);
 		textEmail.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblName = new Label(container, SWT.NONE);
-		lblName.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblName.setText(Messages.get().ModifyUserDialog_2);
+		lblName.setText(CommonMessages.get().Name);
 		
 		textName = new Text(container, SWT.BORDER);
 		textName.setEditable(false);
 		textName.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblAllowIp = new Label(container, SWT.NONE);
-		lblAllowIp.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblAllowIp.setText(Messages.get().ModifyUserDialog_3);
 		
 		textAllowIP = new Text(container, SWT.BORDER);
 		textAllowIP.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblIsRegistDb = new Label(container, SWT.NONE);
-		lblIsRegistDb.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblIsRegistDb.setText(Messages.get().ModifyUserDialog_lblIsRegistDb_text);
 		
 		comboIsRegistDB = new Combo(container, SWT.READ_ONLY);
@@ -121,8 +132,34 @@ public class ModifyUserDialog extends Dialog {
 		comboIsRegistDB.add("YES"); //$NON-NLS-1$
 		comboIsRegistDB.add("NO"); //$NON-NLS-1$
 		
+		// --------------------------------------------
+		Label lblIsSharedDb = new Label(container, SWT.NONE);
+		lblIsSharedDb.setText(Messages.get().IsSharedDB);
+		
+		comboIsSharedDB = new Combo(container, SWT.READ_ONLY);
+		comboIsSharedDB.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		for(PublicTadpoleDefine.YES_NO yesNo : PublicTadpoleDefine.YES_NO.values()) {
+			comboIsSharedDB.add(yesNo.name());
+		}
+
+		Label lblDefaultAddDb = new Label(container, SWT.NONE);
+		lblDefaultAddDb.setText(Messages.get().DefaultAddDBCount);
+		
+		textIntLimtCnt = new Text(container, SWT.BORDER);
+		textIntLimtCnt.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		
+		Label lblDefaultUseDay = new Label(container, SWT.NONE);
+		lblDefaultUseDay.setText(Messages.get().DefaultUseDay);
+		
+		Composite composite = new Composite(container, SWT.NONE);
+		composite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		composite.setLayout(new GridLayout(2, false));
+		
+		endDate = new DateTime(composite, SWT.BORDER);
+		endTime = new DateTime(composite, SWT.BORDER | SWT.TIME);
+		// --------------------------------------------
+		
 		Label lblApproval = new Label(container, SWT.NONE);
-		lblApproval.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblApproval.setText(Messages.get().ModifyUserDialog_4);
 		
 		comboApproval = new Combo(container, SWT.READ_ONLY);
@@ -131,7 +168,6 @@ public class ModifyUserDialog extends Dialog {
 		comboApproval.add("NO"); //$NON-NLS-1$
 		
 		Label lblUserConfirm = new Label(container, SWT.NONE);
-		lblUserConfirm.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblUserConfirm.setText(Messages.get().ModifyUserDialog_5);
 		
 		comboUserConfirm = new Combo(container, SWT.READ_ONLY);
@@ -140,7 +176,6 @@ public class ModifyUserDialog extends Dialog {
 		comboUserConfirm.add("NO"); //$NON-NLS-1$
 		
 		Label lblDelete = new Label(container, SWT.NONE);
-		lblDelete.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblDelete.setText(Messages.get().ModifyUserDialog_6);
 		
 		comboDel = new Combo(container, SWT.READ_ONLY);
@@ -149,7 +184,6 @@ public class ModifyUserDialog extends Dialog {
 		comboDel.add("NO"); //$NON-NLS-1$
 		
 		Label lblCreateDate = new Label(container, SWT.NONE);
-		lblCreateDate.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
 		lblCreateDate.setText(Messages.get().ModifyUserDialog_7);
 		
 		textCreateDate = new Text(container, SWT.BORDER);
@@ -175,6 +209,14 @@ public class ModifyUserDialog extends Dialog {
 		textCreateDate.setText(userDAO.getCreate_time());
 		
 		comboIsRegistDB.setText(userDAO.getIs_regist_db());
+		
+		comboIsSharedDB.setText(userDAO.getIs_shared_db());
+		textIntLimtCnt.setText(""+userDAO.getLimit_add_db_cnt());
+		Calendar cal = Calendar.getInstance();
+		cal.setTimeInMillis(userDAO.getService_end().getTime());
+		endDate.setDate(cal.get(Calendar.YEAR), cal.get(Calendar.MONDAY), cal.get(Calendar.DAY_OF_MONTH));
+		endTime.setTime(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND));
+		
 		comboApproval.setText(userDAO.getApproval_yn());
 		comboUserConfirm.setText(userDAO.getIs_email_certification());
 		comboDel.setText(userDAO.getDelYn());
@@ -183,16 +225,16 @@ public class ModifyUserDialog extends Dialog {
 	@Override
 	protected void buttonPressed(int buttonId) {
 		if(BTN_INITIALIZE_PASSWORD == buttonId) {
-			if(MessageDialog.openConfirm(null, Messages.get().ModifyUserDialog_8, String.format(Messages.get().ModifyUserDialog_9, "tadpole"))) { //$NON-NLS-3$
+			if(MessageDialog.openConfirm(null, CommonMessages.get().Confirm, String.format(Messages.get().ModifyUserDialog_9, "tadpole"))) { //$NON-NLS-3$
 				userDAO.setPasswd("tadpole"); //$NON-NLS-1$
 				try {
 					TadpoleSystem_UserQuery.updateUserPassword(userDAO);
 					SessionManager.updateSessionAttribute(SessionManager.NAME.LOGIN_PASSWORD.toString(), userDAO.getPasswd());
 					
-					MessageDialog.openInformation(null, Messages.get().ModifyUserDialog_8, Messages.get().ModifyUserDialog_17);
+					MessageDialog.openInformation(null, CommonMessages.get().Confirm, Messages.get().ModifyUserDialog_17);
 				} catch(Exception e) {
 					logger.error("Changing password", e); //$NON-NLS-1$
-					MessageDialog.openError(getShell(), "Error", e.getMessage());			 //$NON-NLS-1$
+					MessageDialog.openError(getShell(),CommonMessages.get().Error, e.getMessage());			 //$NON-NLS-1$
 				}
 			}
 			
@@ -203,11 +245,19 @@ public class ModifyUserDialog extends Dialog {
 	
 	@Override
 	protected void okPressed() {
-		if(MessageDialog.openConfirm(getShell(), Messages.get().ModifyUserDialog_12, Messages.get().ModifyUserDialog_13)) {
+		if(MessageDialog.openConfirm(getShell(), CommonMessages.get().Confirm, Messages.get().ModifyUserDialog_13)) {
 			UserDAO user = new UserDAO();
 			user.setSeq(userDAO.getSeq());
 			user.setAllow_ip(textAllowIP.getText());
 			user.setIs_regist_db(comboIsRegistDB.getText());
+			
+			user.setIs_shared_db(comboIsSharedDB.getText());
+			user.setLimit_add_db_cnt(NumberUtils.toInt(textIntLimtCnt.getText()));
+			
+			Calendar cal = Calendar.getInstance();
+			cal.set(endDate.getYear(), endDate.getMonth(), endDate.getDay(), endTime.getHours(), endTime.getMinutes(), endTime.getSeconds());
+			user.setService_end(new Timestamp(cal.getTimeInMillis()));
+			
 			user.setApproval_yn(comboApproval.getText());
 			user.setIs_email_certification(comboUserConfirm.getText());
 			user.setDelYn(comboDel.getText());
@@ -223,7 +273,7 @@ public class ModifyUserDialog extends Dialog {
 				logger.error("data update", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(getShell(), "Error", "User Info update", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
+				ExceptionDetailsErrorDialog.openError(getShell(),CommonMessages.get().Error, "User Info update", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
 				
 				return;
 			}
@@ -233,7 +283,7 @@ public class ModifyUserDialog extends Dialog {
 			return;
 		}		
 	}
-
+	
 	/**
 	 * Create contents of the button bar.
 	 * @param parent
@@ -241,16 +291,15 @@ public class ModifyUserDialog extends Dialog {
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
 		createButton(parent, BTN_INITIALIZE_PASSWORD, Messages.get().ModifyUserDialog_19, false);
-		createButton(parent, IDialogConstants.OK_ID, Messages.get().ModifyUserDialog_11, true);
-		createButton(parent, IDialogConstants.CANCEL_ID, Messages.get().ModifyUserDialog_14, false);
+		createButton(parent, IDialogConstants.OK_ID, CommonMessages.get().Modify, true);
+		createButton(parent, IDialogConstants.CANCEL_ID,  CommonMessages.get().Cancel, false);
 	}
-
 	/**
 	 * Return the initial size of the dialog.
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point(430, 320);
+		return new Point(430, 407);
 	}
 
 }

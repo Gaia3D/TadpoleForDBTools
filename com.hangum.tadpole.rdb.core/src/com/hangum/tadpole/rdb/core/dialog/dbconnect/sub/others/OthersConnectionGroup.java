@@ -61,7 +61,7 @@ public abstract class OthersConnectionGroup extends AbstractOthersConnection {
 	 */
 	public OthersConnectionGroup(Composite parent, int style, DBDefine selectDB) {
 		super(parent, style, selectDB);
-		setText(Messages.get().OthersConnectionRDBGroup_0);
+		setText(Messages.get().SettingOtherInfo);
 		GridLayout gridLayout = new GridLayout(3, false);
 		gridLayout.verticalSpacing = 2;
 		gridLayout.horizontalSpacing = 2;
@@ -71,10 +71,14 @@ public abstract class OthersConnectionGroup extends AbstractOthersConnection {
 		
 		btnReadOnlyConnection = new Button(this, SWT.CHECK);
 		btnReadOnlyConnection.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		btnReadOnlyConnection.setText(Messages.get().OthersConnectionRDBGroup_1);
+		btnReadOnlyConnection.setText(Messages.get().ReadOnly);
 		
 		btnAutoCommit = new Button(this, SWT.CHECK);
-		btnAutoCommit.setSelection(true);
+		if(selectDB == DBDefine.ORACLE_DEFAULT) {
+			btnAutoCommit.setSelection(false);
+		} else {
+			btnAutoCommit.setSelection(true);
+		}
 		btnAutoCommit.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		btnAutoCommit.setText(Messages.get().OthersConnectionRDBGroup_2);
 		
@@ -105,7 +109,7 @@ public abstract class OthersConnectionGroup extends AbstractOthersConnection {
 				}
 			}
 		});
-		btnExternalBrowser.setText(Messages.get().OthersConnectionRDBGroup_4);
+		btnExternalBrowser.setText(Messages.get().ExternalBrowser);
 		
 		btnProfiler = new Button(this, SWT.CHECK);
 		btnProfiler.setText(Messages.get().OthersConnectionRDBGroup_5);
@@ -113,7 +117,7 @@ public abstract class OthersConnectionGroup extends AbstractOthersConnection {
 		
 		btnShowTables = new Button(this, SWT.CHECK);
 		btnShowTables.setSelection(true);
-		btnShowTables.setText(Messages.get().OthersConnectionRDBGroup_btnShowTables_text);
+		btnShowTables.setText(Messages.get().ShowTables);
 		
 		btnExecuteQuestionDml = new Button(this, SWT.CHECK);
 		btnExecuteQuestionDml.setText(Messages.get().OthersConnectionRDBGroup_6);

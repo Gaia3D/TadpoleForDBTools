@@ -25,8 +25,8 @@
 			<property name="JDBC.Password" 			value="${JDBC.Password}" />
 
 			<!--OPTIONAL PROPERTIES BELOW -->
-			<property name="Pool.MaximumActiveConnections" 	value="50" />
-			<property name="Pool.MaximumIdleConnections" 	value="5" />
+			<property name="Pool.MaximumActiveConnections" 	value="1000" />
+			<property name="Pool.MaximumIdleConnections" 	value="10" />
 			<property name="Pool.MaximumWait" 				value="1000" />
 			<!--
 				Use of the validation query can be problematic. If you have
@@ -50,8 +50,11 @@
 	<sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-Common.xml" />
 	
 	<!-- sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-Schedule.xml" /-->
-	<!-- sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-Monitoring.xml" /-->
-	<!-- sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-Template.xml" /-->
+	<sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-Monitoring.xml"/>
+	<sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-Monitoring-Template.xml"/>
+	
+	<sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-SQL-Template.xml" />
 	<sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-AccessControl.xml" />
+	<sqlMap resource="com/hangum/tadpole/engine/query/internal/system/Tadpole-System-bill.xml" />
 
 </sqlMapConfig>

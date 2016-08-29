@@ -14,6 +14,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.eclipse.jface.dialogs.MessageDialog;
 
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.Messages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
@@ -55,15 +56,15 @@ public class ProcedureExecuterManager {
 	 * @throws Exception
 	 */
 	public ProcedureExecutor getExecuter() throws Exception {
-		if(DBDefine.getDBDefine(userDB) == DBDefine.ORACLE_DEFAULT ) {
+		if(userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT | userDB.getDBDefine() == DBDefine.TIBERO_DEFAULT ) {
 			return new OracleProcedureExecuter(procedureDAO, userDB);
-		} else if(DBDefine.getDBDefine(userDB) == DBDefine.MSSQL_8_LE_DEFAULT ||
-				DBDefine.getDBDefine(userDB) == DBDefine.MSSQL_DEFAULT ) {
+		} else if(userDB.getDBDefine() == DBDefine.MSSQL_8_LE_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.MSSQL_DEFAULT ) {
 			return new MSSQLProcedureExecuter(procedureDAO, userDB);
-		} else if(DBDefine.getDBDefine(userDB) == DBDefine.MYSQL_DEFAULT ||
-				DBDefine.getDBDefine(userDB) == DBDefine.MARIADB_DEFAULT) {
+		} else if(userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT) {
 			return new MySqlProcedureExecuter(procedureDAO, userDB);
-		} else if(DBDefine.getDBDefine(userDB) == DBDefine.POSTGRE_DEFAULT) {
+		} else if(userDB.getDBDefine() == DBDefine.POSTGRE_DEFAULT) {
 			return new PostgreSQLProcedureExecuter(procedureDAO, userDB);
 		} else {
 			throw new Exception(Messages.get().ProcedureExecuterManager_0);
@@ -94,15 +95,15 @@ public class ProcedureExecuterManager {
 	 */
 	public boolean isExecuted(ProcedureFunctionDAO procedureDAO, UserDBDAO selectUseDB) {
 		if(!isSupport()) {
-			MessageDialog.openError(null, Messages.get().ProcedureExecuterManager_error, Messages.get().ProcedureExecuterManager_0);
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, Messages.get().ProcedureExecuterManager_0);
 			return false;
 		}
 		if(!procedureDAO.isValid()) {
-			MessageDialog.openError(null, Messages.get().ProcedureExecuterManager_error, Messages.get().ProcedureExecuterManager_4);
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, Messages.get().ProcedureExecuterManager_4);
 			return false;
 		}
 		
-		if(DBDefine.getDBDefine(userDB) == DBDefine.MYSQL_DEFAULT) {
+		if(userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT) {
 			double dbVersion = 0.0;
 			try {
 				SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);				
@@ -110,7 +111,7 @@ public class ProcedureExecuterManager {
 				dbVersion = Double.parseDouble( StringUtils.substring(dbInfo.getProductversion(), 0, 3) );
 			
 				if (dbVersion < 5.5){
-					MessageDialog.openError(null, Messages.get().ProcedureExecuterManager_error, Messages.get().ProcedureExecuterManager_6);
+					MessageDialog.openInformation(null, CommonMessages.get().Information, Messages.get().ProcedureExecuterManager_6);
 					return false;
 				}
 			} catch (Exception e) {
@@ -125,7 +126,7 @@ public class ProcedureExecuterManager {
 			ProcedureExecutor procedureExecutor = getExecuter();
 			procedureExecutor.getInParameters();
 		} catch(Exception e) {
-			MessageDialog.openError(null, Messages.get().ProcedureExecuterManager_error, e.getMessage());
+			MessageDialog.openError(null,CommonMessages.get().Error, e.getMessage());
 			return false;
 		}
 		

@@ -47,11 +47,11 @@ public class EventManager {
 			final UserDBDAO userDB = resultDAO.getUserDB();
 			String strAfterType = resultDAO.getMonitoringIndexDAO().getAfter_type();
 		
-			if(strAfterType.equals("EMAIL")) {
+			if("EMAIL".equals(strAfterType)) {
 				sendEmail(resultDAO);
-			} else if(strAfterType.equals(AFTER_PROCESS_TYPE.PUSH_EMAIL)) {
+			} else if(AFTER_PROCESS_TYPE.PUSH_EMAIL.equals(strAfterType)) {
 				sendEmail(resultDAO);
-			} else if(strAfterType.equals("KILL_AFTER_EMAIL")) {
+			} else if("KILL_AFTER_EMAIL".equals(strAfterType)) {
 				sendEmail(resultDAO);
 				
 				JsonElement jsonElement = parser.parse(resultDAO.getQuery_result());
@@ -100,6 +100,7 @@ public class EventManager {
 			String strMailTitle = resultDao.getUserDB().getDisplay_name() + " - " + resultDao.getMonitoringIndexDAO().getTitle();
 			String strMailContent = strMailTitle + "\n" + resultDao.getSystem_description() + "\n" + resultDao.getQuery_result();
 
+			// TODO 이메일 보내기를 막아놓고 임시조취 
 			//			Utils.sendEmail(resultDao.getMonitoringIndexDAO().getReceiver(), strMailTitle, strMailContent);
 			FileWriter fw = new FileWriter("/Users/hangum/Downloads/mail.txt", true);
 			fw.write(strMailTitle); 

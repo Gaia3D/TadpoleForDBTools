@@ -18,8 +18,8 @@ import org.eclipse.swt.widgets.Composite;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
-import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.AWSRDSLoginComposite;
 import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.AbstractLoginComposite;
+import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.AltibaseLoginComposite;
 import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.CubridLoginComposite;
 import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.HiveLoginComposite;
 import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.MSSQLLoginComposite;
@@ -30,6 +30,7 @@ import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.OracleLoginComposi
 import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.PostgresLoginComposite;
 import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.SQLiteLoginComposite;
 import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.TajoLoginComposite;
+import com.hangum.tadpole.rdb.core.dialog.dbconnect.composite.TiberoLoginComposite;
 
 /**
  * DB Connection utils
@@ -84,13 +85,18 @@ public class DBConnectionUtils {
 			loginComposite = new PostgresLoginComposite(compositeBody, SWT.NONE, listGroupName, selGroupName, userDB);
 		} else if(dbDefine == DBDefine.MONGODB_DEFAULT) {
 			loginComposite = new MongoDBLoginComposite(compositeBody, SWT.NONE, listGroupName, selGroupName, userDB);
-		} else if(dbDefine == DBDefine.AMAZONRDS_DEFAULT) {
-			loginComposite = new AWSRDSLoginComposite(compositeBody, SWT.NONE, listGroupName, selGroupName, userDB);
+//		} else if(dbDefine == DBDefine.AMAZONRDS_DEFAULT) {
+//			loginComposite = new AWSRDSLoginComposite(compositeBody, SWT.NONE, listGroupName, selGroupName, userDB);
 		} else if(dbDefine == DBDefine.HIVE_DEFAULT || dbDefine == DBDefine.HIVE2_DEFAULT) {
 			loginComposite = new HiveLoginComposite(compositeBody, SWT.NONE, listGroupName, selGroupName, userDB);
 		} else if(dbDefine == DBDefine.TAJO_DEFAULT) {
 			loginComposite = new TajoLoginComposite(compositeBody, SWT.NONE, listGroupName, selGroupName, userDB);
+		} else if(dbDefine == DBDefine.TIBERO_DEFAULT) {
+			loginComposite = new TiberoLoginComposite(compositeBody, SWT.NONE, listGroupName, selGroupName, userDB);
+		} else if(dbDefine == DBDefine.ALTIBASE_DEFAULT) {
+			loginComposite = new AltibaseLoginComposite(compositeBody, SWT.NONE, listGroupName, selGroupName, userDB);
 		}
+		
 		loginComposite.setDataActionStatus(dataStatus);
 		
 		return loginComposite;

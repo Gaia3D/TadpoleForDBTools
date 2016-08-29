@@ -59,7 +59,7 @@ public class OthersConnectionBigDataGroup extends AbstractOthersConnection {
 	public OthersConnectionBigDataGroup(final Composite parent, int style, DBDefine selectDB) {
 		super(parent, style, selectDB);
 		
-		setText(Messages.get().OthersConnectionRDBWithoutTunnelingGroup_0);
+		setText(Messages.get().SettingOtherInfo);
 		GridLayout gridLayout = new GridLayout(3, false);
 		gridLayout.verticalSpacing = 2;
 		gridLayout.horizontalSpacing = 2;
@@ -68,7 +68,7 @@ public class OthersConnectionBigDataGroup extends AbstractOthersConnection {
 		setLayout(gridLayout);
 		
 		btnReadOnlyConnection = new Button(this, SWT.CHECK);
-		btnReadOnlyConnection.setText(Messages.get().OthersConnectionRDBWithoutTunnelingGroup_1);
+		btnReadOnlyConnection.setText(Messages.get().ReadOnly);
 		
 //		Button btnTableFilters = new Button(this, SWT.NONE);
 //		btnTableFilters.addSelectionListener(new SelectionAdapter() {
@@ -99,19 +99,19 @@ public class OthersConnectionBigDataGroup extends AbstractOthersConnection {
 				
 			}
 		});
-		btnExternalBrowser.setText(Messages.get().OthersConnectionBigDataGroup_btnExternalBrowser_text);
+		btnExternalBrowser.setText(Messages.get().ExternalBrowser);
 		new Label(this, SWT.NONE);
 		
 		btnProfiler = new Button(this, SWT.CHECK);
 		btnProfiler.setSelection(true);
-		btnProfiler.setText(Messages.get().OthersConnectionRDBWithoutTunnelingGroup_4);
+		btnProfiler.setText(Messages.get().OthersConnectionRDBGroup_5);
 		
 		btnShowTables = new Button(this, SWT.CHECK);
 		btnShowTables.setSelection(true);
-		btnShowTables.setText(Messages.get().OthersConnectionRDBWithoutTunnelingGroup_btnShowTables_text);
+		btnShowTables.setText(Messages.get().ShowTables);
 		
 		btnExecuteQuestionDml = new Button(this, SWT.CHECK);
-		btnExecuteQuestionDml.setText(Messages.get().OthersConnectionRDBWithoutTunnelingGroup_5);
+		btnExecuteQuestionDml.setText(Messages.get().OthersConnectionRDBGroup_6);
 		
 //		btnIsVisible = new Button(this, SWT.CHECK);
 //		btnIsVisible.setSelection(true);

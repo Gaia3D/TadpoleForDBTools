@@ -24,6 +24,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.manager.core.Activator;
 import com.hangum.tadpole.manager.core.Messages;
 import com.hangum.tadpole.manager.core.editor.restfulapi.RESTFulAPIManagerEditor;
@@ -51,7 +52,7 @@ public class RestfulAPIManagerAction extends Action implements ISelectionListene
 		
 		setId(ID);
 		setText(Messages.get().RestfulAPIManagerAction_0);
-		setToolTipText(Messages.get().RestfulAPIManagerAction_1);
+		setToolTipText(Messages.get().RestfulAPIManagerAction_0);
 		setImageDescriptor(ResourceManager.getPluginImageDescriptor(Activator.PLUGIN_ID, "resources/icons/restful_api.png")); //$NON-NLS-1$
 		setEnabled(true);
 	}
@@ -65,7 +66,7 @@ public class RestfulAPIManagerAction extends Action implements ISelectionListene
 			logger.error("RESTFulAPI Management editor", e); //$NON-NLS-1$
 			
 			Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", "RESTFulAPI Management editor", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, "RESTFulAPI Management editor", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
 

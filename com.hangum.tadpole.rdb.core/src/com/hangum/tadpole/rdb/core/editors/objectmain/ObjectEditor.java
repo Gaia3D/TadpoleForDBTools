@@ -41,11 +41,11 @@ import com.hangum.tadpole.commons.dialogs.fileupload.SingleFileuploadDialog;
 import com.hangum.tadpole.commons.dialogs.message.dao.RequestResultDAO;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
-import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.QUERY_DDL_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.sql.util.ExecuteDDLCommand;
-import com.hangum.tadpole.engine.sql.util.OracleObjectCompileUtils;
+import com.hangum.tadpole.engine.sql.util.ObjectCompileUtil;
 import com.hangum.tadpole.preference.define.PreferenceDefine;
 import com.hangum.tadpole.preference.get.GetPreferenceGeneral;
 import com.hangum.tadpole.rdb.core.Activator;
@@ -55,11 +55,13 @@ import com.hangum.tadpole.rdb.core.editors.main.MainEditor;
 import com.hangum.tadpole.rdb.core.editors.main.composite.ResultMainComposite;
 import com.hangum.tadpole.rdb.core.editors.main.utils.RequestQuery;
 import com.hangum.tadpole.rdb.core.util.GrantCheckerUtils;
+import com.hangum.tadpole.rdb.core.viewers.connections.DBIconsUtils;
 import com.hangum.tadpole.rdb.core.viewers.object.ExplorerViewer;
+import com.hangum.tadpole.session.manager.SessionManager;
 import com.swtdesigner.ResourceManager;
+
 /**
  * Object Editor
- * 
  * 
  * @author hangum
  *
@@ -87,7 +89,7 @@ public class ObjectEditor extends MainEditor {
 		setSite(site);
 		setInput(input);
 		setPartName(strPartName);
-//		setTitleImage(DBIconsUtils.getProcedureImage(getUserDB()));
+		setTitleImage(DBIconsUtils.getProcedureImage(getUserDB()));
 	}
 
 	@Override
@@ -117,7 +119,7 @@ public class ObjectEditor extends MainEditor {
 		
 		ToolBar toolBar = new ToolBar(compositeEditor, SWT.NONE | SWT.FLAT | SWT.RIGHT);
 		ToolItem tltmConnectURL = new ToolItem(toolBar, SWT.NONE);
-		tltmConnectURL.setToolTipText(Messages.get().MainEditor_37);
+		tltmConnectURL.setToolTipText(Messages.get().DatabaseInformation);
 		tltmConnectURL.setImage(ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/editor/connect.png")); //$NON-NLS-1$
 		tltmConnectURL.setText(userDB.getDisplay_name());
 		
@@ -148,7 +150,7 @@ public class ObjectEditor extends MainEditor {
 		new ToolItem(toolBar, SWT.SEPARATOR);
 		
 		ToolItem tltmCompile = new ToolItem(toolBar, SWT.NONE);
-		tltmCompile.setToolTipText(String.format(Messages.get().ObjectEditor_1, STR_SHORT_CUT_PREFIX));
+		tltmCompile.setToolTipText(String.format(Messages.get().Compile, STR_SHORT_CUT_PREFIX));
 		tltmCompile.setImage(ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/editor/compile.png")); //$NON-NLS-1$
 		tltmCompile.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -160,7 +162,7 @@ public class ObjectEditor extends MainEditor {
 					executeType = EditorDefine.EXECUTE_TYPE.BLOCK;
 				}
 				
-				RequestQuery reqQuery = new RequestQuery(strQuery, dbAction, EditorDefine.QUERY_MODE.QUERY, executeType, isAutoCommit());
+				RequestQuery reqQuery = new RequestQuery(userDB, strQuery, dbAction, EditorDefine.QUERY_MODE.QUERY, executeType, isAutoCommit());
 				executeCommand(reqQuery);
 			}
 		});
@@ -245,6 +247,12 @@ public class ObjectEditor extends MainEditor {
 	public void executeCommand(final RequestQuery reqQuery) {
 		// 요청쿼리가 없다면 무시합니다. 
 		if(StringUtils.isEmpty(reqQuery.getSql())) return;
+		
+		// do not execute query
+		if(System.currentTimeMillis() > SessionManager.getServiceEnd().getTime()) {
+			MessageDialog.openInformation(null, CommonMessages.get().Information, Messages.get().MainEditorServiceEnd);
+			return;
+		}
 
 		if(reqQuery.getExecuteType() == EXECUTE_TYPE.BLOCK) {
 			resultMainComposite.executeCommand(reqQuery);
@@ -256,45 +264,41 @@ public class ObjectEditor extends MainEditor {
 				return;
 			}
 			
-			if(!MessageDialog.openConfirm(null, Messages.get().ObjectEditor_0, Messages.get().ObjectEditor_3)) {
-				setOrionTextFocus();
-				return;
-			}
+//			if(!MessageDialog.openConfirm(null, CommonMessages.get().Confirm, Messages.get().ObjectEditor_3)) {
+//				setOrionTextFocus();
+//				return;
+//			}
 			
 			RequestResultDAO reqResultDAO = new RequestResultDAO();
 			try {
-				reqResultDAO = ExecuteDDLCommand.executSQL(userDB, reqQuery.getOriginalSql()); //$NON-NLS-1$
+				ExecuteDDLCommand.executSQL(userDB, reqResultDAO, reqQuery.getOriginalSql()); //$NON-NLS-1$
+
 			} catch(Exception e) {
 				logger.error("execute ddl", e); //$NON-NLS-1$
 				reqResultDAO.setResult(PublicTadpoleDefine.SUCCESS_FAIL.F.name());
 				reqResultDAO.setMesssage(e.getMessage());
-				
 			} finally {
 				if(PublicTadpoleDefine.SUCCESS_FAIL.F.name().equals(reqResultDAO.getResult())) {
 					afterProcess(reqQuery, reqResultDAO, ""); //$NON-NLS-1$
 					
-					if(getUserDB().getDBDefine() == DBDefine.MYSQL_DEFAULT | getUserDB().getDBDefine() == DBDefine.MARIADB_DEFAULT) {
+					if(getUserDB().getDBDefine() == DBDefine.MYSQL_DEFAULT || getUserDB().getDBDefine() == DBDefine.MARIADB_DEFAULT) {
 						mysqlAfterProcess(reqResultDAO, reqQuery);
-					} else if(getUserDB().getDBDefine() == DBDefine.MSSQL_DEFAULT | getUserDB().getDBDefine() == DBDefine.MSSQL_8_LE_DEFAULT) {
+					} else if(getUserDB().getDBDefine() == DBDefine.MSSQL_DEFAULT || getUserDB().getDBDefine() == DBDefine.MSSQL_8_LE_DEFAULT) {
 						mssqlAfterProcess(reqResultDAO, reqQuery);
 					}
 					
 				} else {
-					if(getUserDB().getDBDefine() == DBDefine.ORACLE_DEFAULT) {
-						String retMsg = "";
-						try {
-							retMsg = oracleAfterProcess(reqResultDAO, reqQuery);
-							if(!"".equals(retMsg)) { //$NON-NLS-1$
-								retMsg = Messages.get().ObjectEditor_7 + retMsg;
-							}
-						} catch(Exception e) {
-							logger.error("Oracle Object compile", e); //$NON-NLS-1$
-						}
-
+					String retMsg = ObjectCompileUtil.validateObject(userDB, reqQuery.getSqlDDLType(), reqQuery.getSqlObjectName());
+					if(!"".equals(retMsg)) { //$NON-NLS-1$
 						reqResultDAO.setMesssage(retMsg);
+						
+						afterProcess(reqQuery, reqResultDAO, Messages.get().ObjectEditorCompileError);
+					} else {
+						//DBMS_OUTOUT.PUT_LINE을 이용해 출력했던 내용이 있으면 그대로 표시하기 위해서 주석처리.
+						//reqResultDAO.setMesssage("");
+						afterProcess(reqQuery, reqResultDAO, Messages.get().ObjectEditor_2);
 					}
 					
-					afterProcess(reqQuery, reqResultDAO, Messages.get().ObjectEditor_2);
 				}
 
 				setDirty(false);
@@ -305,32 +309,6 @@ public class ObjectEditor extends MainEditor {
 
 		// google analytic
 		AnalyticCaller.track(ObjectEditor.ID, "executeCommandObject"); //$NON-NLS-1$
-	}
-	
-	/**
-	 * oracle object 
-	 * 컴파일 후 - 오브젝트 상태를 표시해 줄수 있도록 합니다. 
-	 * 
-	 * @param reqResultDAO
-	 * @param reqQuery
-	 * @return
-	 */
-	private String oracleAfterProcess(RequestResultDAO reqResultDAO, RequestQuery reqQuery) throws Exception {
-		String retMsg = ""; //$NON-NLS-1$
-		
-		QUERY_DDL_TYPE ddlType = reqQuery.getSqlDDLType();
-		String strObjectName = reqQuery.getSqlObjectName();
-		if(ddlType == QUERY_DDL_TYPE.PROCEDURE) {
-			retMsg = OracleObjectCompileUtils.otherObjectCompile(QUERY_DDL_TYPE.PROCEDURE, "PROCEDURE", strObjectName.toUpperCase(), userDB); //$NON-NLS-1$
-		} else if(ddlType == QUERY_DDL_TYPE.PACKAGE) {
-			retMsg = OracleObjectCompileUtils.packageCompile(strObjectName, userDB);
-		} else if(ddlType == QUERY_DDL_TYPE.FUNCTION) {
-			retMsg = OracleObjectCompileUtils.otherObjectCompile(QUERY_DDL_TYPE.FUNCTION, "FUNCTION", strObjectName.toUpperCase(), userDB);			 //$NON-NLS-1$
-		} else if(ddlType == QUERY_DDL_TYPE.TRIGGER) {
-			retMsg = OracleObjectCompileUtils.otherObjectCompile(QUERY_DDL_TYPE.TRIGGER, "TRIGGER",  strObjectName.toUpperCase(), userDB);			 //$NON-NLS-1$
-		}
-		
-		return retMsg;
 	}
 
 	/**
@@ -401,13 +379,13 @@ public class ObjectEditor extends MainEditor {
 		if(strSQLState.equals("42000") && intSQLErrorCode == 1304) { //$NON-NLS-1$
 			
 			String cmd = String.format("DROP %s %s", reqQuery.getSqlDDLType(), reqQuery.getSqlObjectName()); //$NON-NLS-1$
-			if(MessageDialog.openConfirm(null, Messages.get().ObjectEditor_12, String.format(Messages.get().ObjectEditor_13, reqQuery.getSqlObjectName()))) {
+			if(MessageDialog.openConfirm(null, CommonMessages.get().Confirm, String.format(Messages.get().ObjectEditor_13, reqQuery.getSqlObjectName()))) {
 				RequestResultDAO reqReResultDAO = new RequestResultDAO();
 				try {
-					reqReResultDAO = ExecuteDDLCommand.executSQL(userDB, cmd); //$NON-NLS-1$
+					ExecuteDDLCommand.executSQL(userDB, reqReResultDAO, cmd); //$NON-NLS-1$
 					afterProcess(reqQuery, reqReResultDAO, Messages.get().ObjectEditor_2);
 					
-					reqReResultDAO = ExecuteDDLCommand.executSQL(userDB, reqQuery.getOriginalSql()); //$NON-NLS-1$
+					ExecuteDDLCommand.executSQL(userDB, reqReResultDAO, reqQuery.getOriginalSql()); //$NON-NLS-1$
 					afterProcess(reqQuery, reqReResultDAO, Messages.get().ObjectEditor_2);
 				} catch(Exception ee) {
 					afterProcess(reqQuery, reqResultDAO, ""); //$NON-NLS-1$
@@ -442,13 +420,13 @@ public class ObjectEditor extends MainEditor {
 		
 		if(strSQLState.equals("S0001") && intSQLErrorCode == 2714) { //$NON-NLS-1$
 			String cmd = String.format("DROP %s %s", reqQuery.getSqlDDLType(), reqQuery.getSqlObjectName()); //$NON-NLS-1$
-			if(MessageDialog.openConfirm(null, Messages.get().ObjectEditor_12, String.format(Messages.get().ObjectEditor_13, reqQuery.getSqlObjectName()))) {
+			if(MessageDialog.openConfirm(null, CommonMessages.get().Confirm, String.format(Messages.get().ObjectEditor_13, reqQuery.getSqlObjectName()))) {
 				RequestResultDAO reqReResultDAO = new RequestResultDAO();
 				try {
-					reqReResultDAO = ExecuteDDLCommand.executSQL(userDB, cmd); //$NON-NLS-1$
+					ExecuteDDLCommand.executSQL(userDB, reqReResultDAO, cmd); //$NON-NLS-1$
 					afterProcess(reqQuery, reqReResultDAO, Messages.get().ObjectEditor_2);
 					
-					reqReResultDAO = ExecuteDDLCommand.executSQL(userDB, reqQuery.getOriginalSql()); //$NON-NLS-1$
+					ExecuteDDLCommand.executSQL(userDB, reqReResultDAO, reqQuery.getOriginalSql()); //$NON-NLS-1$
 					afterProcess(reqQuery, reqReResultDAO, Messages.get().ObjectEditor_2);
 				} catch(Exception ee) {
 					afterProcess(reqQuery, reqResultDAO, ""); //$NON-NLS-1$

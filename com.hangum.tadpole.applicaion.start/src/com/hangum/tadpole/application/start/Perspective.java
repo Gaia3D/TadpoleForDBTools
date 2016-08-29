@@ -27,6 +27,7 @@ import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.permission.PermissionChecker;
 import com.hangum.tadpole.manager.core.editor.db.DBMgmtEditor;
 import com.hangum.tadpole.manager.core.editor.db.DBMgntEditorInput;
@@ -35,6 +36,7 @@ import com.hangum.tadpole.manager.core.editor.executedsql.SQLAuditEditorInput;
 //import com.hangum.tadpole.notes.core.views.list.NoteListViewPart;
 import com.hangum.tadpole.rdb.core.viewers.connections.ManagerViewer;
 import com.hangum.tadpole.rdb.core.viewers.object.ExplorerViewer;
+import com.hangum.tadpole.rdb.core.viewers.sql.template.SQLTemplateView;
 import com.hangum.tadpole.session.manager.SessionManager;
 
 /**
@@ -91,12 +93,15 @@ public class Perspective implements IPerspectiveFactory {
 
 		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.26f, "id" + ManagerViewer.ID);
 		leftUnderFolder.addView(ExplorerViewer.ID);
+		leftUnderFolder.addView(SQLTemplateView.ID);
+		
 		
 //		IFolderLayout rightFolder = layout.createFolder("id" + HelpViewPart.ID, IPageLayout.RIGHT, 0.80f, editorArea);
 //		rightFolder.addView(HelpViewPart.ID);
 //
 //		// viewer closealbe false
 //		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
+		layout.getViewLayout(SQLTemplateView.ID).setCloseable(false);
 		layout.getViewLayout(ManagerViewer.ID).setCloseable(false);
 		layout.getViewLayout(ExplorerViewer.ID).setCloseable(false);
 		openEditor(DBMgmtEditor.ID);
@@ -112,12 +117,14 @@ public class Perspective implements IPerspectiveFactory {
 
 		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.26f, "id" + ManagerViewer.ID);
 		leftUnderFolder.addView(ExplorerViewer.ID);
-
+		leftUnderFolder.addView(SQLTemplateView.ID);
+		
 //		IFolderLayout rightFolder = layout.createFolder("id" + HelpViewPart.ID, IPageLayout.RIGHT, 0.80f, editorArea);
 //		rightFolder.addView(HelpViewPart.ID);
 
 		// viewer closealbe false
 //		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
+		layout.getViewLayout(SQLTemplateView.ID).setCloseable(false);
 		layout.getViewLayout(ManagerViewer.ID).setCloseable(false);
 		layout.getViewLayout(ExplorerViewer.ID).setCloseable(false);
 		
@@ -135,9 +142,11 @@ public class Perspective implements IPerspectiveFactory {
 
 		IFolderLayout leftUnderFolder = layout.createFolder("id" + ExplorerViewer.ID, IPageLayout.BOTTOM, 0.26f, "id" + ManagerViewer.ID);
 		leftUnderFolder.addView(ExplorerViewer.ID);
+		leftUnderFolder.addView(SQLTemplateView.ID);
 
 		// viewer closealbe false
 //		layout.getViewLayout(HelpViewPart.ID).setCloseable(false);
+		layout.getViewLayout(SQLTemplateView.ID).setCloseable(false);
 		layout.getViewLayout(ManagerViewer.ID).setCloseable(false);
 		layout.getViewLayout(ExplorerViewer.ID).setCloseable(false);
 	}
@@ -176,7 +185,7 @@ public class Perspective implements IPerspectiveFactory {
 			logger.error("Open editor", e); //$NON-NLS-1$
 
 			Status errStatus = new Status(IStatus.ERROR, BrowserActivator.APPLICTION_ID, e.getMessage(), e); //$NON-NLS-1$
-			ExceptionDetailsErrorDialog.openError(null, "Error", "Open editor", errStatus); //$NON-NLS-1$
+			ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, "Open editor", errStatus); //$NON-NLS-1$
 		}
 	}
 

@@ -10,7 +10,8 @@
  ******************************************************************************/
 package com.hangum.tadpole.rdb.core.editors.main.function;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -22,12 +23,11 @@ import com.hangum.tadpole.ace.editor.core.define.EditorDefine;
 import com.hangum.tadpole.ace.editor.core.define.EditorDefine.EXECUTE_TYPE;
 import com.hangum.tadpole.ace.editor.core.dialogs.help.RDBShortcutHelpDialog;
 import com.hangum.tadpole.ace.editor.core.texteditor.function.EditorFunctionService;
-import com.hangum.tadpole.engine.define.DBDefine;
-import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
-import com.hangum.tadpole.rdb.core.dialog.dml.GenerateStatmentDMLDialog;
+import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.hangum.tadpole.engine.sql.util.SQLUtil;
 import com.hangum.tadpole.rdb.core.editors.main.MainEditor;
 import com.hangum.tadpole.rdb.core.editors.main.utils.RequestQuery;
-import com.hangum.tadpole.rdb.core.viewers.object.sub.utils.TadpoleObjectQuery;
+import com.hangum.tadpole.rdb.core.util.DialogUtil;
 import com.hangum.tadpole.sql.format.SQLFormater;
 
 /**
@@ -38,10 +38,13 @@ import com.hangum.tadpole.sql.format.SQLFormater;
  */
 public class MainEditorBrowserFunctionService extends EditorFunctionService {
 	private static final Logger logger = Logger.getLogger(MainEditorBrowserFunctionService.class);
+	protected UserDBDAO userDB;
 	protected MainEditor editor;
 
-	public MainEditorBrowserFunctionService(Browser browser, String name, MainEditor editor) {
+	public MainEditorBrowserFunctionService(UserDBDAO userDB, Browser browser, String name, MainEditor editor) {
 		super(browser, name, editor);
+		
+		this.userDB = userDB;
 		this.editor = editor;
 	}
 	
@@ -58,9 +61,31 @@ public class MainEditorBrowserFunctionService extends EditorFunctionService {
 		return result;
 	}
 	
+
+	@Override
+	protected Object doAutoSave(Object[] arguments) {
+		boolean result = false;
+		try {
+			String newContents = (String) arguments[1];
+			result = editor.calledDoAutoSave(newContents);
+		} catch(Exception e) {
+			logger.error("do not save", e);
+		}
+		
+		return result;
+	}
+	
 	@Override
 	protected void doDirtyChanged(Object[] arguments) {
 		editor.setDirty(true);
+	}
+	
+	@Override
+	protected String getContentAssist(Object[] arguments) {
+		String strSQL = (String) arguments[1];
+		int intPosition = ((Double)arguments[2]).intValue();
+		
+		return editor.getContentAssist(strSQL, intPosition);
 	}
 	
 	@Override
@@ -69,7 +94,7 @@ public class MainEditorBrowserFunctionService extends EditorFunctionService {
 		EditorDefine.EXECUTE_TYPE exeType = EXECUTE_TYPE.NONE;
 		if((Boolean) arguments[2]) exeType = EXECUTE_TYPE.BLOCK;
 		
-		RequestQuery rq = new RequestQuery(strSQL, editor.getDbAction(), EditorDefine.QUERY_MODE.QUERY, exeType, editor.isAutoCommit());
+		RequestQuery rq = new RequestQuery(userDB, strSQL, editor.getDbAction(), EditorDefine.QUERY_MODE.QUERY, exeType, editor.isAutoCommit());
 		editor.executeCommand(rq);
 	}
 	
@@ -79,7 +104,7 @@ public class MainEditorBrowserFunctionService extends EditorFunctionService {
 	@Override
 	protected void doExecutePlan(Object[] arguments) {
 		String strSQL = (String) arguments[1];
-		RequestQuery rq = new RequestQuery(strSQL, editor.getDbAction(), EditorDefine.QUERY_MODE.EXPLAIN_PLAN, EditorDefine.EXECUTE_TYPE.NONE, editor.isAutoCommit());
+		RequestQuery rq = new RequestQuery(userDB, strSQL, editor.getDbAction(), EditorDefine.QUERY_MODE.EXPLAIN_PLAN, EditorDefine.EXECUTE_TYPE.NONE, editor.isAutoCommit());
 		editor.executeCommand(rq);
 	}
 	
@@ -109,46 +134,41 @@ public class MainEditorBrowserFunctionService extends EditorFunctionService {
 		
 		editor.setFocus();
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see com.hangum.tadpole.ace.editor.core.texteditor.function.EditorFunctionService#f4DMLOpen(java.lang.Object[])
 	 */
 	@Override
 	protected void f4DMLOpen(Object[] arguments) {
-		String strObject = StringUtils.remove((String) arguments[1], ",");
-		strObject = StringUtils.remove(strObject, "(");
-		strObject = StringUtils.remove(strObject, ")");
-		
-		if(StringUtils.contains(strObject, ".")) strObject = StringUtils.substringAfter(strObject, ".");
-		
-		if(logger.isDebugEnabled()) logger.debug("select editor content is '" + strObject + "'");
-		
-		try {
-			TableDAO tableDao = null;
-			List<TableDAO> listTable = editor.getUserDB().getListTable();
-			if(listTable.isEmpty()) { 
-				if(DBDefine.POSTGRE_DEFAULT != editor.getUserDB().getDBDefine()) { 
-					tableDao = TadpoleObjectQuery.getTable(editor.getUserDB(), StringUtils.trim(strObject));
-				} else {
-					tableDao = new TableDAO(strObject, "");
-				}
-			} else {
-				for (TableDAO tmpTableDAO : listTable) {
-					if(strObject.equals(tmpTableDAO.getName())) {
-						tableDao = tmpTableDAO;
-					}
-				}
-			}
-			
-			if(tableDao != null) {
-				GenerateStatmentDMLDialog dialog = new GenerateStatmentDMLDialog(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), false, 
-									editor.getUserDB(), tableDao);
-				dialog.open();
-			}
-			
-		} catch (Exception e) {
-			logger.error("f4 function", e);
+		String strObject = parseLastObject((String) arguments[1]);
+		strObject = SQLUtil.removeIdentifierQuoteString(userDB, strObject);
+		if(logger.isDebugEnabled()) logger.debug("select editor content is [" + strObject + "]");
+
+		/*
+		TableDAO tableDAO = new TableDAO();
+		tableDAO.setSchema_name(userDB.getSchema());
+		if(StringUtils.contains(strObject, ".")) {
+			tableDAO.setSchema_name(StringUtils.substringBefore(strObject, "."));
+			tableDAO.setSysName(StringUtils.substringAfter(strObject, "."));
+			tableDAO.setTab_name(StringUtils.substringAfter(strObject, "."));
+			tableDAO.setTable_name(StringUtils.substringAfter(strObject, "."));
+		}else{
+			tableDAO.setSysName(strObject);
+			tableDAO.setTab_name(strObject);
+			tableDAO.setTable_name(strObject);
 		}
+		*/
+		
+		Map<String,String> paramMap = new HashMap<String, String>();
+		if(StringUtils.contains(strObject, ".")) {
+			paramMap.put("OBJECT_OWNER", StringUtils.substringBefore(strObject, "."));
+			paramMap.put("OBJECT_NAME", StringUtils.substringAfter(strObject, "."));
+		}else{
+			//paramMap.put("OBJECT_OWNER", userDB.getSchema());
+			paramMap.put("OBJECT_NAME", strObject);
+		}
+
+		DialogUtil.popupObjectInformationDialog(editor.getUserDB(), paramMap);
 	}
 
 	/* (non-Javadoc)
@@ -156,17 +176,28 @@ public class MainEditorBrowserFunctionService extends EditorFunctionService {
 	 */
 	@Override
 	protected void generateSelect(Object[] arguments) {
-		String strObject = StringUtils.remove((String) arguments[1], ",");
-		strObject = StringUtils.remove(strObject, "(");
-		strObject = StringUtils.remove(strObject, ")");
-		
+		String strObject = parseLastObject((String) arguments[1]);
 		String strSQL = "select * from " + strObject;
 		EditorDefine.EXECUTE_TYPE exeType = EXECUTE_TYPE.NONE;
 		exeType = EXECUTE_TYPE.BLOCK;
 		
-		RequestQuery rq = new RequestQuery(strSQL, editor.getDbAction(), EditorDefine.QUERY_MODE.QUERY, exeType, editor.isAutoCommit());
+		RequestQuery rq = new RequestQuery(userDB, strSQL, editor.getDbAction(), EditorDefine.QUERY_MODE.QUERY, exeType, editor.isAutoCommit());
 		editor.executeCommand(rq);
 	}
-	
 
+	/**
+	 * parse last object 
+	 */
+	private String parseLastObject(String obj) {
+		String strObject = StringUtils.remove((String)obj, ",");
+		if(StringUtils.contains(strObject, '(')) {
+			strObject = StringUtils.substringBefore(strObject, "(");	
+		}
+		
+		if(StringUtils.contains(strObject, ')')) {
+			strObject = StringUtils.substringAfter(strObject, ")");	
+		}
+		
+		return strObject;
+	}
 }

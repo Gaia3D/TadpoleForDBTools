@@ -18,6 +18,7 @@ import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TY
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.sql.util.SQLUtil;
+import com.hangum.tadpole.rdb.core.Messages;
 import com.hangum.tadpole.rdb.core.actions.object.AbstractObjectSelectAction;
 import com.hangum.tadpole.rdb.core.ext.sampledata.SampleDataGenerateDialog;
 
@@ -28,26 +29,19 @@ import com.hangum.tadpole.rdb.core.ext.sampledata.SampleDataGenerateDialog;
  *
  */
 public class GenerateSampleDataAction extends AbstractObjectSelectAction {
-	/**
-	 * Logger for this class
-	 */
-//	private static final Logger logger = Logger.getLogger(GenerateSampleDataAction.class);
-
 	public final static String ID = "com.hangum.db.browser.rap.core.actions.object.generatesample.data";
 	
 	public GenerateSampleDataAction(IWorkbenchWindow window, PublicTadpoleDefine.OBJECT_TYPE actionType, String title) {
 		super(window, actionType);
 		setId(ID + actionType.toString());
-		setText("Generate Sample data");
-		
-//		window.getSelectionService().addSelectionListener(this);
+		setText(Messages.get().GenerateSampleData);
 	}
 
 	@Override
 	public void run(IStructuredSelection selection, UserDBDAO userDB, OBJECT_TYPE actionType) {
 		TableDAO tableDao = (TableDAO)selection.getFirstElement();
 		
-		SampleDataGenerateDialog dialog = new SampleDataGenerateDialog(getWindow().getShell(), userDB, SQLUtil.getTableName(tableDao));
+		SampleDataGenerateDialog dialog = new SampleDataGenerateDialog(getWindow().getShell(), userDB, SQLUtil.getTableName(userDB, tableDao));
 		dialog.open();
 	}
 }

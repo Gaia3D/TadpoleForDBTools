@@ -22,10 +22,12 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.SQL_STATEMENT_TYPE;
 import com.hangum.tadpole.engine.query.dao.mysql.TableColumnDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.surface.ConnectionInterfact;
+import com.hangum.tadpole.engine.sql.util.PartQueryUtil;
 import com.hangum.tadpole.engine.sql.util.resultset.QueryExecuteResultDTO;
 import com.hangum.tadpole.tajo.core.connections.manager.ConnectionPoolManager;
 
@@ -92,6 +94,27 @@ public class TajoConnectionManager implements ConnectionInterfact {
 		}
 	}
 	
+	/**
+	 * execute query plan
+	 * @param objects 
+	 * @param sql_STATEMENT_TYPE
+	 * @param statementParameter
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	public QueryExecuteResultDTO executeQueryPlan(UserDBDAO userDB, String strQuery, SQL_STATEMENT_TYPE sql_STATEMENT_TYPE, Object[] statementParameter) throws Exception {
+		return select(userDB, PartQueryUtil.makeExplainQuery(userDB, strQuery), statementParameter, 1000);
+	}
+	
+	/**
+	 * execute update
+	 * 
+	 * @param userDB
+	 * @param string
+	 * @param name
+	 * @throws Exception
+	 */
 	public void executeUpdate(UserDBDAO userDB, String string, String name) throws Exception {
 		java.sql.Connection javaConn = null;
 		Statement statement = null;
@@ -104,39 +127,6 @@ public class TajoConnectionManager implements ConnectionInterfact {
 			statement.executeUpdate(String.format(string, quoteString + name + quoteString));
 		} finally {
 			try { if(statement != null) statement.close(); } catch(Exception e) {}
-			try { if(javaConn != null) javaConn.close(); } catch(Exception e){}
-		}
-	}
-	
-	/**
-	 * select
-	 * 
-	 * @param userDB
-	 * @param requestQuery
-	 * @param limitCount
-	 * 
-	 * @throws Exception
-	 */
-	public QueryExecuteResultDTO select(UserDBDAO userDB, String requestQuery, int limitCount) throws Exception {
-		if(logger.isDebugEnabled()) logger.debug("\t * Query is [ " + requestQuery );
-		
-		java.sql.Connection javaConn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		
-		try {
-			javaConn = ConnectionPoolManager.getDataSource(userDB).getConnection();
-			pstmt = javaConn.prepareStatement(requestQuery);
-			rs = pstmt.executeQuery();
-			
-			return new QueryExecuteResultDTO(userDB, true, rs, limitCount);
-		} catch(Exception e) {
-			logger.error("Tajo select", e);
-			throw e;
-			
-		} finally {
-			try { if(pstmt != null) pstmt.close(); } catch(Exception e) {}
-			try { if(rs != null) rs.close(); } catch(Exception e) {}
 			try { if(javaConn != null) javaConn.close(); } catch(Exception e){}
 		}
 	}
@@ -159,8 +149,8 @@ public class TajoConnectionManager implements ConnectionInterfact {
 			logger.error("connection check", e);
 			throw e;
 		} finally {
-			if(rs != null) rs.close();
-			if(conn != null) conn.close();
+			try { if(rs != null) rs.close(); } catch(Exception e) {}
+			try { if(conn != null) conn.close(); } catch(Exception e) {}
 		}
 	}
 	
@@ -183,13 +173,14 @@ public class TajoConnectionManager implements ConnectionInterfact {
 
 	    	while(rs.next()) {
 	    		String strTBName = rs.getString("TABLE_NAME");
+	    		String strComment = rs.getString("REMARKS");
 //	    		logger.debug( rs.getString("TABLE_CAT") );
 //	    		logger.debug( rs.getString("TABLE_SCHEM") );
 //	    		logger.debug( rs.getString("TABLE_NAME") );
 //	    		logger.debug( rs.getString("TABLE_TYPE") );
 //	    		logger.debug( rs.getString("REMARKS") );
 	    		
-	    		TableDAO tdao = new TableDAO(strTBName, "");
+	    		TableDAO tdao = new TableDAO(strTBName, strComment);
 	    		showTables.add(tdao);
 	    	}
 	    	
@@ -197,8 +188,8 @@ public class TajoConnectionManager implements ConnectionInterfact {
 			logger.error("table list", e);
 			throw e;
 		} finally {
-			if(rs != null) rs.close();
-			if(conn != null) conn.close();
+			try { if(rs != null) rs.close(); } catch(Exception e) {}
+			try { if(conn != null) conn.close(); } catch(Exception e) {}
 		}
 		
 		return showTables;
@@ -235,11 +226,50 @@ public class TajoConnectionManager implements ConnectionInterfact {
 			logger.error(mapParam.get("table") + " table column", e);
 			throw e;
 		} finally {
-			if(rs != null) rs.close();
-			if(conn != null) conn.close();
+			try { if(rs != null) rs.close(); } catch(Exception e) {}
+			try { if(conn != null) conn.close(); } catch(Exception e) {}
 		}
 		
 		return showTableColumns;
+	}
+	
+	/**
+	 * select
+	 * 
+	 * @param userDB
+	 * @param requestQuery
+	 * @param statementParameter 
+	 * @param limitCount
+	 * 
+	 * @throws Exception
+	 */
+	public QueryExecuteResultDTO select(UserDBDAO userDB, String requestQuery, Object[] statementParameter, int limitCount) throws Exception {
+		if(logger.isDebugEnabled()) logger.debug("\t * Query is [ " + requestQuery );
+		
+		java.sql.Connection javaConn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		
+		try {
+			javaConn = ConnectionPoolManager.getDataSource(userDB).getConnection();
+			pstmt = javaConn.prepareStatement(requestQuery);
+			if(statementParameter != null) {
+				for (int i=1; i<=statementParameter.length; i++) {
+					pstmt.setObject(i, statementParameter[i-1]);					
+				}
+			}
+			rs = pstmt.executeQuery();
+			
+			return new QueryExecuteResultDTO(userDB, requestQuery, true, rs, limitCount);
+		} catch(Exception e) {
+			logger.error("Tajo select", e);
+			throw e;
+			
+		} finally {
+			try { if(pstmt != null) pstmt.close(); } catch(Exception e) {}
+			try { if(rs != null) rs.close(); } catch(Exception e) {}
+			try { if(javaConn != null) javaConn.close(); } catch(Exception e){}
+		}
 	}
 
 }

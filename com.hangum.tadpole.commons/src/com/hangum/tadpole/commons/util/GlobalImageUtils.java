@@ -24,6 +24,21 @@ import com.swtdesigner.ResourceManager;
 public class GlobalImageUtils {
 	public static final String IMAGE_Activator_ID = Activator.ID;
 	
+	/**
+	 * checked image
+	 * @return
+	 */
+	public static final Image getCheck() {
+		return ResourceManager.getPluginImage(GlobalImageUtils.IMAGE_Activator_ID, "resources/icons/check/checked.gif");
+	}
+	
+	/**
+	 * unchecked image
+	 * @return
+	 */
+	public static final Image getUnCheck() {
+		return ResourceManager.getPluginImage(GlobalImageUtils.IMAGE_Activator_ID, "resources/icons/check/unchecked.gif");
+	}
 
 	/**
 	 * history image
@@ -39,6 +54,15 @@ public class GlobalImageUtils {
 	 */
 	public static final Image getStart() {
 		return ResourceManager.getPluginImage(GlobalImageUtils.IMAGE_Activator_ID, "resources/icons/start.png");
+	}
+	
+	/**
+	 * killing image
+	 * 
+	 * @return
+	 */
+	public static final Image getKilling() {
+		return ResourceManager.getPluginImage(GlobalImageUtils.IMAGE_Activator_ID, "resources/icons/kill_process.png");
 	}
 	
 	/**
@@ -63,6 +87,14 @@ public class GlobalImageUtils {
 	 */
 	public static final Image getAddDatabase() {
 		return ResourceManager.getPluginImage(GlobalImageUtils.IMAGE_Activator_ID, "resources/icons/add_database.png");
+	}
+	
+	/**
+	 * remove database 
+	 * @return
+	 */
+	public static final Image getRemoveConnectionDatabase() {
+		return ResourceManager.getPluginImage(GlobalImageUtils.IMAGE_Activator_ID, "resources/icons/delete_database.png");
 	}
 	
 	/**
@@ -177,4 +209,13 @@ public class GlobalImageUtils {
 	public static Image getSQLEditor() {
 		return ResourceManager.getPluginImage(GlobalImageUtils.IMAGE_Activator_ID, "resources/icons/sql-query.png");
 	}
+
+	/**
+	 * get block
+	 * @return
+	 */
+	public static Image getBlock() {
+		return ResourceManager.getPluginImage(GlobalImageUtils.IMAGE_Activator_ID, "resources/icons/kill_process.png");
+	}
+	
 }

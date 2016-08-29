@@ -20,7 +20,7 @@ import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.monitoring.MonitoringIndexDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
 import com.hangum.tadpole.engine.sql.util.QueryUtils;
-import com.hangum.tadpole.preference.get.GetAdminPreference;
+import com.hangum.tadpole.preference.define.GetAdminPreference;
 import com.hangum.tadpole.preference.get.GetPreferenceGeneral;
 
 /**
@@ -133,7 +133,7 @@ public class Utils {
 			emailDao.setContent(strContent);
 			emailDao.setTo(receivers);
 			
-			SendEmails sendEmail = new SendEmails(GetAdminPreference.getSMTPINFO());
+			SendEmails sendEmail = new SendEmails(GetAdminPreference.getSessionSMTPINFO());
 			sendEmail.sendMail(emailDao);
 		} catch(Exception e) {
 			logger.error("Error send email", e);
@@ -159,7 +159,7 @@ public class Utils {
 	        
 	        return sbStr.toString();
 //		} catch (ParseException e) {
-//			MessageDialog.openError(null, Messages.get().AddScheduleDialog_20, Messages.get().AddScheduleDialog_12);
+//			MessageDialog.openError(null, CommonMessages.get().AddScheduleDialog_20, CommonMessages.get().AddScheduleDialog_12);
 //			textCronExp.setFocus();
 //		}
 	}

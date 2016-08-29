@@ -34,7 +34,7 @@ import com.hangum.tadpole.engine.sql.util.RDBTypeToJavaTypeUtils;
 import com.hangum.tadpole.engine.sql.util.resultset.ResultSetUtilDTO;
 import com.hangum.tadpole.preference.define.PreferenceDefine;
 import com.hangum.tadpole.session.manager.SessionManager;
-import com.swtdesigner.ResourceManager;
+import com.swtdesigner.SWTResourceManager;
 
 /**
  * SQLResult의 LabelProvider
@@ -48,18 +48,20 @@ public class SQLResultLabelProvider extends LabelProvider implements ITableLabel
 	 */
 	private static final Logger logger = Logger.getLogger(SQLResultLabelProvider.class);
 	private boolean isPretty = false;
+	private String strNullValue = "";
 	private ResultSetUtilDTO rsDAO;
-	
 	
 	public SQLResultLabelProvider() {
 	}
 
-	public SQLResultLabelProvider(final boolean isPretty) {
+	public SQLResultLabelProvider(final boolean isPretty, final String strNullValue) {
 		this.isPretty = isPretty;
+		this.strNullValue = strNullValue;
 	}
 	
-	public SQLResultLabelProvider(final boolean isPretty, final ResultSetUtilDTO rsDAO) {
+	public SQLResultLabelProvider(final boolean isPretty, final ResultSetUtilDTO rsDAO, final String strNullValue) {
 		this.isPretty = isPretty;
+		this.strNullValue = strNullValue;
 		this.rsDAO = rsDAO;
 	}
 
@@ -70,7 +72,7 @@ public class SQLResultLabelProvider extends LabelProvider implements ITableLabel
 
 	@Override
 	public Color getBackground(Object element, int columnIndex) {
-		if(columnIndex == 0) return ResourceManager.getColor(SWT.COLOR_GRAY);
+		if(columnIndex == 0) return SWTResourceManager.getColor(SWT.COLOR_GRAY);
 		
 		return null;
 	}
@@ -84,8 +86,7 @@ public class SQLResultLabelProvider extends LabelProvider implements ITableLabel
 	 * @return
 	 */
 	public static String getRDBShowInTheColumn() {
-		UserInfoDataDAO userInfo = SessionManager.getUserInfo(PreferenceDefine.RDB_CHARACTER_SHOW_IN_THE_COLUMN);
-		if(null == userInfo) return PreferenceDefine.RDB_CHARACTER_SHOW_IN_THE_COLUMN_VALUE;
+		UserInfoDataDAO userInfo = SessionManager.getUserInfo(PreferenceDefine.RDB_CHARACTER_SHOW_IN_THE_COLUMN, PreferenceDefine.RDB_CHARACTER_SHOW_IN_THE_COLUMN_VALUE);
 		return userInfo.getValue0();
 	}
 
@@ -97,8 +98,14 @@ public class SQLResultLabelProvider extends LabelProvider implements ITableLabel
 		if(rsDAO != null) {
 			if(isPretty & RDBTypeToJavaTypeUtils.isNumberType(rsDAO.getColumnType().get(columnIndex))) return addComma(obj);
 		}
+		String showValue = "";
+		try {
+			int intShowWidth = Integer.parseInt(getRDBShowInTheColumn());
+			if(intShowWidth != -1) showValue = StringUtils.abbreviate(obj.toString(), 0, intShowWidth);
+			else showValue = obj.toString();
+		} catch(Exception e) {}
 		
-		return obj == null ? PublicTadpoleDefine.DEFINE_NULL_VALUE : StringUtils.abbreviate(obj.toString(), 0, Integer.parseInt(getRDBShowInTheColumn()));
+		return obj == null ? strNullValue : showValue;
 	}
 	
 	/**
@@ -162,8 +169,8 @@ public class SQLResultLabelProvider extends LabelProvider implements ITableLabel
 	 * @param value
 	 * @return
 	 */
-	public static String addComma(Object value) {
-		if(value==null) return PublicTadpoleDefine.DEFINE_NULL_VALUE;
+	private String addComma(Object value) {
+		if(value==null) return strNullValue;
 		
 		try{
 			NumberFormat nf = NumberFormat.getNumberInstance();

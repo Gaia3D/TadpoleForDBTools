@@ -31,6 +31,7 @@ import org.eclipse.swt.widgets.TableColumn;
 
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.dao.KeyValueDAO;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
@@ -44,7 +45,7 @@ import com.ibatis.sqlmap.client.SqlMapClient;
  * @author hangum
  *
  */
-public class RDBInformationComposite extends Composite {
+public class RDBInformationComposite extends DBInfosComposite {
 	private static final Logger logger = Logger.getLogger(RDBInformationComposite.class);
 	private UserDBDAO userDB;
 	private TableViewer tvInformation;
@@ -63,7 +64,7 @@ public class RDBInformationComposite extends Composite {
 		
 		this.userDB = userDb;
 		
-		tvInformation = new TableViewer(this, SWT.BORDER | SWT.FULL_SELECTION);
+		tvInformation = new TableViewer(this, /* SWT.VIRTUAL | */ SWT.BORDER | SWT.FULL_SELECTION);
 		Table table = tvInformation.getTable();
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
@@ -72,47 +73,52 @@ public class RDBInformationComposite extends Composite {
 		TableViewerColumn tableViewerColumn = new TableViewerColumn(tvInformation, SWT.NONE);
 		TableColumn tblclmnName = tableViewerColumn.getColumn();
 		tblclmnName.setWidth(130);
-		tblclmnName.setText(Messages.get().RDBInformationComposite_0);
+		tblclmnName.setText(CommonMessages.get().Name);
 		
 		TableViewerColumn tableViewerColumn_1 = new TableViewerColumn(tvInformation, SWT.NONE);
 		TableColumn tblclmnValue = tableViewerColumn_1.getColumn();
 		tblclmnValue.setWidth(300);
-		tblclmnValue.setText(Messages.get().RDBInformationComposite_1);
+		tblclmnValue.setText(Messages.get().Value);
 		
 		tvInformation.setContentProvider(new ArrayContentProvider());
 		tvInformation.setLabelProvider(new RDBInformationLabelProvider());
-		initUI();
+		initUI(true);
 	}
 	
 	/**
 	 * 초기데이터를 쌓습니다.
 	 */
-	private void initUI() {
-		listInfo = new ArrayList<KeyValueDAO>();
+	public void initUI(boolean isRefresh) {
+		if(isRefresh) {
+			listInfo.clear();
+		} else {
+			if(listInfo.size() != 0) return;
+		}
+		
 		// db information
-		if(DBDefine.getDBDefine(userDB) != DBDefine.MONGODB_DEFAULT) {
+		if(userDB.getDBDefine() != DBDefine.MONGODB_DEFAULT) {
 			rdbInfo();
 		}
 		
-		listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_2, 	userDB.getOperation_type()));
-		listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_3, 	userDB.getGroup_name()));
-		listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_4, 	userDB.getDisplay_name()));
+		listInfo.add(new KeyValueDAO(Messages.get().OperationType, 	userDB.getOperation_type()));
+		listInfo.add(new KeyValueDAO(Messages.get().GroupName, 	userDB.getGroup_name()));
+		listInfo.add(new KeyValueDAO(Messages.get().DisplayName, 	userDB.getDisplay_name()));
 		
-		listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_5, 	userDB.getUrl(userDB.getRole_id())));
-		if(DBDefine.getDBDefine(userDB) != DBDefine.SQLite_DEFAULT) {
+		listInfo.add(new KeyValueDAO(Messages.get().JDBCURL, 	userDB.getUrl(userDB.getRole_id())));
+		if(userDB.getDBDefine() != DBDefine.SQLite_DEFAULT) {
 			listInfo.add(new KeyValueDAO("Host/IP", 		userDB.getHost(userDB.getRole_id()) + "/" + userDB.getPort(userDB.getRole_id()))); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_6, 	userDB.getDb(userDB.getRole_id())));
-		if(DBDefine.getDBDefine(userDB) != DBDefine.SQLite_DEFAULT) {
+		listInfo.add(new KeyValueDAO(Messages.get().Database, 	userDB.getDb(userDB.getRole_id())));
+		if(userDB.getDBDefine() != DBDefine.SQLite_DEFAULT) {
 			listInfo.add(new KeyValueDAO("User",	 		userDB.getUsers(userDB.getRole_id()))); //$NON-NLS-1$
 		}
 		
-		listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_7, 	userDB.getIs_readOnlyConnect()));
+		listInfo.add(new KeyValueDAO(Messages.get().ReadOnly, 	userDB.getIs_readOnlyConnect()));
 
 		// 몽고디비는 없으므로.. 
-		if(DBDefine.getDBDefine(userDB) != DBDefine.MONGODB_DEFAULT) {
-			listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_8,		userDB.getIs_autocommit()));
-			listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_9, 		userDB.getIs_profile()));
+		if(userDB.getDBDefine() != DBDefine.MONGODB_DEFAULT) {
+			listInfo.add(new KeyValueDAO(Messages.get().AutoCommit,		userDB.getIs_autocommit()));
+			listInfo.add(new KeyValueDAO(Messages.get().Profile, 		userDB.getIs_profile()));
 			listInfo.add(new KeyValueDAO(Messages.get().RDBInformationComposite_17, 	userDB.getQuestion_dml()));
 		}
 		
@@ -126,22 +132,20 @@ public class RDBInformationComposite extends Composite {
 	 * add rdb info
 	 */
 	private void rdbInfo() {
+		Connection conn = null;
 		try {
 			SqlMapClient sqlClient = TadpoleSQLManager.getInstance(userDB);
-			Connection conn = sqlClient.getDataSource().getConnection();
+			conn = sqlClient.getDataSource().getConnection();
 			DatabaseMetaData dmd = conn.getMetaData();
 			
-			listInfo.add(new KeyValueDAO("Database information", dmd.getDatabaseProductName() + " " + dmd.getDatabaseProductVersion()));
-			listInfo.add(new KeyValueDAO("Driver information", dmd.getDriverName() + " " + dmd.getDriverVersion()));
+			listInfo.add(new KeyValueDAO(Messages.get().DatabaseInformation, dmd.getDatabaseProductName() + " " + dmd.getDatabaseProductVersion()));
+			listInfo.add(new KeyValueDAO(Messages.get().DriverInformation, dmd.getDriverName() + " " + dmd.getDriverVersion()));
 		} catch(Exception e) {
 			logger.error("RDB info", e);
+		} finally {
+			try { if(conn != null) conn.close(); } catch(Exception e) {}
 		}
 	}
-
-	@Override
-	protected void checkSubclass() {
-	}
-	
 }
 
 /**

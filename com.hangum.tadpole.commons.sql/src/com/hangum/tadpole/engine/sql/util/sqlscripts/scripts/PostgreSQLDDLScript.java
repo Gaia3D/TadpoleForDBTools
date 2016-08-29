@@ -12,6 +12,7 @@ package com.hangum.tadpole.engine.sql.util.sqlscripts.scripts;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -23,6 +24,8 @@ import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO;
 import com.hangum.tadpole.engine.query.dao.rdb.InOutParameterDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleDBLinkDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleSequenceDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.ibatis.sqlmap.client.SqlMapClient;
 
@@ -110,7 +113,13 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 
 		// table, column comments
 		result.append("\n\n");
-		List<String> srcCommentList = client.queryForList("getTableScript.comments", tableDAO.getName());
+		
+		
+		Map<String, String> sqlParam = new HashMap<String, String>();
+		sqlParam.put("schema", tableDAO.getSchema_name());
+		sqlParam.put("object_name", tableDAO.getName());
+		
+		List<String> srcCommentList = client.queryForList("getTableScript.comments", sqlParam);
 		String commentStr = "";
 		if (srcCommentList.size() == 0){
 			result.append("COMMENT ON TABLE " + tableDAO.getName() + " is ''; /* table comment is empty.*/\n");
@@ -159,16 +168,16 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 	 * #getViewScript(java.lang.String)
 	 */
 	@Override
-	public String getViewScript(String strName) throws Exception {
+	public String getViewScript(TableDAO tableDao) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		StringBuilder result = new StringBuilder("");
 //		result.append("/* DROP VIEW " + strName + "; */ \n\n");
 
-		List<String> srcViewHeadList = client.queryForList("getViewScript.head", strName);
+		List<String> srcViewHeadList = client.queryForList("getViewScript.head", tableDao.getName());
 		for (int i = 0; i < srcViewHeadList.size(); i++) {
 			result.append(srcViewHeadList.get(i) + "\n");
 		}
-		List<String> srcViewBodyList = client.queryForList("getViewScript.body", strName);
+		List<String> srcViewBodyList = client.queryForList("getViewScript.body", tableDao.getName());
 		for (int i = 0; i < srcViewBodyList.size(); i++) {
 			result.append(srcViewBodyList.get(i) + "\n");
 		}
@@ -210,18 +219,22 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 	public String getFunctionScript(ProcedureFunctionDAO functionDAO) throws Exception {
 		if(logger.isDebugEnabled()) logger.debug("\n Function DDL Generation...");
 
-		return (getFunctionScript(functionDAO.getName()));
+		return (getFunctionScript(functionDAO.getSchema_name(), functionDAO.getName()));
 
 	}
 
-	public String getFunctionScript(String funcName) throws Exception {
+	public String getFunctionScript(String schemaName, String funcName) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
 		StringBuilder result = new StringBuilder("");
 
 		HashMap<String, String> srcProc = null;
 //		result.append("/* DROP FUNCTION " + funcName + "; */ \n\n");
 		result.append("CREATE FUNCTION " + funcName);
-		srcProc = (HashMap<String, String>) client.queryForObject("getFunctionScript", funcName);
+		
+		Map<String, String> sqlParam = new HashMap<String, String>();
+		sqlParam.put("schema", schemaName);
+		sqlParam.put("object_name", funcName);
+		srcProc = (HashMap<String, String>) client.queryForObject("getFunctionScript", sqlParam);
 		String parameters[] = String.valueOf(srcProc.get("parameter_types")).split(" ");
 		
 		result.append("(");
@@ -262,7 +275,11 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 		HashMap<String, String> srcProc = null;
 //		result.append("/* DROP FUNCTION " + procedureDAO.getName() + "; */ \n\n");
 		result.append("CREATE OR REPLACE FUNCTION " + procedureDAO.getName());
-		srcProc = (HashMap<String, String>) client.queryForObject("getProcedureScript", procedureDAO.getName());
+		
+		Map<String, String> sqlParam = new HashMap<String, String>();
+		sqlParam.put("schema", procedureDAO.getSchema_name());
+		sqlParam.put("object_name", procedureDAO.getName());
+		srcProc = (HashMap<String, String>) client.queryForObject("getProcedureScript", sqlParam);
 		String parameters[] = String.valueOf(srcProc.get("parameter_types")).split(" ");
 
 		result.append("(");
@@ -327,7 +344,11 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 			logger.debug("\n object_name=" + map.get("object_name"));
 		}
 
-		return client.queryForList("getProcedureInParamter", procedureDAO.getName());
+		Map<String, String> sqlParam = new HashMap<String, String>();
+		sqlParam.put("schema", procedureDAO.getSchema_name());
+		sqlParam.put("object_name", procedureDAO.getName());
+		
+		return client.queryForList("getProcedureInParamter", sqlParam);
 	}
 
 	@Override
@@ -338,6 +359,18 @@ public class PostgreSQLDDLScript extends AbstractRDBDDLScript {
 		map.put("object_name", procedureDAO.getName());
 
 		return client.queryForList("getProcedureOutParamter", map);
+	}
+
+	@Override
+	public String getSequenceScript(OracleSequenceDAO sequenceDAO) throws Exception {
+		// TODO Auto-generated method stub
+		return "undefined";
+	}
+
+	@Override
+	public String getDBLinkScript(OracleDBLinkDAO dblinkDAO) throws Exception {
+		// TODO Auto-generated method stub
+		return "undefined";
 	}
 
 }

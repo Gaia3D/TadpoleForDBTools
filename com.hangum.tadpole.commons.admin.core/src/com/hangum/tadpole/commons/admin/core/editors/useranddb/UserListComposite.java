@@ -17,6 +17,7 @@ import org.apache.log4j.Logger;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -51,9 +52,11 @@ import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.USER_ROLE_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.query.dao.system.UserDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserQuery;
+import com.hangum.tadpole.engine.utils.HttpSessionCollectorUtil;
 import com.hangum.tadpole.manager.core.editor.db.DBMgmtEditor;
 import com.hangum.tadpole.manager.core.editor.db.DBMgntEditorInput;
 import com.hangum.tadpole.manager.core.editor.executedsql.SQLAuditEditor;
@@ -79,6 +82,9 @@ public class UserListComposite extends Composite {
 	private ToolItem tltmLoginHistory;
 	private ToolItem tltmDBList;
 	private ToolItem tltmSQLAudit;
+	
+	//
+	private ToolItem tltmUserBlock;
 	
 	/** search text */
 	private Text textSearch;
@@ -129,8 +135,8 @@ public class UserListComposite extends Composite {
 				initUI();
 			}
 		});
-		tltmRefresh.setToolTipText(Messages.get().AdminUserListComposite_0);
-		ToolItem toolItem_0 = new ToolItem(toolBar, SWT.SEPARATOR);
+		tltmRefresh.setToolTipText(CommonMessages.get().Refresh);
+		new ToolItem(toolBar, SWT.SEPARATOR);
 	
 		ToolItem tltmAdd = new ToolItem(toolBar, SWT.NONE);
 		tltmAdd.setImage(GlobalImageUtils.getAdd());
@@ -140,12 +146,12 @@ public class UserListComposite extends Composite {
 				addUser();
 			}
 		});
-		tltmAdd.setToolTipText(Messages.get().AdminUserListComposite_1);
+		tltmAdd.setToolTipText(CommonMessages.get().Add);
 	
 		tltmModify = new ToolItem(toolBar, SWT.NONE);
 		tltmModify.setImage(GlobalImageUtils.getModify());
 		tltmModify.setEnabled(false);
-		tltmModify.setToolTipText(Messages.get().AdminUserListComposite_2);
+		tltmModify.setToolTipText(CommonMessages.get().Modify);
 		tltmModify.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -153,7 +159,7 @@ public class UserListComposite extends Composite {
 			}
 		});
 		tltmModify.setEnabled(false);
-		ToolItem toolItem_1 = new ToolItem(toolBar, SWT.SEPARATOR);
+		new ToolItem(toolBar, SWT.SEPARATOR);
 		
 		tltmLoginHistory = new ToolItem(toolBar, SWT.NONE);
 		tltmLoginHistory.setImage(ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/userHistory.png")); //$NON-NLS-1$
@@ -165,7 +171,7 @@ public class UserListComposite extends Composite {
 			}
 		});
 		tltmLoginHistory.setEnabled(false);
-		ToolItem toolItem_2 = new ToolItem(toolBar, SWT.SEPARATOR);
+		new ToolItem(toolBar, SWT.SEPARATOR);
 		
 		tltmDBList = new ToolItem(toolBar, SWT.NONE);
 		tltmDBList.setImage(ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/db.png")); //$NON-NLS-1$
@@ -177,7 +183,7 @@ public class UserListComposite extends Composite {
 			}
 		});
 		tltmDBList.setEnabled(false);
-		ToolItem toolItem_3 = new ToolItem(toolBar, SWT.SEPARATOR);
+		new ToolItem(toolBar, SWT.SEPARATOR);
 		
 		tltmSQLAudit = new ToolItem(toolBar, SWT.NONE);
 		tltmSQLAudit.setImage(ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/sqlaudit.png")); //$NON-NLS-1$
@@ -189,10 +195,22 @@ public class UserListComposite extends Composite {
 			}
 		});
 		tltmSQLAudit.setEnabled(false);
+		new ToolItem(toolBar, SWT.SEPARATOR);
+		
+		tltmUserBlock = new ToolItem(toolBar, SWT.NONE);
+		tltmUserBlock.setImage(GlobalImageUtils.getBlock());
+		tltmUserBlock.setToolTipText("Block");
+		tltmUserBlock.setEnabled(false);
+		tltmUserBlock.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				userBlock();
+			}
+		});
 		
 		Label lblSearch = new Label(compositeHead, SWT.NONE);
 		lblSearch.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
-		lblSearch.setText(Messages.get().AdminUserListComposite_3);
+		lblSearch.setText(CommonMessages.get().Search);
 		
 		textSearch = new Text(compositeHead, SWT.SEARCH | SWT.ICON_SEARCH | SWT.ICON_CANCEL);
 		textSearch.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
@@ -219,6 +237,7 @@ public class UserListComposite extends Composite {
 				 tltmLoginHistory.setEnabled(true);
 				 tltmDBList.setEnabled(true);
 				 tltmSQLAudit.setEnabled(true);
+				 tltmUserBlock.setEnabled(true);
 			}
 		});
 		Table table = userListViewer.getTable();
@@ -245,10 +264,14 @@ public class UserListComposite extends Composite {
 	 * create column
 	 */
 	private void createColumn() {
-		String[] colNames = {Messages.get().AdminUserListComposite_4, Messages.get().AdminUserListComposite_5, 
-							Messages.get().AdminUserListComposite_6, Messages.get().UserListComposite_6, Messages.get().AdminUserListComposite_7, Messages.get().AdminUserListComposite_8, 
-							Messages.get().AdminUserListComposite_9, Messages.get().AdminUserListComposite_10, Messages.get().AdminUserListComposite_11};
-		int[] colSize = {200, 150, 90, 70, 60, 60, 60, 60, 120};
+		String[] colNames = {CommonMessages.get().Email, CommonMessages.get().Name, 
+							Messages.get().AdminUserListComposite_6, Messages.get().UserListComposite_6, 
+							Messages.get().IsSharedDB, Messages.get().DefaultAddDBCount, Messages.get().DefaultUseDay,
+							Messages.get().AdminUserListComposite_7, Messages.get().AdminUserListComposite_8, 
+							Messages.get().AdminUserListComposite_9, 
+							
+							Messages.get().DeleteAccounts, Messages.get().AdminUserListComposite_11};
+		int[] colSize = {150, 120, 70, 70, 60, 60, 120, 60, 60, 60, 60, 120};
 		
 		for (int i=0; i<colSize.length; i++) {
 			TableViewerColumn tableViewerColumn = new TableViewerColumn(userListViewer, SWT.NONE);
@@ -264,6 +287,8 @@ public class UserListComposite extends Composite {
 	private void initUI() {
 		listUserGroup.clear();
 		
+		initButton();
+		
 		try {
 			listUserGroup =  TadpoleSystem_UserQuery.getAllUser();
 			
@@ -272,6 +297,17 @@ public class UserListComposite extends Composite {
 		} catch(Exception e) {
 			logger.error(Messages.get().AdminUserListComposite_12, e);
 		}
+	}
+	
+	/**
+	 * initialize button
+	 */
+	private void initButton() {
+		tltmModify.setEnabled(false);
+		tltmLoginHistory.setEnabled(false);
+		tltmDBList.setEnabled(false);
+		tltmSQLAudit.setEnabled(false);
+		tltmUserBlock.setEnabled(false);
 	}
 	
 	/**
@@ -296,7 +332,6 @@ public class UserListComposite extends Composite {
 			if(Dialog.OK == dialog.open()) {
 				initUI();
 			}
-
 		}
 	}
 	
@@ -328,7 +363,7 @@ public class UserListComposite extends Composite {
 				logger.error("Database Management editor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", "", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
+				ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, "", errStatus); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 	}
@@ -348,11 +383,36 @@ public class UserListComposite extends Composite {
 				logger.error("SQL Audit open", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().UserListComposite_8, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().UserListComposite_8, errStatus); //$NON-NLS-1$
 			}
 		}
 	}
 
+	/**
+	 * 사용자 블럭을 실행합니다.
+	 */
+	private void userBlock() {
+		IStructuredSelection ss = (IStructuredSelection)userListViewer.getSelection();
+		if(ss != null || !ss.isEmpty()) {
+			 UserDAO userDAO = ((UserDAO)ss.getFirstElement());
+			
+			 if(MessageDialog.openQuestion(null, CommonMessages.get().Confirm, Messages.get().ImmediatelyBlockUser)) {
+				 // http session 을 찾아 끊고, db 연결 정보를 찾아 끊는다.
+				 HttpSessionCollectorUtil.getInstance().sessionDestroyed(userDAO.getEmail());
+				 
+				 // 어드민 허락을 받을때까지 기다리게한다.
+				 try {
+					 TadpoleSystem_UserQuery.updateUserApproval(userDAO, PublicTadpoleDefine.YES_NO.NO.name());
+					 userDAO.setApproval_yn(PublicTadpoleDefine.YES_NO.NO.name());
+				 } catch (Exception e) {
+					 logger.error("update user data", e); //$NON-NLS-1$
+					 
+					 MessageDialog.openInformation(null, CommonMessages.get().Error, Messages.get().ImmediatelyBlockUser_error + e.getMessage());
+				 }				 
+			 }
+		}
+	}
+	
 	@Override
 	protected void checkSubclass() {
 	}

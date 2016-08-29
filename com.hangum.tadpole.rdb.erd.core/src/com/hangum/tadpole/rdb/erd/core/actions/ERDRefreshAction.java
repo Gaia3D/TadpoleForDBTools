@@ -23,6 +23,7 @@ import org.eclipse.gef.ui.actions.SelectionAction;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.IWorkbenchPart;
 
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.TableColumnDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
@@ -30,6 +31,7 @@ import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.erd.core.Messages;
 import com.hangum.tadpole.rdb.erd.core.editor.TadpoleRDBEditor;
 import com.hangum.tadpole.rdb.erd.core.relation.RelationUtil;
+import com.hangum.tadpole.rdb.erd.core.utils.TDBDataHandler;
 import com.hangum.tadpole.rdb.erd.core.utils.TadpoleModelUtils;
 import com.hangum.tadpole.rdb.erd.stanalone.Activator;
 import com.hangum.tadpole.rdb.model.Column;
@@ -69,7 +71,7 @@ public class ERDRefreshAction extends SelectionAction {
 	
 	@Override
 	public void run() {
-		if(!MessageDialog.openConfirm(getWorkbenchPart().getSite().getShell(), Messages.get().ERDRefreshAction_3, Messages.get().ERDRefreshAction_4)) return;
+		if(!MessageDialog.openConfirm(getWorkbenchPart().getSite().getShell(), CommonMessages.get().Confirm, Messages.get().ERDRefreshAction_4)) return;
 		
 		DB dbModel = rdbEditor.getDb();
 		
@@ -113,7 +115,7 @@ public class ERDRefreshAction extends SelectionAction {
 				mapDBTables.put(tableModel.getName(), tableModel);
 				tableModel.setConstraints(mapOldTables.get(table.getName()));
 				// column add
-				List<TableColumnDAO> columnList = TadpoleModelUtils.INSTANCE.getColumns(userDB, table);
+				List<TableColumnDAO> columnList = TDBDataHandler.getColumns(userDB, table);
 				for (TableColumnDAO columnDAO : columnList) {
 					
 					Column column = factory.createColumn();

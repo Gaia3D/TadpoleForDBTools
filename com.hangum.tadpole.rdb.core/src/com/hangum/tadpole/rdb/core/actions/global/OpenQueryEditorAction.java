@@ -16,14 +16,18 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
 
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
+import com.hangum.tadpole.engine.query.dao.system.userdb.ResourcesDAO;
 import com.hangum.tadpole.engine.security.TadpoleSecurityManager;
 import com.hangum.tadpole.rdb.core.Activator;
 import com.hangum.tadpole.rdb.core.Messages;
 import com.hangum.tadpole.rdb.core.actions.connections.QueryEditorAction;
+import com.hangum.tadpole.rdb.core.viewers.connections.ManagerViewer;
 import com.swtdesigner.ResourceManager;
 
 /**
@@ -33,16 +37,17 @@ import com.swtdesigner.ResourceManager;
  *
  */
 public class OpenQueryEditorAction extends Action implements ISelectionListener, IWorkbenchAction {
-	private final IWorkbenchWindow window;
 	private final static String ID = "com.hangum.db.browser.rap.core.actions.global.OpenQueryEditorAction"; //$NON-NLS-1$
-	private IStructuredSelection iss;
+	protected final IWorkbenchWindow window;
+	protected IStructuredSelection iss;
+	protected UserDBDAO userDB;
 	
 	public OpenQueryEditorAction(IWorkbenchWindow window) {
 		this.window = window;
 		
 		setId(ID);
-		setText(Messages.get().OpenQueryEditorAction_1);
-		setToolTipText(Messages.get().OpenQueryEditorAction_2);
+		setText(Messages.get().EditSQL);
+		setToolTipText(Messages.get().EditSQL);
 		setImageDescriptor( ResourceManager.getPluginImageDescriptor(Activator.PLUGIN_ID, "resources/icons/sql-query.png"));
 		setEnabled(false);
 		
@@ -51,8 +56,6 @@ public class OpenQueryEditorAction extends Action implements ISelectionListener,
 	
 	@Override
 	public void run() {
-		UserDBDAO userDB = (UserDBDAO)iss.getFirstElement();
-		
 		QueryEditorAction qea = new QueryEditorAction();
 		qea.run(userDB);
 	}
@@ -66,22 +69,34 @@ public class OpenQueryEditorAction extends Action implements ISelectionListener,
 	@Override
 	public void selectionChanged(IWorkbenchPart part, ISelection selection) {
 		IStructuredSelection sel = (IStructuredSelection)selection;
-		if(sel != null) {
-			if( sel.getFirstElement() instanceof UserDBDAO ) {
-				UserDBDAO userDB = (UserDBDAO)sel.getFirstElement();
-				
-				if(TadpoleSecurityManager.getInstance().isLock(userDB)) {
-					if(userDB.getDBDefine() != DBDefine.MONGODB_DEFAULT) {				
-						iss = sel;					
-						setEnabled(true);
-						
-						return;
-					}
-				}
-			} 
-		} 
-		
-		setEnabled(false);
-	}
 
+		setEnabled(false);
+		if(sel != null) {
+			ManagerViewer ev = (ManagerViewer)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().findView(ManagerViewer.ID);
+			Object obj = ((IStructuredSelection)ev.getManagerTV().getSelection()).getFirstElement();
+			if( obj instanceof UserDBDAO ) {
+				userDB = (UserDBDAO)obj;
+				isSelectEnable();
+			} else if(obj instanceof UserDBResourceDAO) {
+				UserDBResourceDAO userDBResource = (UserDBResourceDAO)obj;
+				userDB = userDBResource.getParent();
+				isSelectEnable();
+			} else if(obj instanceof ResourcesDAO) {
+				ResourcesDAO resourcesDAO = (ResourcesDAO)obj;
+				userDB = resourcesDAO.getUserDBDAO();
+				isSelectEnable();
+			}
+		}
+	}
+	
+	/**
+	 * is select button enable
+	 */
+	private void isSelectEnable() {
+		if(TadpoleSecurityManager.getInstance().isLock(userDB)) {
+			if(userDB.getDBDefine() != DBDefine.MONGODB_DEFAULT) {				
+				setEnabled(true);
+			}
+		}
+	}
 }

@@ -30,7 +30,6 @@ import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
 import com.hangum.tadpole.engine.query.dao.system.SchemaHistoryDAO;
 import com.hangum.tadpole.engine.query.dao.system.SchemaHistoryDetailDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
-import com.hangum.tadpole.engine.sql.util.SQLUtil;
 import com.ibatis.sqlmap.client.SqlMapClient;
 
 /**
@@ -99,9 +98,9 @@ public class TadpoleSystem_SchemaHistory {
 	 * 
 	 * @param user_seq
 	 * @param userDB
-	 * @param strWorkType
-	 * @param strObjecType
-	 * @param strObjectId
+	 * @param strWorkType TABLE, VIEW, PROCEDURE, FUNCTION, TRIGGER...
+	 * @param strObjecType CREATE, ALTER, DROP
+	 * @param strObjectId 객체 명
 	 * @param strSQL
 	 */
 	public static SchemaHistoryDAO save(int user_seq, UserDBDAO userDB, 
@@ -109,28 +108,6 @@ public class TadpoleSystem_SchemaHistory {
 		SchemaHistoryDAO schemaDao = new SchemaHistoryDAO(); 
 		
 		try {
-			//
-			//
-//			//
-//			String strWorkSQL = strSQL.replaceAll("(\r\n|\n|\r)", ""); // 개행문자 제거.
-//			strWorkSQL = strWorkSQL.replaceAll("\\p{Space}", " ");	// 중간에 공백 제거.
-//			if(logger.isDebugEnabled()) logger.debug("[start sql]\t" + strWorkSQL);
-//			
-//			String[] arrSQL = StringUtils.split(strWorkSQL);
-//			if(arrSQL.length <= 5) return schemaDao;
-//			String strWorkType = arrSQL[0];
-//			
-//			// object type
-//			String strObjecType = arrSQL[1];
-//			
-//			// objectId
-//			String strObjectId = StringUtils.remove(arrSQL[2], "(");
-//						
-//			if(StringUtils.equalsIgnoreCase("or", strObjecType)) {
-//				strObjecType = arrSQL[3];
-//				strObjectId = StringUtils.remove(arrSQL[4], "(");
-//			} 
-			
 			schemaDao = new SchemaHistoryDAO();
 			schemaDao.setDb_seq(userDB.getSeq());
 			schemaDao.setUser_seq(user_seq);
@@ -167,10 +144,7 @@ public class TadpoleSystem_SchemaHistory {
 		// content data를 저장합니다.
 		SchemaHistoryDetailDAO dataDao = new SchemaHistoryDetailDAO();
 		dataDao.setSchema_seq(schemaHistoryDao.getSeq());
-		String[] arrayContent = SQLUtil.makeResourceDataArays(strSQL);
-		for (String content : arrayContent) {
-			dataDao.setSource(strSQL);		
-			sqlClient.insert("sqlHistoryDataInsert", dataDao); //$NON-NLS-1$				
-		}
+		dataDao.setSource(strSQL);		
+		sqlClient.insert("sqlHistoryDataInsert", dataDao); //$NON-NLS-1$				
 	}
 }

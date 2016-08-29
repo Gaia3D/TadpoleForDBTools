@@ -31,6 +31,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_UserInfoData;
 import com.hangum.tadpole.preference.Messages;
 import com.hangum.tadpole.preference.define.PreferenceDefine;
@@ -47,6 +48,7 @@ import com.hangum.tadpole.session.manager.SessionManager;
 public class RDBPreferencePage extends TadpoleDefaulPreferencePage implements IWorkbenchPreferencePage {
 	private static final Logger logger = Logger.getLogger(RDBPreferencePage.class);
 	
+	private Button btnQueryProfilling;
 	private Text textSelectLimit;
 	private Text textResultPage;
 	private Text textOraclePlan;
@@ -72,6 +74,10 @@ public class RDBPreferencePage extends TadpoleDefaulPreferencePage implements IW
 		
 		Composite container = new Composite(parent, SWT.NULL);
 		container.setLayout(new GridLayout(2, false));
+		new Label(container, SWT.NONE);
+		
+		btnQueryProfilling = new Button(container, SWT.CHECK);
+		btnQueryProfilling.setText(Messages.get().QueryProfilling);
 		
 		Label lblResultType = new Label(container, SWT.NONE);
 		lblResultType.setText(Messages.get().RDBPreferencePage_resultType);
@@ -103,6 +109,12 @@ public class RDBPreferencePage extends TadpoleDefaulPreferencePage implements IW
 		
 		textResultPage = new Text(container, SWT.BORDER);		
 		textResultPage.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		
+		Label lblNull = new Label(container, SWT.NONE);
+		lblNull.setText(Messages.get().ShowNullCharacters);
+		
+		textNull = new Text(container, SWT.BORDER);
+		textNull.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblResultViewFont = new Label(container, SWT.NONE);
 		lblResultViewFont.setText(Messages.get().RDBPreferencePage_lblResultViewFont_text);
@@ -184,9 +196,11 @@ public class RDBPreferencePage extends TadpoleDefaulPreferencePage implements IW
 	
 	@Override
 	public boolean performOk() {
+		boolean txtQueryProfilling = btnQueryProfilling.getSelection();
 		String txtResultType = comboRDBResultType.getText();
 		String txtSelectLimit = textSelectLimit.getText();
 		String txtResultPage = textResultPage.getText();
+		String txtNull		= textNull.getText();
 		String txtQueryTimtout = textQueryTimeout.getText();
 		String txtOraclePlan = textOraclePlan.getText();
 		String txtRDBNumberColumnIsComman = comboRDBNumberComma.getText();
@@ -195,49 +209,51 @@ public class RDBPreferencePage extends TadpoleDefaulPreferencePage implements IW
 		String txtShownInTheColumn = textShowInTheColumn.getText();
 		
 		if(!NumberUtils.isNumber(txtSelectLimit)) {
-			MessageDialog.openError(getShell(), "Confirm", Messages.get().DefaultPreferencePage_0 + Messages.get().RDBPreferencePage_0);			 //$NON-NLS-1$
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().DefaultPreferencePage_0 + Messages.get().RDBPreferencePage_0);			 //$NON-NLS-1$
 			textSelectLimit.setFocus();
 			return false;
 		}
 		
 		if(!NumberUtils.isNumber(txtResultPage)) {
-			MessageDialog.openError(getShell(), "Confirm", Messages.get().DefaultPreferencePage_other_labelText_1 + Messages.get().RDBPreferencePage_0);			 //$NON-NLS-1$
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().DefaultPreferencePage_other_labelText_1 + Messages.get().RDBPreferencePage_0);			 //$NON-NLS-1$
 			textResultPage.setFocus();
 			return false;
 		}
 		
 		if(!NumberUtils.isNumber(txtQueryTimtout)) {
-			MessageDialog.openError(getShell(), "Confirm", "Query timeout is " + Messages.get().RDBPreferencePage_0);
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, "Query timeout is " + Messages.get().RDBPreferencePage_0);
 			textQueryTimeout.setFocus();
 			return false;
 		}
 		
 		if(!NumberUtils.isNumber(txtCommitCount)) {
-			MessageDialog.openError(getShell(), "Confirm", "Commit count is " + Messages.get().RDBPreferencePage_0);
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, "Commit count is " + Messages.get().RDBPreferencePage_0);
 			textCommitCount.setFocus();
 			return false;
 		}
 		
 		if("".equals(txtOraclePlan)) { //$NON-NLS-1$
-			MessageDialog.openError(getShell(), "Confirm", Messages.get().RDBPreferencePage_3);			 //$NON-NLS-1$
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().RDBPreferencePage_3);			 //$NON-NLS-1$
 			return false;
 		}
 		
 		if(!NumberUtils.isNumber(txtShownInTheColumn)) {
-			MessageDialog.openError(getShell(), "Confirm", Messages.get().RDBPreferencePage_0);
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().RDBPreferencePage_0);
 			textShowInTheColumn.setFocus();
 			return false;
 		}
 		
 		// 테이블에 저장 
 		try {
-			TadpoleSystem_UserInfoData.updateRDBUserInfoData(
+			TadpoleSystem_UserInfoData.updateRDBUserInfoData(txtQueryProfilling,
 					txtSelectLimit, txtResultPage, txtQueryTimtout, txtOraclePlan, txtRDBNumberColumnIsComman, txtFontInfo, txtCommitCount, txtShownInTheColumn, txtResultType);
 			
 			// session 데이터를 수정한다.
+			SessionManager.setUserInfo(PreferenceDefine.RDB_QUERY_PROFILLING, ""+txtQueryProfilling);
 			SessionManager.setUserInfo(PreferenceDefine.RDB_RESULT_TYPE, txtResultType);
 			SessionManager.setUserInfo(PreferenceDefine.SELECT_LIMIT_COUNT, txtSelectLimit);
 			SessionManager.setUserInfo(PreferenceDefine.SELECT_RESULT_PAGE_PREFERENCE, txtResultPage);
+			SessionManager.setUserInfo(PreferenceDefine.RDB_RESULT_NULL, txtNull);
 			SessionManager.setUserInfo(PreferenceDefine.SELECT_QUERY_TIMEOUT, txtQueryTimtout);
 			
 			SessionManager.setUserInfo(PreferenceDefine.ORACLE_PLAN_TABLE, txtOraclePlan);		
@@ -249,7 +265,7 @@ public class RDBPreferencePage extends TadpoleDefaulPreferencePage implements IW
 		} catch(Exception e) {
 			logger.error("RDBPreference saveing", e);
 			
-			MessageDialog.openError(getShell(), "Confirm", Messages.get().RDBPreferencePage_5 + e.getMessage()); //$NON-NLS-1$
+			MessageDialog.openError(getShell(), CommonMessages.get().Confirm, Messages.get().RDBPreferencePage_5 + e.getMessage()); //$NON-NLS-1$
 			return false;
 		}
 		
@@ -280,8 +296,10 @@ public class RDBPreferencePage extends TadpoleDefaulPreferencePage implements IW
 	 * 초기값을 설정 합니다.
 	 */
 	private void initDefaultValue() {
+		btnQueryProfilling.setSelection(GetPreferenceGeneral.getRDBQueryProfilling());
 		comboRDBResultType.setText(GetPreferenceGeneral.getResultType());
 		textSelectLimit.setText( "" + GetPreferenceGeneral.getSelectLimitCount() ); //$NON-NLS-1$
+		textNull.setText(GetPreferenceGeneral.getResultNull());
 		textResultPage.setText( "" + GetPreferenceGeneral.getPageCount() ); //$NON-NLS-1$
 		textQueryTimeout.setText( "" + GetPreferenceGeneral.getQueryTimeOut() );
 		
@@ -335,5 +353,6 @@ public class RDBPreferencePage extends TadpoleDefaulPreferencePage implements IW
 					"         TIME               NUMERIC,         \r\n" + 
 					"         qblock_name        VARCHAR2(30)     \r\n" + 
 					" ) ";
+	private Text textNull;
 }
 

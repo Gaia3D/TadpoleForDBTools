@@ -27,6 +27,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.permission.PermissionChecker;
@@ -71,7 +72,7 @@ public class DBInformationDialog extends Dialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText(Messages.get().DBInformationDialog_0);
+		newShell.setText(Messages.get().DatabaseInformation);
 		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 
@@ -100,7 +101,7 @@ public class DBInformationDialog extends Dialog {
 		Group grpOtherInformation = new Group(compositeTail, SWT.NONE);
 		grpOtherInformation.setLayout(new GridLayout(2, false));
 		grpOtherInformation.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1));
-		grpOtherInformation.setText(Messages.get().DBInformationDialog_1);
+		grpOtherInformation.setText(Messages.get().User);
 		
 //		Label lblGroupName = new Label(grpOtherInformation, SWT.NONE);
 //		lblGroupName.setText(Messages.get().DBInformationDialog_2);
@@ -110,20 +111,20 @@ public class DBInformationDialog extends Dialog {
 //		lblGroupValue.setText(SessionManager.getGroupName());
 		
 		Label lblEmail = new Label(grpOtherInformation, SWT.NONE);
-		lblEmail.setText(Messages.get().DBInformationDialog_3);
+		lblEmail.setText(CommonMessages.get().Email);
 		
 		Label lblEmailValue = new Label(grpOtherInformation, SWT.NONE);
 		lblEmailValue.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		lblEmailValue.setText(SessionManager.getEMAIL());
 		
 		Label lblName = new Label(grpOtherInformation, SWT.NONE);
-		lblName.setText(Messages.get().DBInformationDialog_4);
+		lblName.setText(CommonMessages.get().Name);
+		
+		Label lblNameValue = new Label(grpOtherInformation, SWT.NONE);
+		lblNameValue.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
+		lblNameValue.setText(SessionManager.getName());
 		
 		if(PermissionChecker.isShow(userDB.getRole_id())) {
-			Label lblNameValue = new Label(grpOtherInformation, SWT.NONE);
-			lblNameValue.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-			lblNameValue.setText(SessionManager.getName());
-			
 			compositeBody = new Composite(container, SWT.NONE);
 			compositeBody.setLayout(new GridLayout(1, false));
 			compositeBody.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
@@ -132,7 +133,7 @@ public class DBInformationDialog extends Dialog {
 		} else {
 			Group grpDetail = new Group(container, SWT.NONE);
 			grpDetail.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
-			grpDetail.setText(Messages.get().DBInformationDialog_5);
+			grpDetail.setText(Messages.get().Detail);
 			grpDetail.setLayout(new GridLayout(1, false));
 			
 			Label lblNewLabel = new Label(grpDetail, SWT.NONE);
@@ -168,7 +169,7 @@ public class DBInformationDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, Messages.get().DBInformationDialog_6, true);
+		createButton(parent, IDialogConstants.OK_ID, CommonMessages.get().Close, true);
 	}
 
 	/**
@@ -176,13 +177,13 @@ public class DBInformationDialog extends Dialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		DBDefine dbDefine = DBDefine.getDBDefine(userDB);
+		DBDefine dbDefine = userDB.getDBDefine();
 		if (dbDefine == DBDefine.SQLite_DEFAULT) {
-			return new Point(570, 460);
+			return new Point(570, 500);
 		} else if(dbDefine == DBDefine.HIVE_DEFAULT) {
-			return new Point(560, 480);
-		} else {
 			return new Point(560, 510);
+		} else {
+			return new Point(560, 550);
 		}
 	}
 

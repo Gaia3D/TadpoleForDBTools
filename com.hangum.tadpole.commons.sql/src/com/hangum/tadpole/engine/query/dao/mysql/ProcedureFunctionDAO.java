@@ -10,14 +10,9 @@
  ******************************************************************************/
 package com.hangum.tadpole.engine.query.dao.mysql;
 
-public class ProcedureFunctionDAO {
-	/** 
-	 * 시스템에서 쿼리에 사용할 이름을 정의 .
-	 * 보여줄때는 {@link TableDAO#name}을 사용하고, 쿼리를 사용할때는 . 
-	 * 
-	 * 자세한 사항은 https://github.com/hangum/TadpoleForDBTools/issues/412 를 참고합니다.
-	 */
-	String sysName = "";
+import org.apache.commons.lang.StringUtils;
+
+public class ProcedureFunctionDAO extends StructObjectDAO {
 	
 	String Db;
 	String Name;
@@ -33,6 +28,7 @@ public class ProcedureFunctionDAO {
 	String Collation;
 	String Status;
 	String packagename;
+	int overload; //TODO:함수 오버로딩 여부에 대한 예외사항 추가.
 	
 	/**
 	 * @return the packagename
@@ -49,7 +45,7 @@ public class ProcedureFunctionDAO {
 	}
 
 	public boolean isValid() {
-		return "VALID".equals(Status) || Status == null || "".equals(Status);
+		return "VALID".equalsIgnoreCase(Status) || Status == null || "".equals(Status);
 	}
 
 	public void setStatus(String status) {
@@ -156,18 +152,33 @@ public class ProcedureFunctionDAO {
 		Collation = collation;
 	}
 
-	/**
-	 * @return the sysName
-	 */
-	public String getSysName() {
-		return sysName;
+	public int getOverload() {
+		return overload;
 	}
 
-	/**
-	 * @param sysName the sysName to set
-	 */
-	public void setSysName(String sysName) {
-		this.sysName = sysName;
+	public void setOverload(int overload) {
+		this.overload = overload;
+	}
+	
+	public String getFullName(boolean isPackage) {
+		if(isPackage) {
+			if(StringUtils.isEmpty(this.getSchema_name())){
+				return String.format("%s.%s", this.getPackagename(), this.getSysName());
+			}else{
+				return String.format("%s.%s.%s", this.getSchema_name(), this.getPackagename(), this.getSysName());
+			}
+		}else{
+			return this.getFullName();
+		}
+	}
+	
+	@Override
+	public String getFullName() {
+		if(StringUtils.isEmpty(this.getSchema_name())) {
+			return this.getSysName();
+		}else{
+			return String.format("%s.%s", this.getSchema_name(), this.getSysName());
+		}
 	}
 	
 }

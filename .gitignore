@@ -3,5 +3,8 @@
 # Package Files #
 *.ear
 
+.pmd
+
 bin/
 .DS_Store
+tadpole-system.db

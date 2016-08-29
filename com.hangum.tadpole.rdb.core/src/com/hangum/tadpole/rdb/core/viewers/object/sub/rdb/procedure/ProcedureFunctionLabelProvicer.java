@@ -10,11 +10,13 @@
  ******************************************************************************/
 package com.hangum.tadpole.rdb.core.viewers.object.sub.rdb.procedure;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.graphics.Image;
 
 import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
+import com.hangum.tadpole.engine.sql.util.SQLUtil;
 import com.hangum.tadpole.rdb.core.Activator;
 import com.swtdesigner.ResourceManager;
 
@@ -33,7 +35,15 @@ public class ProcedureFunctionLabelProvicer extends LabelProvider implements ITa
 		switch(columnIndex) {
 		case 0: 
 			if (procDao.isValid()){
-				return ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/state/normalcy.png");
+				if (StringUtils.contains(procDao.getType(), "PROCEDURE")){
+					return ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/objectExplorer/procedure.png"); //$NON-NLS-1$
+				}else if (StringUtils.contains(procDao.getType(), "FUNCTION")){
+					return ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/objectExplorer/function.png"); //$NON-NLS-1$
+				}else if (StringUtils.contains(procDao.getType(), "PACKAGE")){
+					return ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/objectExplorer/package.png"); //$NON-NLS-1$
+				}else{
+					return ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/state/normalcy.png");
+				}
 			}else{
 				return ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/state/warning.png");
 			}
@@ -47,7 +57,7 @@ public class ProcedureFunctionLabelProvicer extends LabelProvider implements ITa
 		ProcedureFunctionDAO tc = (ProcedureFunctionDAO) element;
 
 		switch(columnIndex) {
-		case 0: return tc.getName();
+		case 0: return SQLUtil.getProcedureName(tc);
 		case 1: return tc.getDefiner();
 		case 2: return tc.getModified();
 		case 3: return tc.getCreated();

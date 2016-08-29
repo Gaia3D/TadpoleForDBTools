@@ -10,11 +10,7 @@
  ******************************************************************************/
 package com.hangum.tadpole.commons.util;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -48,18 +44,6 @@ public class Utils {
 	}
 	
 	/**
-	 * validate passwd
-	 * 
-	 * @param passwd
-	 * @return
-	 */
-	public static boolean isPassword(String passwd) {
-		Pattern p = Pattern.compile("^(?=.*\\d)(?=.*[A-Z])(?=.*[a-z]).{8,}$"); //$NON-NLS-1$
-		Matcher m = p.matcher(passwd);
-		return m.matches();
-	}
-	
-	/**
 	 * unique id 를 넘겨준다. 
 	 * 
 	 * @param length
@@ -78,10 +62,5 @@ public class Utils {
 	public static String getUniqueDigit(int digit) {
 		return getUniqueID().substring(0, digit);
 	}
-	
-	public static String dateToStr(Date date) {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		return sdf.format(date);
- 	}
 	
 }

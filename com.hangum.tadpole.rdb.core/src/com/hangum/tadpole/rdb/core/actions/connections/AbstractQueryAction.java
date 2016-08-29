@@ -16,6 +16,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IViewActionDelegate;
 import org.eclipse.ui.IViewPart;
@@ -24,6 +25,8 @@ import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
@@ -36,6 +39,7 @@ import com.hangum.tadpole.rdb.core.editors.main.MainEditorInput;
 import com.hangum.tadpole.rdb.core.util.EditorUtils;
 import com.hangum.tadpole.rdb.core.util.FindEditorAndWriteQueryUtil;
 import com.hangum.tadpole.rdb.core.util.QueryTemplateUtils;
+import com.hangum.tadpole.rdb.core.viewers.object.ExplorerViewer;
 
 /**
  * query editor관련된 최상위 abstract class
@@ -59,36 +63,64 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 	}
 	
 	/**
+	 * explorer viewe
+	 * @return
+	 */
+	protected ExplorerViewer getExplorerView() {
+		try {
+			return (ExplorerViewer)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().findView(ExplorerViewer.ID);
+		} catch(Exception e) {
+			return null;
+		}
+	}
+	
+	/**
+	 * Java 최신정보로 갱신
+	 */
+	protected void refreshExplorerViewer(OBJECT_TYPE actionType) {
+		ExplorerViewer ev = getExplorerView();
+		if (actionType == PublicTadpoleDefine.OBJECT_TYPE.JOBS) {
+			if(ev != null) ev.refreshJobs(true, "");	
+		}else if (actionType == PublicTadpoleDefine.OBJECT_TYPE.JAVA) {
+			if(ev != null) ev.refreshJava(true, "");	
+		}
+	}
+	
+	/**
 	 * 디비의 화면을 오픈합니다.
 	 * 
 	 * @param userDB
 	 */
 	public void run(UserDBDAO userDB) {
-		
+		 open(userDB);
+	}
+	
+	public IEditorPart open(UserDBDAO userDB) {
+			
 		// mongodb인지 검사하여..
 		if(userDB.getDBDefine() != DBDefine.MONGODB_DEFAULT) {
 			MainEditorInput mei = new MainEditorInput(userDB);
 			
 			try {
-				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(mei, MainEditor.ID);
+				return PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(mei, MainEditor.ID);
 			} catch (PartInitException e) {
 				logger.error("open editor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, CommonMessages.get().Error, Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 			}
 		} else if(userDB.getDBDefine() == DBDefine.MONGODB_DEFAULT) {
 			MongoDBInfosInput mongoInput = new MongoDBInfosInput(userDB, MongoDBInfosEditor.PAGES.COLLECTION_SUMMERY);
 			try {
-				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(mongoInput, MongoDBInfosEditor.ID);
+				return PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(mongoInput, MongoDBInfosEditor.ID);
 			} catch (PartInitException e) {
 				logger.error("open editor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, CommonMessages.get().Error, Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 			}
 		}
-		
+		return null;
 	}
 	
 	/**
@@ -109,7 +141,7 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 				logger.error("new editor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().MainEditorInput_0, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, CommonMessages.get().Error, Messages.get().MainEditorInput_0, errStatus); //$NON-NLS-1$
 			}
 		} else {
 			try {
@@ -120,7 +152,7 @@ public abstract class AbstractQueryAction implements IViewActionDelegate {
 				logger.error("findEditor", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, CommonMessages.get().Error, Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 			}
 		}
 	}

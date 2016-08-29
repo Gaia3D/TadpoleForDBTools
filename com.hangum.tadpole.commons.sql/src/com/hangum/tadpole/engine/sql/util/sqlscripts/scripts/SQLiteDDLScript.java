@@ -11,6 +11,8 @@ import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TriggerDAO;
 import com.hangum.tadpole.engine.query.dao.rdb.InOutParameterDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleDBLinkDAO;
+import com.hangum.tadpole.engine.query.dao.rdb.OracleSequenceDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.ibatis.sqlmap.client.SqlMapClient;
 
@@ -33,9 +35,9 @@ public class SQLiteDDLScript extends AbstractRDBDDLScript {
 	}
 
 	@Override
-	public String getViewScript(String strName) throws Exception {
+	public String getViewScript(TableDAO tableDao) throws Exception {
 		SqlMapClient client = TadpoleSQLManager.getInstance(userDB);
-		return ""+client.queryForObject("getViewScript", strName);
+		return ""+client.queryForObject("getViewScript", tableDao.getName());
 	}
 
 	@Override
@@ -72,6 +74,18 @@ public class SQLiteDDLScript extends AbstractRDBDDLScript {
 	@Override
 	public List<InOutParameterDAO> getProcedureOutParamter(ProcedureFunctionDAO procedureDAO) throws Exception {
 		throw new Exception("Not support Database");
+	}
+
+	@Override
+	public String getSequenceScript(OracleSequenceDAO sequenceDAO) throws Exception {
+		// TODO Auto-generated method stub
+		return "undefined";
+	}
+
+	@Override
+	public String getDBLinkScript(OracleDBLinkDAO dblinkDAO) throws Exception {
+		// TODO Auto-generated method stub
+		return "undefined";
 	}
 
 }

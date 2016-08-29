@@ -19,8 +19,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.jface.action.IMenuListener;
-import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -47,13 +45,13 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Tree;
-import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPartSite;
 import org.eclipse.ui.PartInitException;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.NumberFormatUtils;
 import com.hangum.tadpole.engine.permission.PermissionChecker;
 import com.hangum.tadpole.engine.query.dao.mongodb.CollectionFieldDAO;
@@ -136,7 +134,7 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 	
 	private void createWidget(final CTabFolder tabFolderObject) {		
 		CTabItem tbtmTable = new CTabItem(tabFolderObject, SWT.NONE);
-		tbtmTable.setText(Messages.get().TadpoleMongoDBCollectionComposite_0);
+		tbtmTable.setText(Messages.get().Collections);
 		tbtmTable.setData(TAB_DATA_KEY, PublicTadpoleDefine.OBJECT_TYPE.COLLECTIONS.name());
 		
 		Composite compositeTables = new Composite(tabFolderObject, SWT.NONE);
@@ -154,7 +152,7 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 		sashForm.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 1, 1));
 
 		//  SWT.VIRTUAL 일 경우 FILTER를 적용하면 데이터가 보이지 않는 오류수정.
-		tableListViewer = new TableViewer(sashForm, SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI);
+		tableListViewer = new TableViewer(sashForm, /* SWT.VIRTUAL | */ SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI);
 		tableListViewer.addDoubleClickListener(new IDoubleClickListener() {
 			public void doubleClick(DoubleClickEvent event) {
 				if(PublicTadpoleDefine.YES_NO.NO.name().equals(userDB.getIs_showtables())) return;
@@ -172,7 +170,7 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 						logger.error("Load the table data", e); //$NON-NLS-1$
 
 						Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-						ExceptionDetailsErrorDialog.openError(tabFolderObject.getShell(), "Error", Messages.get().ExplorerViewer_39, errStatus); //$NON-NLS-1$
+						ExceptionDetailsErrorDialog.openError(tabFolderObject.getShell(),CommonMessages.get().Error, Messages.get().ExplorerViewer_39, errStatus); //$NON-NLS-1$
 					}
 				}
 			}
@@ -206,7 +204,7 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 					logger.error("get table column", e); //$NON-NLS-1$
 
 					Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-					ExceptionDetailsErrorDialog.openError(tabFolderObject.getShell(), "Error", e.getMessage(), errStatus); //$NON-NLS-1$
+					ExceptionDetailsErrorDialog.openError(tabFolderObject.getShell(),CommonMessages.get().Error, e.getMessage(), errStatus); //$NON-NLS-1$
 				}
 			}
 		});
@@ -276,11 +274,11 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 		tableListViewer.addDragSupport(DND_OPERATIONS, transferTypes , new TableDragListener(userDB, tableListViewer));
 
 		// filter
-		tableFilter = new TableFilter();
+		tableFilter = new TableFilter(userDB);
 		tableListViewer.addFilter(tableFilter);
 
 		// columns
-		treeColumnViewer = new TreeViewer(sashForm, SWT.VIRTUAL | SWT.BORDER | SWT.FULL_SELECTION);
+		treeColumnViewer = new TreeViewer(sashForm, /* SWT.VIRTUAL | */ SWT.BORDER | SWT.FULL_SELECTION);
 		Tree tableTableColumn = treeColumnViewer.getTree();
 		tableTableColumn.setHeaderVisible(true);
 		tableTableColumn.setLinesVisible(true);
@@ -298,7 +296,7 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 	 * @param treeColumnViewer2
 	 */
 	private void createTableMongoColumne() {
-		String[] columnName = {Messages.get().TadpoleMongoDBCollectionComposite_1, Messages.get().TadpoleMongoDBCollectionComposite_2, Messages.get().TadpoleMongoDBCollectionComposite_3};
+		String[] columnName = {Messages.get().Field, Messages.get().TadpoleMongoDBCollectionComposite_2, Messages.get().TadpoleMongoDBCollectionComposite_3};
 		int[] columnSize = {110, 100, 100};
 		
 		try {
@@ -320,11 +318,13 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 	 * create menu
 	 */
 	private void createMenu() {
+		if(getUserDB() == null) return;
+		
 		creatAction_Table 	= new ObjectCreatAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.TABLES, Messages.get().TadpoleMongoDBCollectionComposite_5);
 		deleteAction_Table 	= new ObjectDropAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.TABLES, Messages.get().TadpoleMongoDBCollectionComposite_6);
 		collFindAndModifyAction = new ObjectMongodbCollFindAndModifyAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.TABLES, Messages.get().TadpoleMongoDBCollectionComposite_7);
 		
-		refreshAction_Table = new ObjectRefreshAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.TABLES, Messages.get().TadpoleMongoDBCollectionComposite_8);
+		refreshAction_Table = new ObjectRefreshAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.TABLES, CommonMessages.get().Refresh);
 		insertStmtAction 	= new GenerateSQLInsertAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.TABLES, Messages.get().TadpoleMongoDBCollectionComposite_9);
 
 		renameColAction 	= new ObjectMongodbRenameAction(getSite().getWorkbenchWindow(), PublicTadpoleDefine.OBJECT_TYPE.TABLES, Messages.get().TadpoleMongoDBCollectionComposite_10);
@@ -339,37 +339,29 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 		
 		// menu
 		final MenuManager menuMgr = new MenuManager("#PopupMenu"); //$NON-NLS-1$
-		menuMgr.setRemoveAllWhenShown(true);
-		menuMgr.addMenuListener(new IMenuListener() {
-			@Override
-			public void menuAboutToShow(IMenuManager manager) {
-				if (userDB != null) {
-					manager.add(creatAction_Table);
-					if(PermissionChecker.isShow(getUserRoleType(), userDB)) {
-						manager.add(deleteAction_Table);
-						manager.add(collFindAndModifyAction);
-						manager.add(collValidateAction);
-					}
-					manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-					manager.add(refreshAction_Table);
+		menuMgr.add(creatAction_Table);
+		if(PermissionChecker.isShow(getUserRoleType(), getUserDB())) {
+			menuMgr.add(deleteAction_Table);
+			menuMgr.add(collFindAndModifyAction);
+			menuMgr.add(collValidateAction);
+		}
+		menuMgr.add(new Separator());
+		menuMgr.add(refreshAction_Table);
 
-					manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-					manager.add(insertStmtAction);
-					manager.add(collStatsAction);
-					
-					if(PermissionChecker.isShow(getUserRoleType(), userDB)) {
-						manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-						manager.add(collCompactAction);
-						manager.add(renameColAction);
-						manager.add(reIndexColAction);
-					}
-					
-					manager.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
-					manager.add(mapReduceAction);
-					manager.add(groupAction);
-				}
-			}
-		});
+		menuMgr.add(new Separator());
+		menuMgr.add(insertStmtAction);
+		menuMgr.add(collStatsAction);
+		
+		if(PermissionChecker.isShow(getUserRoleType(), getUserDB())) {
+			menuMgr.add(new Separator());
+			menuMgr.add(collCompactAction);
+			menuMgr.add(renameColAction);
+			menuMgr.add(reIndexColAction);
+		}
+		
+		menuMgr.add(new Separator());
+		menuMgr.add(mapReduceAction);
+		menuMgr.add(groupAction);
 
 		tableListViewer.getTable().setMenu(menuMgr.createContextMenu(tableListViewer.getTable()));
 		getSite().registerContextMenu(menuMgr, tableListViewer);
@@ -381,6 +373,8 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 	}
 
 	public void initAction() {
+		if(getUserDB() == null) return;
+		
 		creatAction_Table.setUserDB(getUserDB());
 		deleteAction_Table.setUserDB(getUserDB());
 		collFindAndModifyAction.setUserDB(getUserDB());
@@ -422,11 +416,10 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 			return;
 		}
 
-		final String jobName = Messages.get().TadpoleMongoDBCollectionComposite_18;
 		Job job = new Job(Messages.get().MainEditor_45) {
 			@Override
 			public IStatus run(IProgressMonitor monitor) {
-				monitor.beginTask(jobName, IProgressMonitor.UNKNOWN);
+				monitor.beginTask(MSG_DataIsBeginAcquired, IProgressMonitor.UNKNOWN);
 				
 				try {
 					showTables= MongoDBQuery.listCollection(userDB);
@@ -463,7 +456,7 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 							TableUtil.packTable(tableListViewer.getTable());
 
 							Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, jobEvent.getResult().getMessage(), jobEvent.getResult().getException()); //$NON-NLS-1$
-							ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().ExplorerViewer_86, errStatus); //$NON-NLS-1$
+							ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().ExplorerViewer_86, errStatus); //$NON-NLS-1$
 						}
 					}
 				});	// end display.asyncExec
@@ -489,14 +482,20 @@ public class TadpoleMongoDBCollectionComposite extends AbstractObjectComposite {
 	public void dispose() {
 		super.dispose();
 		
-		creatAction_Table.dispose();
-		deleteAction_Table.dispose();
-		refreshAction_Table.dispose();
-		insertStmtAction.dispose();
-		renameColAction.dispose();
-		reIndexColAction.dispose();
-		mapReduceAction.dispose();
-		groupAction.dispose();
+		if(creatAction_Table != null) creatAction_Table.dispose();
+		if(deleteAction_Table != null) deleteAction_Table.dispose();
+		if(collFindAndModifyAction != null) collFindAndModifyAction.dispose();
+		if(collValidateAction != null) collValidateAction.dispose();
+		
+		if(refreshAction_Table != null) refreshAction_Table.dispose();
+		if(insertStmtAction != null) insertStmtAction.dispose();
+		
+		if(collStatsAction != null) collStatsAction.dispose();
+		if(collCompactAction != null) collCompactAction.dispose();
+		if(renameColAction != null) renameColAction.dispose();
+		if(reIndexColAction != null) reIndexColAction.dispose();
+		if(mapReduceAction != null) mapReduceAction.dispose();
+		if(groupAction != null) groupAction.dispose();
 	}
 
 	@Override

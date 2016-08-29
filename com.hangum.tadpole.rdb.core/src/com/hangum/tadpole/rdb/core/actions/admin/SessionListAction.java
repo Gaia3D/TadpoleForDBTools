@@ -23,6 +23,7 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.core.Activator;
@@ -55,13 +56,14 @@ public class SessionListAction implements IViewActionDelegate {
 	public void run(IAction action) {
 		UserDBDAO userDB = (UserDBDAO)sel.getFirstElement();
 		
-		if (DBDefine.getDBDefine(userDB) == DBDefine.MYSQL_DEFAULT ||
-				DBDefine.getDBDefine(userDB) == DBDefine.MARIADB_DEFAULT ||
-				DBDefine.getDBDefine(userDB) == DBDefine.ORACLE_DEFAULT  ||
-				DBDefine.getDBDefine(userDB) == DBDefine.MSSQL_DEFAULT 	||
-				DBDefine.getDBDefine(userDB) == DBDefine.POSTGRE_DEFAULT
+		if (userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT  ||
+				userDB.getDBDefine() == DBDefine.TIBERO_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.MSSQL_DEFAULT 	||
+				userDB.getDBDefine() == DBDefine.POSTGRE_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.ALTIBASE_DEFAULT
 		) {
-			
 			try {
 				SessionListEditorInput sleInput = new SessionListEditorInput(userDB);
 				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(sleInput, SessionListEditor.ID);
@@ -69,10 +71,20 @@ public class SessionListAction implements IViewActionDelegate {
 				logger.error("open session list", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
-				ExceptionDetailsErrorDialog.openError(null, "Error", Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+				ExceptionDetailsErrorDialog.openError(null, CommonMessages.get().Error, Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
 			}
+//		} else if(userDB.getDBDefine() == DBDefine.TAJO_DEFAULT) {
+//			try {
+//				TajoSessionListEditorInput sleInput = new TajoSessionListEditorInput(userDB);
+//				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(sleInput, TajoSessionListEditor.ID);
+//			} catch (PartInitException e) {
+//				logger.error("open session list", e); //$NON-NLS-1$
+//				
+//				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
+//				ExceptionDetailsErrorDialog.openError(null,CommonMessages.get().Error, Messages.get().AbstractQueryAction_1, errStatus); //$NON-NLS-1$
+//			}
 		} else {
-			MessageDialog.openWarning(null, "Information", "Not support database.");
+			MessageDialog.openWarning(null, CommonMessages.get().Information, Messages.get().NotSupportDatabase);
 		}
 	}
 

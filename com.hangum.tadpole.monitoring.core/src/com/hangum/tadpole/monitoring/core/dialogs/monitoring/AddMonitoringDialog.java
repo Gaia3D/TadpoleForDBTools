@@ -29,12 +29,14 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.monitoring.MonitoringIndexDAO;
 import com.hangum.tadpole.engine.query.dao.system.monitoring.MonitoringMainDAO;
 import com.hangum.tadpole.engine.query.dao.system.sql.template.TeadpoleMonitoringTemplateDAO;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_Template;
 import com.hangum.tadpole.engine.query.sql.TadpoleSystem_monitoring;
+import com.hangum.tadpole.monitoring.core.Messages;
 import com.hangum.tadpole.monitoring.core.utils.MonitoringDefine;
 import com.hangum.tadpole.session.manager.SessionManager;
 
@@ -376,12 +378,12 @@ public class AddMonitoringDialog extends Dialog {
 	@Override
 	protected void okPressed() {
 		if("".equals(textTitle.getText())) {
-			MessageDialog.openError(null, "Error", "Title column is not empay.");
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, "Title column is not empay.");
 			textTitle.setFocus();
 			return;
 		}
 		if("".equals(textQuery.getText())) {
-			MessageDialog.openError(null, "Error", "Query column is not empty");
+			MessageDialog.openWarning(null, CommonMessages.get().Warning, "Query column is not empty");
 			textQuery.setFocus();
 			return;
 		}
@@ -425,11 +427,11 @@ public class AddMonitoringDialog extends Dialog {
 
 		try {
 			TadpoleSystem_monitoring.saveMonitoring(mainDao, indexDao);
-			MessageDialog.openInformation(null, "Confirm", "Save data.");
+			MessageDialog.openInformation(null, CommonMessages.get().Confirm, "Save data.");
 		} catch (Exception e) {
 			logger.error("save monitoring index", e);
 			
-			MessageDialog.openError(null, "Error", e.getMessage());
+			MessageDialog.openError(null,CommonMessages.get().Error, e.getMessage());
 		}
 	}
 	

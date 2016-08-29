@@ -23,7 +23,9 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.hangum.tadpole.ace.editor.core.define.EditorDefine;
 import com.hangum.tadpole.ace.editor.core.widgets.TadpoleEditorWidget;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.GlobalImageUtils;
+import com.hangum.tadpole.rdb.core.Messages;
 
 /**
  * dircet change dialg
@@ -52,7 +54,7 @@ public class DirectChangeDialog extends Dialog {
 	@Override
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
-		newShell.setText("Update SQL");
+		newShell.setText(Messages.get().ExecuteQuery);
 		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 
@@ -95,8 +97,8 @@ public class DirectChangeDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, "OK", false);
-		createButton(parent, IDialogConstants.CANCEL_ID, "CANCEL", true);
+		createButton(parent, IDialogConstants.OK_ID, CommonMessages.get().Confirm, false);
+		createButton(parent, IDialogConstants.CANCEL_ID,  CommonMessages.get().Cancel, true);
 	}
 	
 	public String getSQL() {

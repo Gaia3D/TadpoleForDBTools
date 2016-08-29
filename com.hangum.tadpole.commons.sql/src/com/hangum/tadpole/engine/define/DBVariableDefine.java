@@ -1,3 +1,13 @@
+/*******************************************************************************
+ * Copyright (c) 2016 hangum.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the GNU Lesser Public License v2.1
+ * which accompanies this distribution, and is available at
+ * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+ * 
+ * Contributors:
+ *     hangum - initial API and implementation
+ ******************************************************************************/
 package com.hangum.tadpole.engine.define;
 
 /**
@@ -18,4 +28,5 @@ public class DBVariableDefine {
 	public static String[] HIVE2_VARIABLE = MYSQL_VARIABLES;
 	public static String[] TAJO_VARIABLE = MYSQL_VARIABLES;
 	public static String[] MONGO_VARIABLE = MYSQL_VARIABLES;
+	public static String[] ALTIBASE_VARIABLE = MYSQL_VARIABLES;
 }

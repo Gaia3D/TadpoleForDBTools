@@ -16,12 +16,15 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.FileLocator;
 
 import com.hangum.tadpole.cipher.core.manager.CipherManager;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.SystemDefine;
 import com.hangum.tadpole.commons.util.ApplicationArgumentUtils;
+import com.hangum.tadpole.engine.TadpoleEngineActivator;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.manager.TadpoleApplicationContextManager;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
@@ -49,6 +52,8 @@ public class TadpoleSystemInitializer {
 	 */
 	static {
 		String dbServerPath = "";
+		
+		// jdbc driver 파일을 옮긴다.
 
 		// 로컬 디비를 사용 할 경우.
 		if (!ApplicationArgumentUtils.isDBServer()) {
@@ -65,7 +70,7 @@ public class TadpoleSystemInitializer {
 				if (logger.isDebugEnabled()) logger.debug(DEFAULT_DB_FILE_LOCATION + DB_NAME);
 			} catch(Exception e) {
 				logger.error("System DB Initialize exception", e);
-				System.exit(1);
+				System.exit(0);
 			}
 
 			// 원격디비를 사용 할 경우.
@@ -77,7 +82,7 @@ public class TadpoleSystemInitializer {
 				}
 			} catch(Exception e) {
 				logger.error("Tadpole Argument error. check ini file is -dbServer value. ");
-				System.exit(1);
+				System.exit(0);
 			}
 		}
 
@@ -103,6 +108,9 @@ public class TadpoleSystemInitializer {
 	 */
 	public static boolean initSystem() throws Exception {
 		
+		// move to driver file
+		if(!TadpoleApplicationContextManager.isSystemInitialize()) initJDBCDriver();
+		
 		// Is SQLite?
 		if (!ApplicationArgumentUtils.isDBServer()) {
 			if(!new File(DEFAULT_DB_FILE_LOCATION + DB_NAME).exists()) {
@@ -125,6 +133,35 @@ public class TadpoleSystemInitializer {
 		
 		return TadpoleApplicationContextManager.getSystemAdmin() == null?false:true;
 	}
+	
+	/**
+	 * initialize jdbc driver
+	 */
+	private static void initJDBCDriver() {
+		final String strJDBCDir = ApplicationArgumentUtils.JDBC_RESOURCE_DIR;
+		File jdbcLocationDir = new File(strJDBCDir);
+
+		if(!jdbcLocationDir.exists()) {
+			try {
+				jdbcLocationDir.mkdirs();
+				
+				File fileEngine = FileLocator.getBundleFile(TadpoleEngineActivator.getDefault().getBundle());
+				String filePath = fileEngine.getAbsolutePath() + "/libs/driver";
+				if(logger.isInfoEnabled()) logger.info("##### TDB JDBC URI: " + filePath);
+				
+				FileUtils.copyDirectory(new File(filePath), new File(strJDBCDir));
+			} catch(Exception e) {
+				logger.error("Initialize JDBC driver file", e);
+			}
+		}
+		
+		// driver loading
+		try {
+			JDBCDriverLoader.addJARDir(strJDBCDir);
+		} catch(Exception e) {
+			logger.error("JDBC driver loading", e);
+		}
+	}
 
 	/**
 	 * Tadpole Engine db를 초기화 합니다.
@@ -142,7 +179,8 @@ public class TadpoleSystemInitializer {
 			tadpoleEngineDB.setDb("SQLite"); //$NON-NLS-1$
 			tadpoleEngineDB.setDisplay_name("Tadpole Engine DB"); //$NON-NLS-1$
 			tadpoleEngineDB.setPasswd(""); //$NON-NLS-1$
-			tadpoleEngineDB.setUsers(""); //$NON-NLS-1$			
+			tadpoleEngineDB.setUsers(""); //$NON-NLS-1$
+			tadpoleEngineDB.setTdbUserID(PublicTadpoleDefine.USER_ROLE_TYPE.SYSTEM_ADMIN.name());
 
 		} else {
 			try {
@@ -169,23 +207,12 @@ public class TadpoleSystemInitializer {
 					tadpoleEngineDB.setDisplay_name(DBDefine.TADPOLE_SYSTEM_MYSQL_DEFAULT.getDBToString());
 					tadpoleEngineDB.setUsers(user);
 					tadpoleEngineDB.setPasswd(passwd);
-//				} else if("PGSQL".equalsIgnoreCase(whichDB)) {
-//					tadpoleEngineDB.setDbms_types(DBDefine.TADPOLE_SYSTEM_PGSQL_DEFAULT.getDBToString());
-//					tadpoleEngineDB.setUrl(String.format(DBDefine.TADPOLE_SYSTEM_PGSQL_DEFAULT.getDB_URL_INFO(), ip, port, database));
-//					
-//					String isSSL = prop.getProperty("isSSL");
-//					if("true".equals(isSSL)) {
-//						tadpoleEngineDB.setUrl( tadpoleEngineDB.getUrl() + "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory");
-//					}
-//					
-//					tadpoleEngineDB.setDb(database);
-//					tadpoleEngineDB.setDisplay_name(DBDefine.TADPOLE_SYSTEM_PGSQL_DEFAULT.getDBToString());
-//					tadpoleEngineDB.setUsers(user);
-//					tadpoleEngineDB.setPasswd(passwd);
+					
+					tadpoleEngineDB.setTdbUserID(PublicTadpoleDefine.USER_ROLE_TYPE.SYSTEM_ADMIN.name());
 				}
 
 			} catch (Exception ioe) {
-				logger.error("File not found exception or file encrypt exception. check the exist file." + dbServerPath, ioe);
+				logger.error("License File not found or file encrypt exception. check the file." + dbServerPath, ioe);
 				System.exit(0);
 			}
 

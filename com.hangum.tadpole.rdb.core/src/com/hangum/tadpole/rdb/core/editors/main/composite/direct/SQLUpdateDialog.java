@@ -20,17 +20,19 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.hangum.tadpole.ace.editor.core.define.EditorDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
+import com.hangum.tadpole.commons.util.GlobalImageUtils;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.core.Messages;
 import com.hangum.tadpole.rdb.core.editors.main.execute.sub.ExecuteOtherSQL;
 import com.hangum.tadpole.rdb.core.editors.main.utils.RequestQuery;
 import com.hangum.tadpole.session.manager.SessionManager;
-import org.eclipse.swt.widgets.Label;
 
 /**
  * SQL update dialog
@@ -63,6 +65,7 @@ public class SQLUpdateDialog extends Dialog {
 	protected void configureShell(Shell newShell) {
 		super.configureShell(newShell);
 		newShell.setText(Messages.get().SQLUpdateDialog_1);
+		newShell.setImage(GlobalImageUtils.getTadpoleIcon());
 	}
 
 	/**
@@ -96,17 +99,17 @@ public class SQLUpdateDialog extends Dialog {
 		String strSQL = textSQL.getText();
 		
 		if("".equals(strSQL)) { //$NON-NLS-1$
-			MessageDialog.openError(getShell(), Messages.get().SQLUpdateDialog_Error, Messages.get().SQLUpdateDialog_5);
+			MessageDialog.openWarning(getShell(), CommonMessages.get().Warning, Messages.get().SQLUpdateDialog_5);
 			return;
 		}
 		
-		RequestQuery reqQuery = new RequestQuery(strSQL, PublicTadpoleDefine.OBJECT_TYPE.TABLES, 
+		RequestQuery reqQuery = new RequestQuery(userDB, strSQL, PublicTadpoleDefine.OBJECT_TYPE.TABLES, 
 					EditorDefine.QUERY_MODE.QUERY, EditorDefine.EXECUTE_TYPE.BLOCK, true);
 		try {
 			ExecuteOtherSQL.runPermissionSQLExecution(Messages.get().MainEditor_21, reqQuery, userDB, SessionManager.getRepresentRole(), SessionManager.getEMAIL());
 		} catch (Exception e) {
-			logger.error(Messages.get().SQLUpdateDialog_6, e);
-			MessageDialog.openError(getShell(), Messages.get().SQLUpdateDialog_Error, Messages.get().SQLUpdateDialog_8 + e.getMessage());
+			logger.error("SQL Execute error", e);
+			MessageDialog.openError(getShell(),CommonMessages.get().Error, Messages.get().SQLUpdateDialog_8 + e.getMessage());
 			return;
 		}
 		
@@ -119,8 +122,8 @@ public class SQLUpdateDialog extends Dialog {
 	 */
 	@Override
 	protected void createButtonsForButtonBar(Composite parent) {
-		createButton(parent, IDialogConstants.OK_ID, Messages.get().SQLUpdateDialog_9, true);
-		createButton(parent, IDialogConstants.CANCEL_ID, Messages.get().SQLUpdateDialog_10, false);
+		createButton(parent, IDialogConstants.OK_ID, Messages.get().Update, true);
+		createButton(parent, IDialogConstants.CANCEL_ID, CommonMessages.get().Close, false);
 	}
 
 	/**

@@ -15,7 +15,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Plugin;
 import org.osgi.framework.BundleContext;
 
-import com.hangum.tadpole.commons.log.LogListener;
+import com.hangum.tadpole.commons.libs.core.logs.LogListener;
 
 public class TadpoleEngineActivator extends Plugin {
 
@@ -41,6 +41,7 @@ public class TadpoleEngineActivator extends Plugin {
 		plugin = this;
 		
 //		LogConfiguration.getInstance();//.setLevel(Level.DEBUG.toString());
+		// jdbc driver loading
 		
 		// eclipse 로그도 log4j에 넣어주도록 수정 ... (해야할지 살짝 의문이고 삭제해야할지도....) -hangum, 11.09
 		listener = new LogListener();

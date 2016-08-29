@@ -21,6 +21,9 @@ import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TY
 import com.hangum.tadpole.db.metadata.TadpoleMetaData;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
+import com.hangum.tadpole.engine.query.dao.mysql.InformationSchemaDAO;
+import com.hangum.tadpole.engine.query.dao.mysql.ProcedureFunctionDAO;
+import com.hangum.tadpole.engine.query.dao.mysql.TableConstraintsDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 
@@ -88,17 +91,6 @@ public class SQLUtil {
 	 */
 	public static String removeComment(String strSQL) {
 		if(null == strSQL) return "";
-		
-//		String retStr = strSQL.replaceAll(PATTERN_COMMENT, "");
-//		retStr = retStr.replaceAll(PATTERN_COMMENT2, "");
-		
-//		Pattern regex = Pattern.compile("(?:--[^;]*?$)|(--[^\r\n])|(?:/\\*[^;]*?\\*/)", Pattern.DOTALL | Pattern.MULTILINE);
-//        Matcher regexMatcher = regex.matcher(strSQL);
-//		
-//		return regexMatcher.replaceAll("");
-//		logger.debug("[original]" + strSQL);
-//		logger.debug("[change]" + strSQL.replaceAll("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?://.*)", ""));
-		
 		return strSQL.replaceAll("(?:/\\*(?:[^*]|(?:\\*+[^*/]))*\\*+/)|(?:--.*)", "");
 	}
 	
@@ -121,22 +113,6 @@ public class SQLUtil {
 		
 		return isRet;
 	}
-	
-//	/**
-//	 * execute query
-//	 * 
-//	 * @param strSQL
-//	 * @return
-//	 */
-//	public static boolean isExecute(String strSQL) {
-//		strSQL = removeComment(strSQL);
-//		if((PATTERN_EXECUTE_QUERY.matcher(strSQL)).matches()) {
-//			return true;
-//		}
-//		
-//		return false;
-//	}
-	
 	
 	/**
 	 * 쿼리의 패턴이 <code>PATTERN_STATEMENT</code>인지?
@@ -166,51 +142,69 @@ public class SQLUtil {
 		return false;
 	}
 	
-//	/**
-//	 * 영문인지 검사합니다.
-//	 * @param strValue
-//	 * @return
-//	 */
-//	public static boolean isEnglish(String strValue) {
-//		if(strValue == null || strValue.length() == 0) return false;
-//		
-//		char charVal = strValue.charAt(0);
-//		if(charVal >= 65 && charVal <= 90) return true; 	// 소문자
-//		if(charVal >= 97 && charVal <= 122) return true; 	// 대문자 
-//		
-//		return false;
-//	}
+	/**
+	 * sql 관련 없는 모든 코드를 삭제한다.
+	 * 
+	 * @param userDB
+	 * @param exeSQL
+	 * @return
+	 */
+	public static String removeCommentAndOthers(UserDBDAO userDB, String exeSQL) {
+		exeSQL = StringUtils.trimToEmpty(exeSQL);
+		exeSQL = removeComment(exeSQL);
+		exeSQL = StringUtils.trimToEmpty(exeSQL);
+		exeSQL = StringUtils.removeEnd(exeSQL, "/");
+		exeSQL = StringUtils.trimToEmpty(exeSQL);
+		//TO DO 오라클 프로시저등의 오브젝트는 마지막 딜리미터(;)가 없으면 오류입니다. 하여서 이 코드는 문제입니다.
+		exeSQL = StringUtils.removeEnd(exeSQL, PublicTadpoleDefine.SQL_DELIMITER);
+		
+		return exeSQL;
+	}
 	
 	/**
 	 * 쿼리를 jdbc에서 실행 가능한 쿼리로 보정합니다.
 	 * 
+	 * @param userDB
 	 * @param exeSQL
 	 * @return
 	 */
-	public static String sqlExecutable(String exeSQL) {
+	public static String makeExecutableSQL(UserDBDAO userDB, String exeSQL) {
 		
 //		tmpStrSelText = UnicodeUtils.getUnicode(tmpStrSelText);
-//		try {
-//			
+			
 //			https://github.com/hangum/TadpoleForDBTools/issues/140 오류로 불럭지정하였습니다.
 //			TO DO 특정 쿼리에서는 주석이 있으면 오류인데..DB에서 쿼리를 실행받는 다양한 조건을 고려할 필요가 있습니다. 
-			
-			// 문장 의 // 뒤에를 주석으로 인식 쿼리열에서 제외합니다.
-			/*
-			 *  mysql의 경우 주석문자 즉, -- 바로 다음 문자가 --와 붙어 있으면 주석으로 인식하지 않아 오류가 발생합니다. --comment 이면 주석으로 인식하지 않습니다.(다른 디비(mssql, oralce, pgsql)은 주석으로 인식합니다)
-			 *  고칠가 고민하지만, 실제 쿼리에서도 동일하게 오류로 처리할 것이기에 주석을 지우지 않고 놔둡니다. - 2013.11.11- (hangum)
-			 */
-//			
-			// 모든 쿼리에 공백 주석 제거
+		
+		// 문장 의 // 뒤에를 주석으로 인식 쿼리열에서 제외합니다.
+		/*
+		 *  mysql의 경우 주석문자 즉, -- 바로 다음 문자가 --와 붙어 있으면 주석으로 인식하지 않아 오류가 발생합니다. --comment 이면 주석으로 인식하지 않습니다.(다른 디비(mssql, oralce, pgsql)은 주석으로 인식합니다)
+		 *  고칠가 고민하지만, 실제 쿼리에서도 동일하게 오류로 처리할 것이기에 주석을 지우지 않고 놔둡니다. - 2013.11.11- (hangum)
+		 */
+
+		exeSQL = StringUtils.trimToEmpty(exeSQL);
+
+		// 주석제거.
+		// oracle, tibero, altibase은 힌트가 주석 문법을 쓰므로 주석을 삭제하지 않는다.
+		if(userDB.getDBDefine() == DBDefine.ORACLE_DEFAULT || 
+				userDB.getDBDefine() == DBDefine.TIBERO_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.ALTIBASE_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT ||
+				userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT
+		) {
+			// ignore code
+		} else {
 			exeSQL = removeComment(exeSQL);
-			exeSQL = StringUtils.trimToEmpty(exeSQL);
+		}
+		
+		// 주석으로 종료되는 행이면 지우지 않도록 수정.
+		exeSQL = StringUtils.trimToEmpty(exeSQL);
+		if(!StringUtils.endsWith(exeSQL, "*/")) { 
 			exeSQL = StringUtils.removeEnd(exeSQL, "/");
-			exeSQL = StringUtils.trimToEmpty(exeSQL);
-			exeSQL = StringUtils.removeEnd(exeSQL, PublicTadpoleDefine.SQL_DELIMITER);
-			
-//		} catch(Exception e) {
-//			logger.error("query execute", e);
-//		}
+		}
+		exeSQL = StringUtils.trimToEmpty(exeSQL);
+		
+		//TO DO 오라클 프로시저등의 오브젝트는 마지막 딜리미터(;)가 없으면 오류입니다. 하여서 이 코드는 문제입니다.
+		exeSQL = StringUtils.removeEnd(exeSQL, PublicTadpoleDefine.SQL_DELIMITER);
 		
 		return exeSQL;
 	}
@@ -224,22 +218,26 @@ public class SQLUtil {
 	 */
 	public static String makeIdentifierName(UserDBDAO userDB, String name) {
 		boolean isChanged = false;
+		name = name == null ? "" : name;
 		String retStr = name;
-		TadpoleMetaData tmd = TadpoleSQLManager.getDbMetadata(userDB);
-		
-		if(tmd == null) return retStr;
 
-		// mssql일 경우 시스템 테이블 스키서부터 "가 붙여 있는 경우 "가 있으면 []을 양쪽에 붙여 줍니다. --;; 
+		//
+		// 오라클 평선의 파라미터 중에 리턴값의 아규먼트 명칭은 널이다.  
+		//
+		TadpoleMetaData tmd = TadpoleSQLManager.getDbMetadata(userDB);
+		if(tmd == null) return name;
+
+		//
+		// mssql일 경우 시스템 테이블 스키서부터 "가 붙여 있는 경우 "가 있으면 []을 양쪽에 붙여 줍니다. --;;
+		//
 		if(userDB.getDBDefine() == DBDefine.MSSQL_8_LE_DEFAULT || userDB.getDBDefine() == DBDefine.MSSQL_DEFAULT) {
 			if(StringUtils.contains(name, "\"")) {
 				return name = String.format("[%s]", name);
 			}
 		}
 		
+		// 정의 된 형태로 오브젝트 명을 변경한다.
 		switch(tmd.getSTORE_TYPE()) {
-//		case NONE: 
-//			retStr = tableName;
-//			break;
 		case BLANK: 
 			if(name.matches(".*\\s.*")) {
 				isChanged = true;
@@ -250,93 +248,106 @@ public class SQLUtil {
 			if(name.matches(".*[a-z\\s].*")) {
 				isChanged = true;
 				retStr = makeFullyTableName(name, tmd.getIdentifierQuoteString());
+			}else if(name.matches(".*[.].*")) {
+				isChanged = true;
+				retStr = makeFullyTableName(name, tmd.getIdentifierQuoteString());
 			}
 			break;
 		case UPPERCASE_BLANK:
 			if(name.matches(".*[A-Z\\s].*")) {
 				isChanged = true;
 				retStr = makeFullyTableName(name, tmd.getIdentifierQuoteString());
+			}else if(name.matches(".*[.].*")) {
+				isChanged = true;
+				retStr = makeFullyTableName(name, tmd.getIdentifierQuoteString());
 			}
 			break;
 		}
 		
-		// Is keywords?
-		// schema.tableName
+		// 키워드 인지 검사하여 오브젝트 명을 변경한다.
 		if(!isChanged) {
-			String[] arryRetStr = StringUtils.split(retStr, ".");
-			if(arryRetStr.length == 1) {
-				if(StringUtils.containsIgnoreCase(","+tmd.getKeywords()+",", ","+arryRetStr[0]+",")) {
-					retStr = tmd.getIdentifierQuoteString() + retStr + tmd.getIdentifierQuoteString();
-				}
-			} else if(arryRetStr.length > 1){
-				if(StringUtils.containsIgnoreCase(","+tmd.getKeywords()+",", ","+arryRetStr[1]+",")) {
-					retStr = tmd.getIdentifierQuoteString() + retStr + tmd.getIdentifierQuoteString();
-				}
+			if(StringUtils.containsIgnoreCase(","+tmd.getKeywords()+",", ","+retStr+",")) {
+				retStr = tmd.getIdentifierQuoteString() + name + tmd.getIdentifierQuoteString();
 			}
 		}
 		
-//		if(logger.isDebugEnabled()) logger.debug("[tmd.getSTORE_TYPE()]" + tmd.getSTORE_TYPE() + "[original]" + tableName + "[retStr = ]" + retStr);
-		
 		return retStr;
 	}
-	
-	private static String makeFullyTableName(String tableName, String strIdentifier) {
-		String retStr = "";
-		
-		for(String chunk : StringUtils.split(tableName, '.')) {
-			retStr += strIdentifier + chunk + strIdentifier + ".";
-		}
-		retStr = StringUtils.removeEnd(retStr, ".");
-		
-		return retStr;
-	}
-	
+
 	/**
-	 * db resource data를 저장할때 2000byte 단위로 저장하도록 합니다.
+	 * remove identifier quote string
 	 * 
-	 * @param resource data
+	 * @param userDB
+	 * @param name
 	 * @return
 	 */
-	public static String[] makeResourceDataArays(String resourceContent)  {
-		int cutsize = 1998;
-		String[] tmpRetArryStr = new String[2000];
-		resourceContent = resourceContent == null ? "" : resourceContent;
-		byte[] byteSqlText = resourceContent.getBytes();
-		
-		int isEndTextHangul = 0;
-		int workCnt = 0;
+	public static String removeIdentifierQuoteString(UserDBDAO userDB, String name) {
+		TadpoleMetaData tmd = TadpoleSQLManager.getDbMetadata(userDB);
+		if(tmd == null) return name;
 
-		while (byteSqlText.length > cutsize) {
-			isEndTextHangul = 0;
-			for (int i=0; i<cutsize; i++) {
-				if (byteSqlText[i] < 0) isEndTextHangul++;
-			}
-
-			if (isEndTextHangul%2 != 0) {
-				tmpRetArryStr[workCnt] = new String(byteSqlText, 0, cutsize + 1);
-				byteSqlText = new String(byteSqlText, cutsize + 1, byteSqlText.length - (cutsize + 1)).getBytes();
-			} else {
-				tmpRetArryStr[workCnt] = new String(byteSqlText, 0, cutsize);
-				byteSqlText = new String(byteSqlText, cutsize, byteSqlText.length - cutsize).getBytes();
-			}
-
-			workCnt++;
-		}
-		tmpRetArryStr[workCnt] = new String(byteSqlText);
-		
-		// 결과가 있는 만큼 담기위해
-		String[] returnDataArry = new String[workCnt+1];
-		for (int i=0; i<=workCnt; i++) {
-			returnDataArry[i] = tmpRetArryStr[i];
-		}
-		
-		return returnDataArry;
+		return StringUtils.replace(name, tmd.getIdentifierQuoteString(), "");
 	}
+
+	/**
+	 * make fully table name
+	 * @param tableName
+	 * @param strIdentifier
+	 * @return
+	 */
+	private static String makeFullyTableName(String tableName, String strIdentifier) {
+		return strIdentifier + tableName + strIdentifier;
+	}
+	
+//	컬럼을 2천바이트까지만 저장하는 컬럼이 있을 경우 사용하였으나, 사용하지 않아서 삭제한다. - hangum
+//	/**
+//	 * db resource data를 저장할때 2000byte 단위로 저장하도록 합니다.
+//	 * 이 이슈( https://github.com/hangum/TadpoleForDBTools/issues/864 )로 컬럼을 하나로 만들고 수정합니다.
+//	 * 
+//	 * @param resource data
+//	 * @return
+//	 */
+//	public static String[] makeResourceDataArays(String resourceContent)  {
+//		int cutsize = 1998;
+//		String[] tmpRetArryStr = new String[2000];
+//		resourceContent = resourceContent == null ? "" : resourceContent;
+//		byte[] byteSqlText = resourceContent.getBytes();
+//		
+//		int isEndTextHangul = 0;
+//		int workCnt = 0;
+//
+//		while (byteSqlText.length > cutsize) {
+//			isEndTextHangul = 0;
+//			for (int i=0; i<cutsize; i++) {
+//				if (byteSqlText[i] < 0) isEndTextHangul++;
+//			}
+//
+//			if (isEndTextHangul%2 != 0) {
+//				tmpRetArryStr[workCnt] = new String(byteSqlText, 0, cutsize + 1);
+//				byteSqlText = new String(byteSqlText, cutsize + 1, byteSqlText.length - (cutsize + 1)).getBytes();
+//			} else {
+//				tmpRetArryStr[workCnt] = new String(byteSqlText, 0, cutsize);
+//				byteSqlText = new String(byteSqlText, cutsize, byteSqlText.length - cutsize).getBytes();
+//			}
+//
+//			workCnt++;
+//		}
+//		tmpRetArryStr[workCnt] = new String(byteSqlText);
+//		
+//		// 결과가 있는 만큼 담기위해
+//		String[] returnDataArry = new String[workCnt+1];
+//		for (int i=0; i<=workCnt; i++) {
+//			returnDataArry[i] = tmpRetArryStr[i];
+//		}
+//		
+//		return returnDataArry;
+//	}
 	
 	/**
 	 * 에디터에서 쿼리 실행 단위 조절.
 	 * 
 	 * https://github.com/hangum/TadpoleForDBTools/issues/466
+	 * 
+	 * 오라클 디비링크 관련 스크립트는 SQL에디터를 사용하도록 OBJECT_TYPE.LINK 추가.
 	 * 
 	 * @param dbAction
 	 * @return
@@ -345,7 +356,10 @@ public class SQLUtil {
 		if(dbAction == OBJECT_TYPE.TABLES ||
 				dbAction == OBJECT_TYPE.VIEWS ||
 				dbAction == OBJECT_TYPE.SYNONYM ||
-				dbAction == OBJECT_TYPE.INDEXES) {
+				dbAction == OBJECT_TYPE.INDEXES ||
+				dbAction == OBJECT_TYPE.SEQUENCE ||
+				dbAction == OBJECT_TYPE.LINK||
+				dbAction == OBJECT_TYPE.JOBS) {
 			return true;
 		}
 		
@@ -383,26 +397,6 @@ public class SQLUtil {
 		return queryType;
 	}
 	
-//	/**
-//	 * <pre>
-//	 * 이런식의 쿼리가 넘어 올때 "ALTER TABLE %s COMMENT %s", dao.getSysName(), dao.getComment()"가 입력 값일 경
-//	 * ALTER TABLE 'dao.getSysName()' COMMENT 'dao.getComment()'
-//	 * 로 바꾸어줍니다.
-//	 * </pre>
-//	 * 
-//	 * @param strings
-//	 * @return
-//	 */
-//	public static String makeQuery(String ...strings) {
-//		String sql = strings[0];
-//		
-//		String[] strParam = new String[strings.length-1];
-//		for(int i=1; i<strings.length; i++) {
-//			strParam[i-1] = makeQuote(strings[i]);
-//		}
-//		
-//		return String.format(sql, strParam);
-//	}
 	/**
 	 * make quote mark
 	 * 
@@ -410,19 +404,52 @@ public class SQLUtil {
 	 * @return
 	 */
 	public static String makeQuote(String value) {
-		return String.format("'%s'", StringEscapeUtils.escapeSql(value));
+		if (null == value){
+			return null;
+		}else{
+			return String.format("'%s'", StringEscapeUtils.escapeSql(value));
+		}
+	}
+	
+	/**
+	 * index name
+	 * @param tc
+	 * @return
+	 */
+	public static String getIndexName(InformationSchemaDAO tc) {
+		if("".equals(tc.getSchema_name()) | null == tc.getSchema_name()) return tc.getINDEX_NAME();
+		else return String.format("%s.%s", tc.getSchema_name(), tc.getINDEX_NAME());
+	}
+	
+	/**
+	 * constraint name
+	 * @param tc
+	 * @return
+	 */
+	public static String getConstraintName(TableConstraintsDAO tc) {
+		if("".equals(tc.getSchema_name()) || null == tc.getSchema_name()) return tc.getTABLE_NAME();
+		else return String.format("%s.%s", tc.getSchema_name(), tc.getTABLE_NAME());
+	}
+	
+	/**
+	 * get procedure name
+	 * 
+	 * @param tc
+	 * @return
+	 */
+	public static String getProcedureName(ProcedureFunctionDAO tc) {
+		if("".equals(tc.getSchema_name()) || null == tc.getSchema_name()) return tc.getName();
+		else return String.format("%s.%s", tc.getSchema_name(), tc.getName());
 	}
 	
 	/**
 	 * Table name
-	 * 
+	 * @param userDB 
 	 * @param tableDAO
 	 * @return
 	 */
-	public static String getTableName(TableDAO tableDAO) {
-		if("".equals(tableDAO.getSchema_name())) return tableDAO.getSysName(); //$NON-NLS-2$
-		
-		return tableDAO.getSchema_name() + "." + tableDAO.getSysName(); //$NON-NLS-2$
+	public static String getTableName(UserDBDAO userDB, TableDAO tableDAO) {
+		return tableDAO.getFullName();
 	}
 	
 }

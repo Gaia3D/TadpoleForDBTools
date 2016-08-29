@@ -22,6 +22,7 @@ import org.eclipse.ui.PlatformUI;
 
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.rdb.core.Messages;
@@ -53,13 +54,13 @@ public class ObjectRenameAction extends AbstractObjectSelectAction {
 	public void run(IStructuredSelection selection, UserDBDAO userDB, OBJECT_TYPE actionType) {
 		TableDAO dao = (TableDAO)selection.getFirstElement();
 		
-		ObjectRenameValidator fv = new ObjectRenameValidator();
+		ObjectRenameValidator fv = new ObjectRenameValidator(dao.getName());
 		final Shell activeShell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 		InputDialog dialog = new InputDialog(activeShell, Messages.get().ObjectRenameAction_0, dao.getName(), dao.getName(), fv);
 		if(dialog.open() == Window.OK) {
 			String newTableNm = dialog.getValue();
 			
-			if(!MessageDialog.openConfirm(null, Messages.get().ObjectRenameAction_1, String.format(Messages.get().ObjectRenameAction_2, newTableNm))) return;
+			if(!MessageDialog.openConfirm(null, CommonMessages.get().Confirm, String.format(Messages.get().ObjectRenameAction_2, newTableNm))) return;
 			try {
 				TadpoleObjectQuery.renameTable(userDB, dao, newTableNm);
 				refreshTable(newTableNm);
@@ -71,8 +72,6 @@ public class ObjectRenameAction extends AbstractObjectSelectAction {
 			}
 		}
 	}
-	
-	
 }
 
 /**
@@ -82,22 +81,22 @@ public class ObjectRenameAction extends AbstractObjectSelectAction {
  */
 class ObjectRenameValidator implements IInputValidator {
 	private static final Logger logger = Logger.getLogger(ObjectRenameValidator.class);
-	private String objectName;
+	private String oldName;
 	
-	public ObjectRenameValidator() {
+	public ObjectRenameValidator(String oldName) {
 		super();
+		
+		this.oldName = oldName;
 	}
 	
 	@Override
 	public String isValid(String newText) {
 		int len = newText.length();
+		if(oldName.equals(newText)) {
+			return Messages.get().ObjectRenameValidator_0;
+		}
 		if(len < 2) return Messages.get().FileNameValidator_0;
-		objectName = newText;
 				
 		return null;
-	}
-	
-	public String getObjectName() {
-		return objectName;
 	}
 }
