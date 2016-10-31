@@ -110,7 +110,7 @@
 <!-- 
 	find user
  -->
-<select id="findUser" resultClass="com.hangum.tadpole.engine.query.dao.system.UserDAO" parameterClass="java.lang.String">
+<select id="findEmailUser" resultClass="com.hangum.tadpole.engine.query.dao.system.UserDAO" parameterClass="java.lang.String">
 	SELECT *
 	FROM tadpole_user 
 	WHERE 
@@ -361,6 +361,7 @@
  	FROM tadpole_db
  	WHERE user_seq = #user_seq# AND
  		display_name = #display_name# AND
+ 		url = #url# AND 
  		seq <> #seq# AND 
 		delYn = 'NO'
 ]]>
@@ -373,7 +374,8 @@
  	SELECT *
  	FROM tadpole_db
  	WHERE user_seq = #user_seq# AND
- 		display_name = #display_name# AND 
+ 		display_name = #display_name# AND
+ 		url = #url# AND  
 		delYn = 'NO'
  </select>
  

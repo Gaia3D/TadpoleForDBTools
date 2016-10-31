@@ -49,13 +49,14 @@ import com.hangum.tadpole.ace.editor.core.texteditor.function.IEditorFunction;
 import com.hangum.tadpole.commons.dialogs.fileupload.SingleFileuploadDialog;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.google.analytics.AnalyticCaller;
+import com.hangum.tadpole.commons.libs.core.define.DefineExternalPlguin;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine.OBJECT_TYPE;
 import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.ApplicationArgumentUtils;
 import com.hangum.tadpole.commons.util.RequestInfoUtils;
 import com.hangum.tadpole.commons.util.ShortcutPrefixUtils;
-import com.hangum.tadpole.engine.define.DBDefine;
+import com.hangum.tadpole.engine.define.DBGroupDefine;
 import com.hangum.tadpole.engine.manager.TadpoleSQLTransactionManager;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
@@ -148,7 +149,7 @@ public class MainEditor extends EditorExtension {
 				dBResourceAuto = TadpoleSystem_UserDBResource.getDefaultDBResourceData(userDB);
 				if(dBResourceAuto != null) {
 					if(!StringUtils.isEmpty(dBResourceAuto.getDataString())) {
-						if(userDB.getDBDefine() == DBDefine.MYSQL_DEFAULT || userDB.getDBDefine() == DBDefine.MARIADB_DEFAULT) {
+						if(DBGroupDefine.MYSQL_GROUP == userDB.getDBGroup()) {
 							initDefaultEditorStr = dBResourceAuto.getDataString() + Messages.get().AutoRecoverMsg_mysql + initDefaultEditorStr;
 						} else {
 							initDefaultEditorStr = dBResourceAuto.getDataString() + Messages.get().AutoRecoverMsg + initDefaultEditorStr;
@@ -587,7 +588,7 @@ public class MainEditor extends EditorExtension {
 	 * initialize editor
 	 */
 	private void initEditor() {
-		if (userDB.getDBDefine() == DBDefine.HIVE_DEFAULT || userDB.getDBDefine() == DBDefine.TAJO_DEFAULT) {
+		if (DBGroupDefine.HIVE_GROUP == userDB.getDBGroup() || DBGroupDefine.TAJO_GROUP == userDB.getDBGroup()) {
 			tiAutoCommit.setEnabled(false);
 		}
 
@@ -670,7 +671,7 @@ public class MainEditor extends EditorExtension {
 					UserBillEditorInput mei = new UserBillEditorInput();
 					
 					try {
-						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(mei, "com.hangum.tadpole.bill.core.editor.user");
+						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().openEditor(mei, DefineExternalPlguin.BILL_PLUGIN);
 					} catch (PartInitException e) {
 						logger.error("open editor", e); //$NON-NLS-1$
 						Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$

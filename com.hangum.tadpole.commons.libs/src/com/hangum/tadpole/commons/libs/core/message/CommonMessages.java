@@ -42,6 +42,7 @@ public class CommonMessages {
 	public String Add;
 	public String Delete;
 	public String Modify;
+	public String ModifyMessage;
 	public String Save;
 	public String Run;
 	
@@ -66,6 +67,15 @@ public class CommonMessages {
 	
 	/** 접근제어 시스템 연동 오류 */
 	public String Check_DBAccessSystem;
+	
+	/** ?값은 ?보다 크고 ?보다 적어야 합니다.*/
+	public String ValueIsLessThanOrOverThan;
+
+	public String Text_ValueIsLessThanOrOverThan; 
+	
+	public String Please_InputText;
+
+	public String ThisFunctionEnterprise;
 	
 	public static CommonMessages get() {
 		return RWT.NLS.getISO8859_1Encoded(BUNDLE_NAME, CommonMessages.class);

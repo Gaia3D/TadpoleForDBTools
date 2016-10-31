@@ -50,7 +50,7 @@ import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
 import com.hangum.tadpole.commons.util.download.DownloadServiceHandler;
 import com.hangum.tadpole.commons.util.download.DownloadUtils;
-import com.hangum.tadpole.engine.define.DBDefine;
+import com.hangum.tadpole.engine.define.DBGroupDefine;
 import com.hangum.tadpole.engine.query.dao.ManagerListDTO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
 import com.hangum.tadpole.engine.query.dao.system.UserDBResourceDAO;
@@ -162,7 +162,7 @@ public class ManagerViewer extends ViewPart {
 					if( PublicTadpoleDefine.RESOURCE_TYPE.ERD.toString().equals(dao.getResource_types())) {
 						UserDBDAO userDB = dao.getParent();
 						
-						if(userDB != null && DBDefine.MONGODB_DEFAULT == userDB.getDBDefine()) {							
+						if(userDB != null && DBGroupDefine.MONGODB_GROUP == userDB.getDBGroup()) {							
 							MongoDBERDViewAction ea = new MongoDBERDViewAction();
 							ea.run(dao);
 						} else {
@@ -192,7 +192,7 @@ public class ManagerViewer extends ViewPart {
 		
 		managerTV.setContentProvider(new ManagerContentProvider());
 		managerTV.setLabelProvider(new ManagerLabelProvider());
-		managerTV.setInput(treeDataList);		
+		managerTV.setInput(treeDataList);
 		getSite().setSelectionProvider(managerTV);
 		
 		createPopupMenu();
@@ -206,19 +206,20 @@ public class ManagerViewer extends ViewPart {
 			public void propertyChange(PropertyChangeEvent event) {
 				if (event.getProperty() ==  PublicTadpoleDefine.SAVE_FILE) {
 					addResource(Integer.parseInt( event.getNewValue().toString().split(":")[0] )); //$NON-NLS-1$
-				} else if (event.getProperty() ==  PublicTadpoleDefine.ADD_DB) {
-					init();
 				}
 			}
 		});
 	}
 	
+	/**
+	 * initialize manager db list
+	 */
 	private void setManagerDBList() {
 		treeDataList.clear();
 		
-//		List<ManagerListDTO> _tmpListManager = SessionManager.getManagerDBList();
-//		if(_tmpListManager.isEmpty()) {
-//			if(logger.isDebugEnabled()) logger.debug("===== Manager Viewer add user session................");
+		List<ManagerListDTO> _tmpListManager = SessionManager.getManagerDBList();
+		if(_tmpListManager.isEmpty()) {
+			if(logger.isDebugEnabled()) logger.debug("===== Manager Viewer add user session................");
 			try {
 				for (String strGroupName : TadpoleSystem_UserDBQuery.getUserGroupName()) {
 					ManagerListDTO managerDTO = new ManagerListDTO(strGroupName);
@@ -231,19 +232,26 @@ public class ManagerViewer extends ViewPart {
 				}	// end last end
 	
 				// session 에 사용자 디비 리스트를 저장하다.
-//				SessionManager.setManagerDBList(treeDataList);
-			} catch (Exception e) {
+				SessionManager.setManagerDBList(treeDataList);
+			} catch (Exception e) {	
 				logger.error("initialize Managerview", e); //$NON-NLS-1$
 				
 				Status errStatus = new Status(IStatus.ERROR, Activator.PLUGIN_ID, e.getMessage(), e); //$NON-NLS-1$
 				ExceptionDetailsErrorDialog.openError(getSite().getShell(),CommonMessages.get().Error, Messages.get().ManagerViewer_4, errStatus); //$NON-NLS-1$
 			}
-//		} else {
-//			if(logger.isDebugEnabled()) logger.debug("===== Manager Viewer reuse user session................");
-//			treeDataList = _tmpListManager;
-//		}
+		} else {
+			if(logger.isDebugEnabled()) {
+				logger.debug("===== Manager Viewer reuse user session................" + _tmpListManager.size());
+//				for (ManagerListDTO managerListDTO : _tmpListManager) {
+//					for (UserDBDAO dbDao : managerListDTO.getManagerList()) {
+//						logger.debug("\t======>> " + dbDao.getDisplay_name());
+//					}
+//				}
+			}
+			treeDataList = _tmpListManager;
+		}
 		
-		managerTV.refresh();
+		managerTV.setInput(treeDataList);
 		managerTV.expandToLevel(2);
 		AnalyticCaller.track(ManagerViewer.ID);
 	}
@@ -253,10 +261,10 @@ public class ManagerViewer extends ViewPart {
 	 */
 	public void init() {
 		if(logger.isDebugEnabled()) logger.debug("===== Manager Viewer init..............");
-//		SessionManager.initManagerDBList();
+		SessionManager.initManagerDBList();
 		setManagerDBList();
 	}
-
+	
 	/**
 	 * popup 화면을 오픈합니다.
 	 */
@@ -324,8 +332,8 @@ public class ManagerViewer extends ViewPart {
 					userDB.getListResource().add(resourcesDAO);
 				}
 				
-				// pgsql, oracle, mssql 은 스키마를 추가한다.
-				if(userDB.getDBDefine() == DBDefine.POSTGRE_DEFAULT) {
+				// pgsql은 익스텐스 을 보여준다.
+				if(DBGroupDefine.POSTGRE_GROUP == userDB.getDBGroup()) {
 					PostgresqlConnectionEXT.connectionext(userDB);
 				}
 				managerTV.refresh(userDB, true);
@@ -347,17 +355,13 @@ public class ManagerViewer extends ViewPart {
 	 */
 	public void addResource(int dbSeq) {
 		for(ManagerListDTO dto: treeDataList) {
-			
 			for(UserDBDAO userDB : dto.getManagerList()) {
 				if(userDB.getSeq() == dbSeq) {
 					userDB.getListResource().clear();
 					addManagerResouceData(userDB, true);
-					
 					return;
 				}	// if(userDB.getSeq() == dbSeq) {
-				
 			}	// for(UserDBDAO
-				
 		}
 	}
 	
@@ -404,7 +408,7 @@ public class ManagerViewer extends ViewPart {
 		
 		if(!defaultOpen) return;
 		// mongodb 일경우 열지 않는다.
-		if(userDB.getDBDefine() != DBDefine.MONGODB_DEFAULT) {
+		if(DBGroupDefine.MONGODB_GROUP != userDB.getDBGroup()) {
 			MainEditorInput mei = new MainEditorInput(userDB);		
 			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 			try {

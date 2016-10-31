@@ -55,13 +55,13 @@ public class TransactioonTableComparator extends ViewerSorter  {
 		int rc = ASCENDING;
 		switch (this.propertyIndex) {
 		case 0:
-			rc = NullSafeComparator.compare(dao1.getUserDB().getDbms_type(), dao2.getUserDB().getDbms_type());
+			rc = NullSafeComparator.compare(dao1.getUserId(), dao2.getUserId());
 			break;
 		case 1:
-			rc = NullSafeComparator.compare(dao1.getUserDB().getDisplay_name(), dao2.getUserDB().getDisplay_name());
+			rc = NullSafeComparator.compare(dao1.getUserDB().getDbms_type(), dao2.getUserDB().getDbms_type());
 			break;
 		case 2:
-			rc = NullSafeComparator.compare(dao1.getUserId(), dao2.getUserId());
+			rc = NullSafeComparator.compare(dao1.getUserDB().getDisplay_name(), dao2.getUserDB().getDisplay_name());
 			break;
 		case 3:
 			rc = NullSafeComparator.compare(dao1.getStartTransaction().getTime(), dao2.getStartTransaction().getTime());

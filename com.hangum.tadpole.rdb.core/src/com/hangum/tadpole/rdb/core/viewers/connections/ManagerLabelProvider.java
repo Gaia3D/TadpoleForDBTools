@@ -34,11 +34,11 @@ import com.swtdesigner.ResourceManager;
 public class ManagerLabelProvider extends LabelProvider {
 	private static final Logger logger = Logger.getLogger(ManagerLabelProvider.class);
 	
-	/** production markup start tag */
+//	/** production markup start tag */
 //	public static String PRODUCTION_SERVER_START_TAG = "<em style='color:rgb(255, 0, 0)'>"; //$NON-NLS-1$
 //	/** development markup start tag */
 //	public static String DEVELOPMENT_SERVER_START_TAG = "<em style='color:rgb(224, 224, 224)'>"; //$NON-NLS-1$
-	/** development markup start tag */
+//	/** development markup start tag */
 //	public static String INFO_SERVER_START_TAG = "<em style='color:rgb(145, 129, 129)'>"; //$NON-NLS-1$
 //	
 //	/** Markup end tag */
@@ -61,6 +61,7 @@ public class ManagerLabelProvider extends LabelProvider {
 	 */
 	public static String getDBText(UserDBDAO userDB) {
 		String retText = "";
+		
 		if(PublicTadpoleDefine.DBOperationType.PRODUCTION.toString().equals(userDB.getOperation_type())) {
 //			retText = String.format("%s [%s] %s", PRODUCTION_SERVER_START_TAG, StringUtils.substring(userDB.getOperation_type(), 0, 1), END_TAG);
 			retText = String.format("[%s] ", StringUtils.substring(userDB.getOperation_type(), 0, 1));
@@ -97,8 +98,10 @@ public class ManagerLabelProvider extends LabelProvider {
 		} else if(element instanceof UserDBResourceDAO) {
 			UserDBResourceDAO dao = (UserDBResourceDAO)element;
 			
-			Image baseImage = ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/sql-query.png"); //$NON-NLS-1$
-			if(PublicTadpoleDefine.RESOURCE_TYPE.ERD.toString().equals( dao.getResource_types())) {
+			Image baseImage = null;
+			if(PublicTadpoleDefine.RESOURCE_TYPE.SQL.toString().equals( dao.getResource_types())) {
+				baseImage = ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/sql-query.png"); //$NON-NLS-1$
+			} else if(PublicTadpoleDefine.RESOURCE_TYPE.ERD.toString().equals( dao.getResource_types())) {
 				baseImage = ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/erd.png"); //$NON-NLS-1$
 			}
 			
@@ -112,6 +115,8 @@ public class ManagerLabelProvider extends LabelProvider {
 //			}
 			
 			return baseImage;
+		} else if(element instanceof DBOtherDAO) {
+			return ResourceManager.getPluginImage(Activator.PLUGIN_ID, "resources/icons/managerExplorer/extension.png"); //$NON-NLS-1$
 		}
 		
 		return super.getImage(element);

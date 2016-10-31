@@ -14,6 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
@@ -27,7 +28,9 @@ import com.hangum.tadpole.commons.util.ApplicationArgumentUtils;
 import com.hangum.tadpole.engine.TadpoleEngineActivator;
 import com.hangum.tadpole.engine.define.DBDefine;
 import com.hangum.tadpole.engine.manager.TadpoleApplicationContextManager;
+import com.hangum.tadpole.engine.manager.TadpoleSQLManager;
 import com.hangum.tadpole.engine.query.dao.system.UserDBDAO;
+import com.ibatis.sqlmap.client.SqlMapClient;
 
 /**
  * <pre>
@@ -129,6 +132,21 @@ public class TadpoleSystemInitializer {
 				fos.close();
 				is.close();
 			}
+		} else {
+			SqlMapClient sqlClient = TadpoleSQLManager.getInstance(TadpoleSystemInitializer.getUserDB());
+			try {
+				List listUserTable = sqlClient.queryForList("system_information"); //$NON-NLS-1$
+				// 초기 데이터를 넣는다.
+				if(listUserTable.size() == 0) {
+					logger.info("Initialize System table");
+					InitializeEngineHandler initializeEngine = new InitializeEngineHandler();
+					initializeEngine.initializeEngine();
+				}
+			} catch(Exception e) {
+				logger.info("Initialize System table");
+				InitializeEngineHandler initializeEngine = new InitializeEngineHandler();
+				initializeEngine.initializeEngine();
+			}
 		}
 		
 		return TadpoleApplicationContextManager.getSystemAdmin() == null?false:true;
@@ -173,7 +191,6 @@ public class TadpoleSystemInitializer {
 
 		// local db
 		if ("".equals(dbServerPath)) {
-
 			tadpoleEngineDB.setDbms_type(DBDefine.TADPOLE_SYSTEM_DEFAULT.getDBToString());
 			tadpoleEngineDB.setUrl(String.format(DBDefine.TADPOLE_SYSTEM_DEFAULT.getDB_URL_INFO(), DEFAULT_DB_FILE_LOCATION + DB_NAME));
 			tadpoleEngineDB.setDb("SQLite"); //$NON-NLS-1$
@@ -212,7 +229,7 @@ public class TadpoleSystemInitializer {
 				}
 
 			} catch (Exception ioe) {
-				logger.error("License File not found or file encrypt exception. check the file." + dbServerPath, ioe);
+				logger.error("License file encrypt exception. check the file." + dbServerPath, ioe);
 				System.exit(0);
 			}
 

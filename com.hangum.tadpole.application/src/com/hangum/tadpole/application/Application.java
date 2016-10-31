@@ -24,7 +24,8 @@ import org.eclipse.ui.application.WorkbenchAdvisor;
 
 import com.hangum.tadpole.application.initialize.wizard.SystemInitializeWizard;
 import com.hangum.tadpole.application.start.ApplicationWorkbenchAdvisor;
-import com.hangum.tadpole.engine.initialize.License;
+import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
+import com.hangum.tadpole.engine.initialize.ApplicationLicenseInitialize;
 import com.hangum.tadpole.engine.initialize.TadpoleSystemInitializer;
 
 /**
@@ -53,7 +54,7 @@ public class Application implements EntryPoint {
 	 * If the system table does not exist, create a table.
 	 */
 	private void systemInitialize() {
-		License.load();
+		ApplicationLicenseInitialize.load();
 		try {
 			boolean isInitialize = TadpoleSystemInitializer.initSystem();
 			if(!isInitialize) {
@@ -66,7 +67,7 @@ public class Application implements EntryPoint {
 			}
 		} catch(Exception e) {
 			logger.error("Initialization failed.", e); //$NON-NLS-1$
-			MessageDialog.openError(null, "Error", com.hangum.tadpole.application.start.Messages.get().ApplicationWorkbenchWindowAdvisor_2 + e.getMessage());
+			MessageDialog.openError(null, CommonMessages.get().Error, com.hangum.tadpole.application.start.Messages.get().ApplicationWorkbenchWindowAdvisor_2);
 			
 			System.exit(0);
 		}

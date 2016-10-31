@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,7 @@ import com.hangum.tadpole.commons.csv.DateUtil;
 import com.hangum.tadpole.commons.exception.TadpoleAuthorityException;
 import com.hangum.tadpole.commons.exception.TadpoleRuntimeException;
 import com.hangum.tadpole.commons.exception.TadpoleSQLManagerException;
+import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.util.ApplicationArgumentUtils;
 import com.hangum.tadpole.engine.Messages;
 import com.hangum.tadpole.engine.initialize.TadpoleSystemInitializer;
@@ -69,6 +71,17 @@ public class TadpoleSystem_UserQuery {
 	public static List<UserDAO> getLiveAllUser() throws TadpoleSQLManagerException, SQLException {
 		SqlMapClient sqlClient = TadpoleSQLManager.getInstance(TadpoleSystemInitializer.getUserDB());
 		return sqlClient.queryForList("getLiveAllUser"); //$NON-NLS-1$
+	}
+	
+	/**
+	 * add ldap user
+	 * @return
+	 * @throws TadpoleSQLManagerException
+	 * @throws SQLException
+	 */
+	public static UserDAO newLDAPUser(String email) throws TadpoleSQLManagerException, SQLException {
+		return newUser(PublicTadpoleDefine.INPUT_TYPE.NORMAL.toString(), email, "LDAP", "YES", "TadpoleLDAPLogin", PublicTadpoleDefine.USER_ROLE_TYPE.ADMIN.toString(),
+				"LDAP", "KO", "Asia/Seoul", "YES", "NO", "", "*");
 	}
 	
 	/**
@@ -168,6 +181,19 @@ public class TadpoleSystem_UserQuery {
 	}
 	
 	/**
+	 * 유저를 넘겨 받는다.
+	 * @param email
+	 * @return
+	 * @throws TadpoleSQLManagerException
+	 * @throws SQLException
+	 */
+	public static List<UserDAO> findExistUser(String email) throws TadpoleSQLManagerException, SQLException {
+		SqlMapClient sqlClient = TadpoleSQLManager.getInstance(TadpoleSystemInitializer.getUserDB());
+		List<UserDAO> listUser = sqlClient.queryForList("findEmailUser", email); //$NON-NLS-1$
+		return listUser;
+	}
+	
+	/**
 	 * 사용자 정보를 찾습니다.
 	 * 
 	 * @param email
@@ -176,7 +202,12 @@ public class TadpoleSystem_UserQuery {
 	 */
 	public static UserDAO findUser(String email) throws TadpoleSQLManagerException, SQLException {
 		SqlMapClient sqlClient = TadpoleSQLManager.getInstance(TadpoleSystemInitializer.getUserDB());
-		List<UserDAO> listUser = sqlClient.queryForList("findUser", email); //$NON-NLS-1$
+		List<UserDAO> listUser = new ArrayList<UserDAO>();
+		if(ApplicationArgumentUtils.isOnlineServer()) {
+			listUser = sqlClient.queryForList("findEmailUser", email); //$NON-NLS-1$
+		} else {
+			listUser = sqlClient.queryForList("findLikeUser", "%" + email + "%"); //$NON-NLS-1$
+		}
 		
 		if(listUser.size() == 0) {
 			throw new TadpoleRuntimeException(Messages.get().TadpoleSystem_UserQuery_0);
@@ -185,6 +216,18 @@ public class TadpoleSystem_UserQuery {
 		return listUser.get(0);
 	}
 	
+	public static List<UserDAO> findUserList(String email) throws TadpoleSQLManagerException, SQLException {
+		SqlMapClient sqlClient = TadpoleSQLManager.getInstance(TadpoleSystemInitializer.getUserDB());
+		List<UserDAO> listUser = new ArrayList<UserDAO>();
+		
+			listUser = sqlClient.queryForList("findLikeUser", "%" + email + "%"); //$NON-NLS-1$
+		
+		if(listUser.size() == 0) {
+			throw new TadpoleRuntimeException(Messages.get().TadpoleSystem_UserQuery_0);
+		}
+		
+		return listUser;
+	}
 	
 	/**
 	 * 로그인시 email, passwd 확인 
@@ -282,7 +325,7 @@ public class TadpoleSystem_UserQuery {
 	 */
 	public static UserDAO getSystemAdmin() throws TadpoleSQLManagerException, SQLException {
 		SqlMapClient sqlClient = TadpoleSQLManager.getInstance(TadpoleSystemInitializer.getUserDB());
-		return (UserDAO)sqlClient.queryForObject("getSystemAdmin"); //$NON-NLS-1$
+			return (UserDAO)sqlClient.queryForObject("getSystemAdmin"); //$NON-NLS-1$
 	}
 	
 	/**

@@ -66,11 +66,10 @@ public class SystemAdminWizardDefaultUserPage extends WizardPage {
 		Group grpAdministratorUserInformation = new Group(container, SWT.NONE);
 		grpAdministratorUserInformation.setLayout(new GridLayout(2, false));
 		grpAdministratorUserInformation.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
-		grpAdministratorUserInformation.setText(Messages.get().SystemAdminWizardPage_3);
+		grpAdministratorUserInformation.setText(Messages.get().SystemAdminWizardPage_1);
 		
 		Label lblEmail = new Label(grpAdministratorUserInformation, SWT.NONE);
-		lblEmail.setAlignment(SWT.RIGHT);
-		GridData gd_lblEmail = new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1);
+		GridData gd_lblEmail = new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1);
 		gd_lblEmail.widthHint = 120;
 		lblEmail.setLayoutData(gd_lblEmail);
 		lblEmail.setText(Messages.get().SystemAdminWizardPage_4);
@@ -93,8 +92,7 @@ public class SystemAdminWizardDefaultUserPage extends WizardPage {
 		textEmail.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblPasswd = new Label(grpAdministratorUserInformation, SWT.NONE);
-		lblPasswd.setAlignment(SWT.RIGHT);
-		lblPasswd.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblPasswd.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 		lblPasswd.setText(Messages.get().SystemAdminWizardPage_5);
 		
 		textPasswd = new Text(grpAdministratorUserInformation, SWT.BORDER | SWT.PASSWORD);
@@ -113,8 +111,7 @@ public class SystemAdminWizardDefaultUserPage extends WizardPage {
 		textPasswd.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 1, 1));
 		
 		Label lblRePasswd = new Label(grpAdministratorUserInformation, SWT.NONE);
-		lblRePasswd.setAlignment(SWT.RIGHT);
-		lblRePasswd.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false, false, 1, 1));
+		lblRePasswd.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1));
 		lblRePasswd.setText(Messages.get().SystemAdminWizardPage_6);
 		
 		textRePasswd = new Text(grpAdministratorUserInformation, SWT.BORDER | SWT.PASSWORD);
@@ -163,7 +160,7 @@ public class SystemAdminWizardDefaultUserPage extends WizardPage {
 		} else if(!ValidChecker.isValidEmailAddress(strEmail)) {
 			errorSet(textEmail, Messages.get().SystemAdminWizardPage_48);
 			return;
-		} else if(!ValidChecker.isSimplePasswordChecker(strPass)) { //$NON-NLS-1$
+		} else if(!ValidChecker.isPasswordLengthChecker(strPass)) { //$NON-NLS-1$
 			errorSet(textPasswd, Messages.get().SystemAdminWizardPage_37);
 			return;
 		} else if(!strPass.equals(strRePass)) { //$NON-NLS-1$

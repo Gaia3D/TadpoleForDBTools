@@ -40,7 +40,7 @@ import org.eclipse.swt.widgets.Table;
 import com.hangum.tadpole.commons.exception.dialog.ExceptionDetailsErrorDialog;
 import com.hangum.tadpole.commons.libs.core.define.PublicTadpoleDefine;
 import com.hangum.tadpole.commons.libs.core.message.CommonMessages;
-import com.hangum.tadpole.engine.define.DBDefine;
+import com.hangum.tadpole.engine.define.DBGroupDefine;
 import com.hangum.tadpole.engine.query.dao.mysql.TableColumnDAO;
 import com.hangum.tadpole.engine.query.dao.mysql.TableDAO;
 import com.hangum.tadpole.engine.sql.util.tables.TableUtil;
@@ -88,7 +88,6 @@ public class TableColumnComposite extends AbstractTableComposite {
 		tbtmTable.setData(Messages.get().Columns);
 		tbtmTable.setData(TAB_DATA_KEY, PublicTadpoleDefine.OBJECT_TYPE.COLUMNS.name());
 
-		
 		Composite compositeColumn = new Composite(parentFolder, SWT.NONE);
 		tbtmTable.setControl(compositeColumn);
 		GridLayout gl_compositeTables = new GridLayout(1, false);
@@ -109,7 +108,7 @@ public class TableColumnComposite extends AbstractTableComposite {
 
 				if (!is.isEmpty()) {
 					TableColumnDAO tableDAO = (TableColumnDAO) is.getFirstElement();
-					FindEditorAndWriteQueryUtil.runAtPosition(StringUtils.trim(tableDAO.getField()));
+					FindEditorAndWriteQueryUtil.runAtPosition(String.format("%s, ", tableDAO.getField()));
 				}
 			}
 		});
@@ -161,9 +160,9 @@ public class TableColumnComposite extends AbstractTableComposite {
 
 		if(getUserDB() == null) return;
 		// table column
-		tableColumnSelectionAction.setUserDB(getUserDB());
-		tableColumnDeleteAction.setUserDB(getUserDB());
-		tableColumnModifyAction.setUserDB(getUserDB());
+		if(tableColumnSelectionAction != null) tableColumnSelectionAction.setUserDB(getUserDB());
+		if(tableColumnDeleteAction!= null) tableColumnDeleteAction.setUserDB(getUserDB());
+		if(tableColumnModifyAction != null) tableColumnModifyAction.setUserDB(getUserDB());
 	}
 	
 	public TableViewer getTableColumnViewer() {
@@ -242,7 +241,7 @@ public class TableColumnComposite extends AbstractTableComposite {
 		
 		// menu	
 		final MenuManager menuMgr = new MenuManager("#PopupMenu"); //$NON-NLS-1$
-		if (getUserDB().getDBDefine() == DBDefine.MYSQL_DEFAULT || getUserDB().getDBDefine() == DBDefine.MARIADB_DEFAULT) {
+		if(DBGroupDefine.MYSQL_GROUP == getUserDB().getDBGroup()) {
 			menuMgr.add(tableColumnModifyAction);
 			menuMgr.add(tableColumnDeleteAction);
 			menuMgr.add(new Separator());

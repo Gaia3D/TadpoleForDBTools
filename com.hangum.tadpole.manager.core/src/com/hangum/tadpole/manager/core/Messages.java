@@ -294,8 +294,21 @@ public class Messages {
 	public String MS;
 
 	public String ReleteConnectionPool;
-	
 
+	public String PleaseSelectDB;
+
+	public String PleaseSelectUser;
+	
+	public String userSearch;
+
+	public String ProcessResult;
+
+	public String AuthorityTargetDB;
+
+	public String AuthorityTargetUser;
+
+	public String RemoveDatabase;
+	
 	public static Messages get() {
 		return RWT.NLS.getISO8859_1Encoded(BUNDLE_NAME, Messages.class);
 	}

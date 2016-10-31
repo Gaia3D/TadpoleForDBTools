@@ -124,8 +124,6 @@ public class Messages {
 
 	public String NewUserDialog_2;
 
-	public String NewUserDialog_25;
-
 	public String NewUserDialog_29;
 
 	public String NewUserDialog_3;
@@ -244,6 +242,14 @@ public class Messages {
 	
 	public String ImmediatelyBlockUser;
 	public String ImmediatelyBlockUser_error;
+
+	public String RDBInitializeSetting;
+
+	public String MsgRDBInitializeSetting;
+
+	public String NewUserDialog_33;
+
+	public String DownloadMsg;
 	
 	public static Messages get() {
 		return RWT.NLS.getISO8859_1Encoded(BUNDLE_NAME, Messages.class);
